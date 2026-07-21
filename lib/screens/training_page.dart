@@ -59,7 +59,7 @@ class _TrainingPageState extends State<TrainingPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(
-                    strokeWidth: 10,
+                    strokeWidth: 5,
                     color: Colors.lightGreen,
                     backgroundColor: Colors.white,
                   ),

@@ -30,6 +30,7 @@ Thumbs.db
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+.metadata
 .packages
 .pub-cache/
 .pub/

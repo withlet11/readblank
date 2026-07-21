@@ -22,33 +22,23 @@
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as parser;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wl11_fillblank/screens/bookmark_page.dart';
 
 import 'drawers/bookmark_drawers.dart';
 import 'provider/bookmarkedUrlsProvider.dart';
 import 'screens/training_page.dart';
-
-const kDefaultBookmarkedUrls = [
-  'https://www.google.com',
-  'https://www.wikipedia.org',
-  'https://www.debian.org',
-  'https://hu.wikipedia.org/wiki/Wikip%C3%A9dia',
-];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  final bookmarkedUrls =
-      prefs.getStringList('bookmarks') ?? kDefaultBookmarkedUrls;
-
   runApp(
     ChangeNotifierProvider(
-      create: (_) => BookmarkedUrlsProvider(bookmarkedUrls),
+      create: (_) => BookmarkedUrlsProvider(prefs),
       child: FillWords(),
     ),
   );
@@ -102,12 +92,134 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  // // Saving
-  // void _saveBookmarkedUrl(String url) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.setStringList('bookmarks', _bookmarkedUrls as List<String>);
-  // }
-  //
+  void _restoreDefaultList() async {
+    final settings = context.read<BookmarkedUrlsProvider>();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Restore Default List'),
+        content: Text('Are you sure you want to restore the default list?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      settings.restoreDefaultList();
+    }
+  }
+
+  void _addItem() async {
+    final callersContext = context;
+    final settings = callersContext.read<BookmarkedUrlsProvider>();
+    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+    final String? copiedText = data?.text;
+    if (copiedText != null && copiedText.isNotEmpty) {
+      try {
+        final response = await http.get(Uri.parse(copiedText));
+        if (response.statusCode == 200) {
+          final document = parser.parse(response.body);
+          final pElements = document.getElementsByTagName('p');
+          if (pElements.any((element) => element.text.trim().isNotEmpty)) {
+            if (settings.containsItem(copiedText)) {
+              if (callersContext.mounted) {
+                ScaffoldMessenger.of(callersContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('Bookmark already exists!'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            } else {
+              settings.addItem(copiedText);
+              if (callersContext.mounted) {
+                ScaffoldMessenger.of(callersContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('Bookmark added successfully!'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+          } else {
+            AlertDialog(
+              title: Text('No Text'),
+              content: Text(
+                'The copied URL does not contain any paragraph text. '
+                'Please try a different URL',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          }
+        } else {
+          print('Error: ${response?.statusCode}');
+          AlertDialog(
+            title: Text('Invalid URL'),
+            content: Text(
+              'Please copy the URL from your browser\'s address bar.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        }
+      } catch (e) {
+        print('Error Invalid URL: $e');
+        if (callersContext.mounted) {
+          showDialog(
+            context: callersContext,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.error, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Error'),
+                ],
+              ),
+              content: Text(
+                'Connection error or invalid URL.\n'
+                'The current URL is "$copiedText".',
+                maxLines: 5,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } else {
+      AlertDialog(
+        title: Text('No copied URL'),
+        content: Text('Please copy the URL from your browser\'s address bar.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +241,20 @@ class _MainPageState extends State<MainPage> {
                     },
                   ),
                 ),
+              if (_selectedIndex == 1) ...[
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.bookmark_add_outlined),
+                    onPressed: _addItem,
+                  ),
+                ),
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.settings_backup_restore),
+                    onPressed: _restoreDefaultList,
+                  ),
+                ),
+              ],
             ],
           ),
           body: FutureBuilder<List<String>>(
@@ -136,12 +262,18 @@ class _MainPageState extends State<MainPage> {
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return CircularProgressIndicator(
-                  strokeWidth: 100,
+                  strokeWidth: 5,
                   color: Colors.lightGreen,
                   backgroundColor: Colors.white,
                 );
               }
-              return Center(child: TrainingPage(title: 'Training'));
+              if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else if (_selectedIndex == 1) {
+                return BookmarkPage(title: 'Bookmarks');
+              } else {
+                return TrainingPage(title: 'Training');
+              }
             },
           ),
           endDrawer: const BookmarkDrawers(),

@@ -20,20 +20,39 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const kDefaultBookmarkedUrls = [
+  'https://www.google.com',
+  'https://www.wikipedia.org',
+  'https://www.debian.org',
+  'https://hu.wikipedia.org/wiki/Wikip%C3%A9dia',
+];
 
 class BookmarkedUrlsProvider extends ChangeNotifier {
+  final SharedPreferences prefs;
   int _currentIndex = 0;
   List<String> _bookmarkedUrls = [];
 
+  BookmarkedUrlsProvider(this.prefs) {
+    final list = prefs.getStringList('bookmarks');
+    _bookmarkedUrls = (list != null && list.isNotEmpty)
+        ? list
+        : List.from(kDefaultBookmarkedUrls);
+  }
+
   int get currentIndex => _currentIndex;
+
   List<String> get bookmarkedUrls => _bookmarkedUrls;
 
   String get currentUrl => _bookmarkedUrls[_currentIndex];
 
-  BookmarkedUrlsProvider(List<String> initialItems) : _bookmarkedUrls = initialItems;
-
   bool isSelectedItem(String item) {
     return _bookmarkedUrls.indexOf(item) == _currentIndex;
+  }
+
+  bool containsItem(String item) {
+    return _bookmarkedUrls.contains(item);
   }
 
   void selectItem(String item) {
@@ -44,12 +63,13 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
   void setIndex(int index) {
     if (index < 0 || index >= _bookmarkedUrls.length) {
       _currentIndex = index;
-      notifyListeners(); // Tells the UI to rebuild
+      notifyListeners();
     }
   }
 
   void addItem(String item) {
     _bookmarkedUrls.add(item);
+    prefs.setStringList('bookmarks', _bookmarkedUrls);
     notifyListeners();
   }
 
@@ -57,11 +77,19 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
     if (_bookmarkedUrls.length > 1) {
       if (_bookmarkedUrls.contains(item)) {
         _bookmarkedUrls.remove(item);
-        if (_bookmarkedUrls.length > _currentIndex) {
+        if (_currentIndex >= _bookmarkedUrls.length) {
           _currentIndex = _bookmarkedUrls.length - 1;
         }
+        prefs.setStringList('bookmarks', _bookmarkedUrls);
         notifyListeners();
       }
     }
+  }
+
+  void restoreDefaultList() {
+    _bookmarkedUrls = List.from(kDefaultBookmarkedUrls);
+    prefs.setStringList('bookmarks', _bookmarkedUrls);
+    _currentIndex = 0;
+    notifyListeners();
   }
 }
