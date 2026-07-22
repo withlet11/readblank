@@ -226,8 +226,11 @@ class _ContentPaneState extends State<ContentPane> {
                       icon: Icon(Icons.keyboard_arrow_right),
                     ),
                     IconButton.filled(
-                      onPressed: _wordList[_currentIndex].$3
-                          ? null : () async {
+                      onPressed:
+                          (_currentIndex >= _wordList.length ||
+                              _wordList[_currentIndex].$3)
+                          ? null
+                          : () async {
                               SharePlus.instance.share(
                                 ShareParams(
                                   text: _paragraph

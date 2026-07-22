@@ -25,7 +25,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../panes/content_pane.dart';
-import '../provider/bookmarkedUrlsProvider.dart';
+import '../provider/bookmarked_urls_provider.dart';
 
 class TrainingPage extends StatefulWidget {
   final String title;
@@ -37,23 +37,14 @@ class TrainingPage extends StatefulWidget {
 }
 
 class _TrainingPageState extends State<TrainingPage> {
-  int _currentParagraphIndex = 0;
-  String? _lastUrl;
-  final Map<String, List<String>> _cachedParagraphs = {};
-
   @override
   Widget build(BuildContext context) {
     return Consumer<BookmarkedUrlsProvider>(
       builder: (context, provider, child) {
-        if (_lastUrl != provider.currentUrl) {
-          _lastUrl = provider.currentUrl;
-          _currentParagraphIndex = 0;
-        }
-
-        if (_cachedParagraphs.containsKey(provider.currentUrl)) {
-          return _buildContent(_cachedParagraphs[provider.currentUrl]!);
+        if (provider.currentParagraphList != null) {
+          return _buildContent(provider);
         } else {
-          return FutureBuilder<List<String>>(
+          return FutureBuilder<(String?, List<String>)>(
             future: _fetchParagraphs(provider.currentUrl),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -67,8 +58,11 @@ class _TrainingPageState extends State<TrainingPage> {
               } else if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               } else if (snapshot.hasData) {
-                _cachedParagraphs[provider.currentUrl] = snapshot.data!;
-                return _buildContent(snapshot.data!);
+                provider.cacheParagraphList(
+                  provider.currentUrl,
+                  snapshot.data!,
+                );
+                return _buildContent(provider);
               } else {
                 return Center(child: Text('No content found.'));
               }
@@ -79,27 +73,23 @@ class _TrainingPageState extends State<TrainingPage> {
     );
   }
 
-  Future<List<String>> _fetchParagraphs(String url) async {
+  Future<(String?, List<String>)> _fetchParagraphs(String url) async {
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final document = parser.parse(response.body);
+      final title = document.querySelector('title')?.text;
       final pElements = document.getElementsByTagName('p');
-      return pElements
+      return (title, pElements
           .map((element) => element.text.trim())
           .where((text) => text.isNotEmpty)
-          .toList();
+          .toList());
     } else {
       throw Exception('Failed to load page');
     }
   }
 
-  Widget _buildContent(List<String> paragraphs) {
-    if (_currentParagraphIndex >= paragraphs.length) {
-      _currentParagraphIndex = paragraphs.length - 1;
-    }
-    if (_currentParagraphIndex < 0) _currentParagraphIndex = 0;
-
+  Widget _buildContent(BookmarkedUrlsProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -107,8 +97,10 @@ class _TrainingPageState extends State<TrainingPage> {
             SizedBox(
               height: constraints.maxHeight * 0.9,
               child: ContentPane(
-                key: ValueKey('${_currentParagraphIndex}_${paragraphs[_currentParagraphIndex]}'),
-                paragraph: paragraphs[_currentParagraphIndex],
+                key: ValueKey(
+                  '${provider.currentParagraphIndex}_${provider.currentParagraph}',
+                ),
+                paragraph: provider.currentParagraph,
               ),
             ),
             Expanded(
@@ -116,21 +108,21 @@ class _TrainingPageState extends State<TrainingPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    onPressed: _currentParagraphIndex > 0
-                        ? () => setState(() => _currentParagraphIndex = 0)
+                    onPressed: provider.isNotFirstParagraph
+                        ? () => setState(() => provider.moveToFirstParagraph())
                         : null,
                     icon: Icon(Icons.first_page),
                   ),
                   IconButton(
-                    onPressed: _currentParagraphIndex > 0
-                        ? () => setState(() => _currentParagraphIndex--)
+                    onPressed: provider.isNotFirstParagraph
+                        ? () => setState(() => provider.movePreviousParagraph())
                         : null,
                     icon: Icon(Icons.keyboard_arrow_left),
                   ),
                   DropdownButton<int>(
-                    value: _currentParagraphIndex,
+                    value: provider.currentParagraphIndex,
                     items: List.generate(
-                      paragraphs.length,
+                      provider.currentParagraphList?.length ?? 0,
                       (index) => DropdownMenuItem(
                         value: index,
                         child: Text((index + 1).toString()),
@@ -138,19 +130,19 @@ class _TrainingPageState extends State<TrainingPage> {
                     ),
                     onChanged: (int? value) {
                       if (value != null) {
-                        setState(() => _currentParagraphIndex = value);
+                        setState(() => provider.currentParagraphIndex = value);
                       }
                     },
                   ),
                   IconButton(
-                    onPressed: _currentParagraphIndex < paragraphs.length - 1
-                        ? () => setState(() => _currentParagraphIndex++)
+                    onPressed: provider.isNotLastParagraph
+                        ? () => setState(() => provider.moveNextParagraph())
                         : null,
                     icon: Icon(Icons.keyboard_arrow_right),
                   ),
                   IconButton(
-                    onPressed: _currentParagraphIndex < paragraphs.length - 1
-                        ? () => setState(() => _currentParagraphIndex = paragraphs.length - 1)
+                    onPressed: provider.isNotLastParagraph
+                        ? () => setState(() => provider.moveToLastParagraph())
                         : null,
                     icon: Icon(Icons.last_page),
                   ),

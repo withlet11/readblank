@@ -22,7 +22,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/bookmarkedUrlsProvider.dart';
+import '../provider/bookmarked_urls_provider.dart';
 
 class BookmarkPage extends StatefulWidget {
   final String title;
@@ -39,83 +39,36 @@ class _BookmarkPageState extends State<BookmarkPage> {
     return Consumer<BookmarkedUrlsProvider>(
       builder: (context, provider, child) {
         return Center(
-          /*
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                color: Colors.deepPurple,
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.bookmark_add, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'How to bookmark a URL:',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white,
-                          fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.copy, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Copy the URL from your browser\'s address bar.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Click the + button located on this screen.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-           */
           child: ListView.builder(
-            itemCount: provider.bookmarkedUrls.length,
+            itemCount: provider.bookmarkList.length,
             itemBuilder: (context, index) {
-              final (
-                onPressed,
-                iconColor,
-              ) = (index > 0 || provider.bookmarkedUrls.length > 1)
+              final (onPressed, iconColor) = provider.bookmarkList.length > 1
                   ? (
                       () {
                         setState(() {
-                          provider.removeItem(provider.bookmarkedUrls[index]);
+                          provider.removeBookmark(index);
                         });
                       },
                       Colors.red,
                     )
                   : (null, Colors.grey);
               return ListTile(
-                title: Text(provider.bookmarkedUrls[index]),
+                selected: provider.isSelectedBookmark(
+                  provider.bookmarkList[index],
+                ),
+                selectedTileColor: Colors.lightGreen.shade200,
+                title: Text(provider.bookmarkList[index]),
+                onTap: () {
+                  setState(() {
+                    provider.selectBookmark(provider.bookmarkList[index]);
+                  });
+                },
                 trailing: IconButton(
                   icon: Icon(Icons.delete_outline, color: iconColor),
                   onPressed: onPressed,
                 ),
               );
             },
-            // ),
-            // ),
-            // ],
           ),
         );
       },

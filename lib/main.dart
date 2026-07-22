@@ -28,7 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wl11_fillblank/screens/bookmark_page.dart';
 
 import 'drawers/bookmark_drawers.dart';
-import 'provider/bookmarkedUrlsProvider.dart';
+import 'provider/bookmarked_urls_provider.dart';
 import 'screens/training_page.dart';
 
 void main() async {
@@ -75,23 +75,6 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  Future<List<String>> fetchParagraphs(String url) async {
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      // Parse the HTML string
-      final document = parser.parse(response.body);
-
-      // Query all <p> elements
-      final pElements = document.getElementsByTagName('p');
-
-      // Extract the text content from each <p>
-      return pElements.map((element) => element.text).toList();
-    } else {
-      throw Exception('Failed to load page');
-    }
-  }
-
   void _restoreDefaultList() async {
     final settings = context.read<BookmarkedUrlsProvider>();
     final confirm = await showDialog<bool>(
@@ -117,7 +100,7 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  void _addItem() async {
+  void _addBookmark() async {
     final callersContext = context;
     final settings = callersContext.read<BookmarkedUrlsProvider>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
@@ -129,7 +112,7 @@ class _MainPageState extends State<MainPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (settings.containsItem(copiedText)) {
+            if (settings.containsBookmark(copiedText)) {
               if (callersContext.mounted) {
                 ScaffoldMessenger.of(callersContext).showSnackBar(
                   const SnackBar(
@@ -139,7 +122,7 @@ class _MainPageState extends State<MainPage> {
                 );
               }
             } else {
-              settings.addItem(copiedText);
+              settings.addBookmark(copiedText);
               if (callersContext.mounted) {
                 ScaffoldMessenger.of(callersContext).showSnackBar(
                   const SnackBar(
@@ -150,37 +133,45 @@ class _MainPageState extends State<MainPage> {
               }
             }
           } else {
-            AlertDialog(
-              title: Text('No Text'),
-              content: Text(
-                'The copied URL does not contain any paragraph text. '
-                'Please try a different URL',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+            if (callersContext.mounted) {
+              showDialog(
+                context: callersContext,
+                builder: (context) => AlertDialog(
+                  title: Text('No Text'),
+                  content: Text(
+                    'The copied URL does not contain any paragraph text. '
+                    'Please try a different URL',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
                 ),
-              ],
-            );
+              );
+            }
           }
         } else {
-          print('Error: ${response?.statusCode}');
-          AlertDialog(
-            title: Text('Invalid URL'),
-            content: Text(
-              'Please copy the URL from your browser\'s address bar.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
+          if (callersContext.mounted) {
+            showDialog(
+              context: callersContext,
+              builder: (context) => AlertDialog(
+                title: Text('Invalid URL'),
+                content: Text(
+                  'Please copy the URL from your browser\'s address bar.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
               ),
-            ],
-          );
+            );
+          }
         }
       } catch (e) {
-        print('Error Invalid URL: $e');
         if (callersContext.mounted) {
           showDialog(
             context: callersContext,
@@ -194,7 +185,7 @@ class _MainPageState extends State<MainPage> {
               ),
               content: Text(
                 'Connection error or invalid URL.\n'
-                'The current URL is "$copiedText".',
+                'The copied text is "$copiedText".',
                 maxLines: 5,
               ),
               actions: [
@@ -208,16 +199,23 @@ class _MainPageState extends State<MainPage> {
         }
       }
     } else {
-      AlertDialog(
-        title: Text('No copied URL'),
-        content: Text('Please copy the URL from your browser\'s address bar.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      if (callersContext.mounted) {
+        showDialog(
+          context: callersContext,
+          builder: (context) => AlertDialog(
+            title: Text('No copied URL'),
+            content: Text(
+              'Please copy the URL from your browser\'s address bar.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      );
+        );
+      }
     }
   }
 
@@ -227,7 +225,23 @@ class _MainPageState extends State<MainPage> {
       builder: (context, provider, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text(provider.currentUrl),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  provider.currentTitle,
+                  style: TextStyle(fontSize: 16),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  provider.currentDomainName,
+                  style: TextStyle(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
             foregroundColor: Colors.black,
             backgroundColor: Colors.lightGreen,
             automaticallyImplyActions: false,
@@ -235,7 +249,7 @@ class _MainPageState extends State<MainPage> {
               if (_selectedIndex == 0)
                 Builder(
                   builder: (context) => IconButton(
-                    icon: Icon(Icons.menu),
+                    icon: Icon(Icons.bookmarks_outlined),
                     onPressed: () {
                       Scaffold.of(context).openEndDrawer();
                     },
@@ -244,38 +258,22 @@ class _MainPageState extends State<MainPage> {
               if (_selectedIndex == 1) ...[
                 Builder(
                   builder: (context) => IconButton(
-                    icon: Icon(Icons.bookmark_add_outlined),
-                    onPressed: _addItem,
+                    icon: Icon(Icons.settings_backup_restore),
+                    onPressed: _restoreDefaultList,
                   ),
                 ),
                 Builder(
                   builder: (context) => IconButton(
-                    icon: Icon(Icons.settings_backup_restore),
-                    onPressed: _restoreDefaultList,
+                    icon: Icon(Icons.bookmark_add_outlined),
+                    onPressed: _addBookmark,
                   ),
                 ),
               ],
             ],
           ),
-          body: FutureBuilder<List<String>>(
-            future: fetchParagraphs(provider.currentUrl),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return CircularProgressIndicator(
-                  strokeWidth: 5,
-                  color: Colors.lightGreen,
-                  backgroundColor: Colors.white,
-                );
-              }
-              if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
-              } else if (_selectedIndex == 1) {
-                return BookmarkPage(title: 'Bookmarks');
-              } else {
-                return TrainingPage(title: 'Training');
-              }
-            },
-          ),
+          body: _selectedIndex == 1
+              ? BookmarkPage(title: 'Bookmarks')
+              : TrainingPage(title: 'Training'),
           endDrawer: const BookmarkDrawers(),
           bottomNavigationBar: NavigationBar(
             backgroundColor: Colors.white,
