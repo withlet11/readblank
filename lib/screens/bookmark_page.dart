@@ -36,6 +36,8 @@ class BookmarkPage extends StatefulWidget {
 class _BookmarkPageState extends State<BookmarkPage> {
   @override
   Widget build(BuildContext context) {
+    return Center(child: Text('BookmarkPage'));
+    /*
     return Consumer<BookmarkedUrlsProvider>(
       builder: (context, provider, child) {
         return Center(
@@ -73,5 +75,7 @@ class _BookmarkPageState extends State<BookmarkPage> {
         );
       },
     );
+
+     */
   }
 }

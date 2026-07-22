@@ -20,6 +20,8 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:html/parser.dart' as parser;
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 const kDefaultBookmarkedUrls = [
@@ -30,6 +32,12 @@ const kDefaultBookmarkedUrls = [
 ];
 
 class BookmarkedUrlsProvider extends ChangeNotifier {
+  // For fetching data from the web
+  bool _isLoading = false;
+  String? _data;
+  String? _error;
+
+  // For storing and retrieving data from SharedPreferences
   final SharedPreferences prefs;
   List<String> _bookmarkList = [];
   int _index = 0; // internal variable of _currentBookmarkIndex
@@ -43,6 +51,62 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
         : List.from(kDefaultBookmarkedUrls);
   }
 
+  // For fetching data from the web
+  bool get isLoading => _isLoading;
+
+  String? get data => _data;
+
+  Future<void> fetchAllUrls() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners(); // Notify UI to show spinner
+
+    try {
+      for (final url in _bookmarkList) {
+        _cachedContents[url] = await _fetchData(url);
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Notify UI to stop spinner
+    }
+  }
+
+  Future<void> fetchCurrentUrl() async {
+    if (currentParagraphList != null) return;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners(); // Notify UI to show spinner
+
+    final contents = await _fetchData(currentUrl);
+    _cachedContents[currentUrl] = contents;
+
+    _isLoading = false;
+    notifyListeners(); // Notify UI to stop spinner
+  }
+
+  Future<(String?, List<String>)> _fetchData(String url) async {
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final document = parser.parse(response.body);
+      final title = document.querySelector('title')?.text;
+      final pElements = document.getElementsByTagName('p');
+      return (
+      title,
+      pElements
+          .map((element) => element.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList(),
+      );
+    } else {
+      throw Exception('Failed to load page');
+    }
+  }
+
+  // For storing and retrieving data from SharedPreferences
   int get _currentBookmarkIndex => _index;
 
   set _currentBookmarkIndex(int index) {
@@ -67,18 +131,17 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
 
   void selectBookmark(String bookmark) {
     _currentBookmarkIndex = _bookmarkList.indexOf(bookmark);
-    // _currentBookmarkIndex = _bookmarkList.indexOf(bookmark);
-    // _currentParagraphIndex = 0;
     notifyListeners();
   }
 
-  void addBookmark(String bookmark) {
+  void addBookmark(String bookmark) async {
     _bookmarkList.add(bookmark);
     prefs.setStringList('bookmarks', _bookmarkList);
+    _cachedContents[bookmark] = await _fetchData(bookmark);
     notifyListeners();
   }
 
-  void removeBookmark(int index) {
+  void removeBookmark(int index) async {
     if (_bookmarkList.length > 1) {
       if (index >= 0 && index < _bookmarkList.length) {
         _bookmarkList.removeAt(index);
@@ -91,12 +154,12 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
     }
   }
 
-  void removeBookMarkWithUrl(String url) {
+  void removeBookMarkWithUrl(String url) async {
     final index = _bookmarkList.indexOf(url);
     removeBookmark(index);
   }
 
-  void restoreDefaultList() {
+  void restoreDefaultList() async {
     _bookmarkList = List.from(kDefaultBookmarkedUrls);
     prefs.setStringList('bookmarks', _bookmarkList);
     _currentBookmarkIndex = 0;
@@ -110,7 +173,6 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
   void cacheParagraphList(String url, (String?, List<String>) contents) {
     _cachedContents[url] = contents;
     _currentBookmarkIndex = _bookmarkList.indexOf(url);
-    // selectBookmark(url);
   }
 
   int get currentParagraphIndex => _currentParagraphIndex;

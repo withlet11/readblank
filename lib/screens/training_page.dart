@@ -20,8 +20,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart' as parser;
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../panes/content_pane.dart';
@@ -38,55 +36,33 @@ class TrainingPage extends StatefulWidget {
 
 class _TrainingPageState extends State<TrainingPage> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<BookmarkedUrlsProvider>(
+        context,
+        listen: false,
+      ).fetchCurrentUrl();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<BookmarkedUrlsProvider>(
       builder: (context, provider, child) {
-        if (provider.currentParagraphList != null) {
-          return _buildContent(provider);
-        } else {
-          return FutureBuilder<(String?, List<String>)>(
-            future: _fetchParagraphs(provider.currentUrl),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 5,
-                    color: Colors.lightGreen,
-                    backgroundColor: Colors.white,
-                  ),
-                );
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else if (snapshot.hasData) {
-                provider.cacheParagraphList(
-                  provider.currentUrl,
-                  snapshot.data!,
-                );
-                return _buildContent(provider);
-              } else {
-                return Center(child: Text('No content found.'));
-              }
-            },
+        if (provider.isLoading) {
+          return Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 5,
+              color: Colors.lightGreen,
+              backgroundColor: Colors.white,
+            ),
           );
+        } else {
+          return _buildContent(provider);
         }
       },
     );
-  }
-
-  Future<(String?, List<String>)> _fetchParagraphs(String url) async {
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final document = parser.parse(response.body);
-      final title = document.querySelector('title')?.text;
-      final pElements = document.getElementsByTagName('p');
-      return (title, pElements
-          .map((element) => element.text.trim())
-          .where((text) => text.isNotEmpty)
-          .toList());
-    } else {
-      throw Exception('Failed to load page');
-    }
   }
 
   Widget _buildContent(BookmarkedUrlsProvider provider) {
