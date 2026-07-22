@@ -20,54 +20,53 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/bookmarked_urls_provider.dart';
 
-class BookmarkPage extends StatefulWidget {
+class StudyLogPage extends StatefulWidget {
   final String title;
 
-  const BookmarkPage({super.key, required this.title});
+  const StudyLogPage({super.key, required this.title});
 
   @override
-  State<BookmarkPage> createState() => _BookmarkPageState();
+  State<StudyLogPage> createState() => _StudyLogPageState();
 }
 
-class _BookmarkPageState extends State<BookmarkPage> {
+class _StudyLogPageState extends State<StudyLogPage> {
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('BookmarkPage'));
-    /*
     return Consumer<BookmarkedUrlsProvider>(
       builder: (context, provider, child) {
         return Center(
           child: ListView.builder(
-            itemCount: provider.bookmarkList.length,
+            itemCount: provider.studyLog.length,
             itemBuilder: (context, index) {
-              final (onPressed, iconColor) = provider.bookmarkList.length > 1
-                  ? (
-                      () {
-                        setState(() {
-                          provider.removeBookmark(index);
-                        });
-                      },
-                      Colors.red,
-                    )
-                  : (null, Colors.grey);
-              return ListTile(
-                selected: provider.isSelectedBookmark(
-                  provider.bookmarkList[index],
-                ),
-                selectedTileColor: Colors.lightGreen.shade200,
-                title: Text(provider.bookmarkList[index]),
-                onTap: () {
-                  setState(() {
-                    provider.selectBookmark(provider.bookmarkList[index]);
-                  });
-                },
-                trailing: IconButton(
-                  icon: Icon(Icons.delete_outline, color: iconColor),
-                  onPressed: onPressed,
+              final logItem = provider.studyLog[index];
+              final word = logItem['word'] ?? 'No title';
+              final timestamp = logItem['timestamp'] ?? '';
+              return Container(
+                height: 48,
+                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      word, // provider.studyLog[index].split(',')[1],
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    Text(
+                      DateFormat.yMd().add_jm().format(
+                        DateTime.parse(timestamp),
+                        /*
+                        DateTime.parse(
+                          provider.studyLog[index].split(',')[0],
+                        ).toLocal(),
+                         */
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -75,7 +74,5 @@ class _BookmarkPageState extends State<BookmarkPage> {
         );
       },
     );
-
-     */
   }
 }

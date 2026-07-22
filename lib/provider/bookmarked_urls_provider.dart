@@ -22,7 +22,9 @@
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
 const kDefaultBookmarkedUrls = [
   'https://www.google.com',
@@ -44,11 +46,18 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
   final Map<String, (String?, List<String>)> _cachedContents = {};
   int _currentParagraphIndex = 0;
 
+  // For database operations
+  final DatabaseHelper _db = DatabaseHelper.instance;
+  List<Map<String, dynamic>> _studyLog = List.empty(growable: true);
+  bool _isDbLoading = true;
+
   BookmarkedUrlsProvider(this.prefs) {
-    final list = prefs.getStringList('bookmarks');
-    _bookmarkList = (list != null && list.isNotEmpty)
-        ? list
+    final bookmarks = prefs.getStringList('bookmarks');
+    final log = prefs.getStringList('studyLog');
+    _bookmarkList = (bookmarks != null && bookmarks.isNotEmpty)
+        ? bookmarks
         : List.from(kDefaultBookmarkedUrls);
+    _loadLogs();
   }
 
   // For fetching data from the web
@@ -95,11 +104,11 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
       final title = document.querySelector('title')?.text;
       final pElements = document.getElementsByTagName('p');
       return (
-      title,
-      pElements
-          .map((element) => element.text.trim())
-          .where((text) => text.isNotEmpty)
-          .toList(),
+        title,
+        pElements
+            .map((element) => element.text.trim())
+            .where((text) => text.isNotEmpty)
+            .toList(),
       );
     } else {
       throw Exception('Failed to load page');
@@ -220,4 +229,126 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // For database operations
+  List<Map<String, dynamic>> get studyLog => _studyLog;
+
+  bool get isDbLoading => _isDbLoading;
+
+  Future<void> _loadLogs() async {
+    _isDbLoading = true;
+    notifyListeners();
+
+    // Fetch from database
+    _studyLog = await _db.getAllLogs();
+
+    _isDbLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> addLog(String word) async {
+    // 1. Insert to DB
+    await _db.addLog(word);
+
+    // 2. Keep memory in sync
+    _studyLog.insert(0, {'word': word, 'timestamp': DateTime.now().toIso8601String()});
+
+    // 3. Keep memory limit
+    if (_studyLog.length > 10000) _studyLog.removeLast();
+
+    notifyListeners();
+  }
+
+  /*
+  void addStudyLog(DateTime dateTime, String word) {
+    _studyLog.add('${dateTime.toIso8601String()},$word');
+    prefs.setStringList('studyLog', _studyLog);
+    notifyListeners();
+  }
+   */
+}
+
+class DatabaseHelper {
+  static final DatabaseHelper instance = DatabaseHelper._init();
+  static Database? _database;
+
+  DatabaseHelper._init();
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDB('fillblank.db');
+    return _database!;
+  }
+
+  Future<Database> _initDB(String filePath) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, filePath);
+    return await openDatabase(path, version: 2, onCreate: _createDB, onUpgrade: _onUpgrade);
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          word TEXT NOT NULL,
+          timestamp TEXT NOT NULL
+        )
+      ''');
+    }
+  }
+
+  Future _createDB(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        word TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> addLog(String word) async {
+    final db = await database;
+    await db.insert('logs', {
+      'word': word,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    // Optional: Auto-trim database size
+    await db.execute(
+      'DELETE FROM logs WHERE id <= (SELECT id FROM logs ORDER BY id DESC LIMIT 1 OFFSET 10000)',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getAllLogs() async {
+    final db = await database;
+    // Fetch newest 100 first
+    return await db.query('logs', orderBy: 'id DESC', limit: 10000);
+  }
+
+/*
+  // Insert
+  Future<int> addBookmark(Map<String, dynamic> row) async {
+    final db = await instance.database;
+    return await db.insert('bookmarks', row);
+  }
+
+  // Query
+  Future<List<Map<String, dynamic>>> getAllBookmarks() async {
+    final db = await instance.database;
+    return await db.query('bookmarks');
+  }
+
+  // Delete
+  Future<int> deleteBookmark(int id) async {
+    final db = await instance.database;
+    return await db.delete('bookmarks', where: 'id = ?', whereArgs: [id]);
+  }
+
+  void saveUrl(String url, String title) async {
+    await DatabaseHelper.instance.addBookmark({'url': url, 'title': title});
+    print('Saved!');
+  }
+   */
 }

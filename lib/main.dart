@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wl11_fillblank/screens/bookmark_page.dart';
+import 'package:wl11_fillblank/screens/studylog_page.dart';
 
 import 'drawers/bookmark_drawers.dart';
 import 'provider/bookmarked_urls_provider.dart';
@@ -98,41 +98,66 @@ class _MainPageState extends State<MainPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              provider.currentTitle,
-              style: TextStyle(fontSize: 16),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              provider.currentDomainName,
-              style: TextStyle(fontSize: 12),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-        foregroundColor: Colors.black,
-        backgroundColor: Colors.lightGreen,
-        automaticallyImplyActions: false,
-        actions: [
-          if (_selectedIndex == 0)
-            Builder(
-              builder: (context) => IconButton(
-                icon: Icon(Icons.bookmarks_outlined),
-                onPressed: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
+      appBar: _selectedIndex == 2
+          ? AppBar(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Study Log', style: TextStyle(color: Colors.black87)),
+                ],
               ),
+              foregroundColor: Colors.black,
+              backgroundColor: Colors.lightGreen,
+              automaticallyImplyActions: false,
+              actions: [
+                Builder(
+                  builder: (context) =>
+                      IconButton(icon: Icon(Icons.view_list_outlined), onPressed: () {}),
+                ),
+                Builder(
+                  builder: (context) =>
+                      IconButton(icon: Icon(Icons.view_week_outlined), onPressed: () {}),
+                ),
+                Builder(
+                  builder: (context) =>
+                      IconButton(icon: Icon(Icons.calendar_view_month_outlined), onPressed: () {}),
+                ),
+              ],
+            )
+          : AppBar(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    provider.currentTitle,
+                    style: TextStyle(fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    provider.currentDomainName,
+                    style: TextStyle(fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              foregroundColor: Colors.black,
+              backgroundColor: Colors.lightGreen,
+              automaticallyImplyActions: false,
+              actions: [
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.bookmarks_outlined),
+                    onPressed: () {
+                      Scaffold.of(context).openEndDrawer();
+                    },
+                  ),
+                ),
+              ],
             ),
-        ],
-      ),
-      body: _selectedIndex == 1
-          ? BookmarkPage(title: 'Bookmarks')
+      body: _selectedIndex == 2
+          ? StudyLogPage(title: 'Study Log')
           : TrainingPage(title: 'Training'),
       endDrawer: const BookmarkDrawers(),
       bottomNavigationBar: NavigationBar(
@@ -153,7 +178,7 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.library_books_outlined),
           ),
           const NavigationDestination(
-            label: 'Contact',
+            label: 'Log',
             icon: Icon(Icons.bar_chart),
           ),
         ],
