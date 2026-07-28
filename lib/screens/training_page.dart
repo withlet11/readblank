@@ -21,9 +21,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:readblank/provider/history_provider.dart';
 
 import '../panes/content_pane.dart';
-import '../provider/bookmarked_urls_provider.dart';
 
 class TrainingPage extends StatefulWidget {
   final String title;
@@ -39,16 +39,13 @@ class _TrainingPageState extends State<TrainingPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<BookmarkedUrlsProvider>(
-        context,
-        listen: false,
-      ).fetchCurrentUrl();
+      Provider.of<HistoryProvider>(context, listen: false).fetchCurrentUrl();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BookmarkedUrlsProvider>(
+    return Consumer<HistoryProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return Center(
@@ -65,7 +62,7 @@ class _TrainingPageState extends State<TrainingPage> {
     );
   }
 
-  Widget _buildContent(BookmarkedUrlsProvider provider) {
+  Widget _buildContent(HistoryProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -76,7 +73,9 @@ class _TrainingPageState extends State<TrainingPage> {
                 key: ValueKey(
                   '${provider.currentParagraphIndex}_${provider.currentParagraph}',
                 ),
-                paragraph: provider.currentParagraph,
+                paragraph: provider.currentParagraph.isEmpty
+                    ? 'Please add an URL'
+                    : provider.currentParagraph,
               ),
             ),
             Expanded(

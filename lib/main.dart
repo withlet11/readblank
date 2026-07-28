@@ -25,8 +25,10 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:readblank/screens/studylog_page.dart';
 
+import 'db/word_list_provider.dart';
 import 'drawers/bookmark_drawers.dart';
 import 'provider/bookmarked_urls_provider.dart';
+import 'provider/history_provider.dart';
 import 'screens/training_page.dart';
 
 void main() async {
@@ -35,27 +37,31 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => BookmarkedUrlsProvider(prefs),
-      child: FillBlank(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BookmarkedUrlsProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => HistoryProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => WordListProvider(prefs)),
+      ],
+      child: ReadBlank(),
     ),
   );
 }
 
-class FillBlank extends StatelessWidget {
-  const FillBlank({super.key});
+class ReadBlank extends StatelessWidget {
+  const ReadBlank({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'WL11 FillBlank',
+      title: 'ReadBlank',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.lightGreen,
         ).copyWith(surface: Colors.white),
       ),
-      home: const MainPage(title: 'FillBlank'),
+      home: const MainPage(title: 'ReadBlank'),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -77,13 +83,13 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BookmarkedUrlsProvider>().fetchAllUrls();
+      context.read<HistoryProvider>().fetchAllUrls();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<BookmarkedUrlsProvider>();
+    final provider = context.watch<HistoryProvider>();
 
     if (provider.isLoading) {
       return Scaffold(
@@ -154,7 +160,7 @@ class _MainPageState extends State<MainPage> {
               actions: [
                 Builder(
                   builder: (context) => IconButton(
-                    icon: Icon(Icons.bookmarks_outlined),
+                    icon: Icon(Icons.list_outlined),
                     onPressed: () {
                       Scaffold.of(context).openEndDrawer();
                     },

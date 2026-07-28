@@ -1,5 +1,5 @@
 /*
- * bookmarked_urls_provider.dart
+ * history_provider.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -19,19 +19,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const kDefaultBookmarkedUrls = [
-  'https://www.google.com',
-  'https://www.wikipedia.org',
-  'https://www.debian.org',
-  'https://hu.wikipedia.org/wiki/Wikip%C3%A9dia',
-];
-
-class BookmarkedUrlsProvider extends ChangeNotifier {
+class HistoryProvider extends ChangeNotifier {
   // For fetching data from the web
   bool _isLoading = false;
   String? _data;
@@ -39,16 +34,24 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
 
   // For storing and retrieving data from SharedPreferences
   final SharedPreferences prefs;
-  List<String> _bookmarkList = [];
-  int _index = 0; // internal variable of _currentBookmarkIndex
+  List<Map<String, dynamic>> _historyList = [];
   final Map<String, (String?, List<String>)> _cachedContents = {};
   int _currentParagraphIndex = 0;
 
-  BookmarkedUrlsProvider(this.prefs) {
-    final bookmarks = prefs.getStringList('bookmarks');
-    _bookmarkList = (bookmarks != null && bookmarks.isNotEmpty)
-        ? bookmarks
-        : List.from(kDefaultBookmarkedUrls);
+  HistoryProvider(this.prefs) {
+    final historyJson = prefs.getString('history');
+    if (historyJson != null) {
+      try {
+        final decoded = jsonDecode(historyJson);
+        if (decoded is List) {
+          _historyList = List<Map<String, dynamic>>.from(decoded);
+        }
+      } catch (e) {
+        _historyList = [];
+      }
+    } else {
+      _historyList = [];
+    }
   }
 
   // For fetching data from the web
@@ -62,7 +65,8 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
     notifyListeners(); // Notify UI to show spinner
 
     try {
-      for (final url in _bookmarkList) {
+      for (final entry in _historyList) {
+        final url = entry['url'] as String;
         _cachedContents[url] = await _fetchData(url);
       }
     } catch (e) {
@@ -80,11 +84,15 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
     _error = null;
     notifyListeners(); // Notify UI to show spinner
 
-    final contents = await _fetchData(currentUrl);
-    _cachedContents[currentUrl] = contents;
-
-    _isLoading = false;
-    notifyListeners(); // Notify UI to stop spinner
+    try {
+      final contents = await _fetchData(currentUrl);
+      _cachedContents[currentUrl] = contents;
+    } catch (e) {
+      print('fetchCurrentUrl() error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // Notify UI to stop spinner
+    }
   }
 
   Future<(String?, List<String>)> _fetchData(String url) async {
@@ -106,63 +114,78 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
     }
   }
 
-  // For storing and retrieving data from SharedPreferences
-  int get _currentBookmarkIndex => _index;
+  List<Map<String, dynamic>> get historyList => _historyList;
 
-  set _currentBookmarkIndex(int index) {
-    _index = index;
-    _currentParagraphIndex = 0;
-  }
+  String get currentUrl =>
+      _historyList.isEmpty ? '' : _historyList.first['url'] as String;
 
-  List<String> get bookmarkList => _bookmarkList;
+  String get currentTimestamp => _historyList.isEmpty
+      ? ''
+      : DateFormat.yMd().add_jm().format(
+          DateTime.parse(_historyList.first['timestamp']),
+        );
 
-  String get currentUrl => _bookmarkList[_currentBookmarkIndex];
-
-  String get currentDomainName => Uri.parse(
-    _bookmarkList[_currentBookmarkIndex],
-  ).host.replaceFirst('www.', '');
+  String get currentDomainName =>
+      Uri.parse(currentUrl).host.replaceFirst('www.', '');
 
   String get currentTitle => _cachedContents[currentUrl]?.$1 ?? currentUrl;
 
-  bool isSelectedBookmark(String bookmark) =>
-      _bookmarkList.indexOf(bookmark) == _currentBookmarkIndex;
+  bool isSelected(String entry) =>
+      // _historyList.indexWhere((e) => e['url'] == entry) ==
+      // _currentIndex;
+      _historyList.isNotEmpty && _historyList.first['url'] == entry;
 
-  bool containsBookmark(String bookmark) => _bookmarkList.contains(bookmark);
+  bool contains(String entry) => _historyList.any((e) => e['url'] == entry);
 
-  void selectBookmark(String bookmark) {
-    _currentBookmarkIndex = _bookmarkList.indexOf(bookmark);
+  void select(String entry) {
+    // _currentIndex = _historyList.indexWhere((e) => e['url'] == entry);
+    final index = _historyList.indexWhere((e) => e['url'] == entry);
+    if (index > 0) {
+      final item = _historyList[index];
+      _historyList.removeAt(index);
+      item['timestamp'] = DateTime.now().toIso8601String();
+      _historyList.insert(0, item);
+      _currentParagraphIndex = 0; // _currentIndex = 0;
+      prefs.setString('history', jsonEncode(_historyList));
+      notifyListeners();
+    }
+  }
+
+  void add(String entry) async {
+    _historyList.insert(0, {
+      'url': entry,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+    prefs.setString('history', jsonEncode(_historyList));
+    _cachedContents[entry] = await _fetchData(entry);
     notifyListeners();
   }
 
-  void addBookmark(String bookmark) async {
-    _bookmarkList.add(bookmark);
-    prefs.setStringList('bookmarks', _bookmarkList);
-    _cachedContents[bookmark] = await _fetchData(bookmark);
-    notifyListeners();
-  }
-
-  void removeBookmark(int index) async {
-    if (_bookmarkList.length > 1) {
-      if (index >= 0 && index < _bookmarkList.length) {
-        _bookmarkList.removeAt(index);
-        if (_currentBookmarkIndex >= _bookmarkList.length) {
-          _currentBookmarkIndex = _bookmarkList.length - 1;
-        }
-        prefs.setStringList('bookmarks', _bookmarkList);
+  void removeAt(int index) async {
+    if (_historyList.length > 1) {
+      if (index >= 0 && index < _historyList.length) {
+        _historyList.removeAt(index);
+        // if (_currentIndex >= _historyList.length) {
+        //   _currentIndex = _historyList.length - 1;
+        // }
+        if (index == 0) _currentParagraphIndex = 0;
+        prefs.setString('history', jsonEncode(_historyList));
         notifyListeners();
       }
     }
   }
 
-  void removeBookMarkWithUrl(String url) async {
-    final index = _bookmarkList.indexOf(url);
-    removeBookmark(index);
+  void remove(String url) async {
+    final index = _historyList.indexWhere((e) => e['url'] == url);
+    if (index != -1) {
+      removeAt(index);
+    }
   }
 
-  void restoreDefaultList() async {
-    _bookmarkList = List.from(kDefaultBookmarkedUrls);
-    prefs.setStringList('bookmarks', _bookmarkList);
-    _currentBookmarkIndex = 0;
+  void clearAll() async {
+    _historyList = [];
+    prefs.setString('history', jsonEncode(_historyList));
+    // _currentIndex = 0;
     notifyListeners();
   }
 
@@ -170,10 +193,10 @@ class BookmarkedUrlsProvider extends ChangeNotifier {
 
   List<String>? get currentParagraphList => _cachedContents[currentUrl]?.$2;
 
-  void cacheParagraphList(String url, (String?, List<String>) contents) {
-    _cachedContents[url] = contents;
-    _currentBookmarkIndex = _bookmarkList.indexOf(url);
-  }
+  // void cacheParagraphList(String url, (String?, List<String>) contents) {
+  //   _cachedContents[url] = contents;
+  //   _currentIndex = _historyList.indexWhere((e) => e['url'] == url);
+  // }
 
   int get currentParagraphIndex => _currentParagraphIndex;
 

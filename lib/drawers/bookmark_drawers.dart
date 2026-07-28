@@ -23,7 +23,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:readblank/provider/history_provider.dart';
 
 import '../provider/bookmarked_urls_provider.dart';
 
@@ -37,92 +39,203 @@ class BookmarkDrawers extends StatefulWidget {
 class _BookmarkDrawersState extends State<BookmarkDrawers> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<BookmarkedUrlsProvider>(
-      builder: (context, provider, child) {
+    return Consumer2<HistoryProvider, BookmarkedUrlsProvider>(
+      builder: (context, provider, bookmarkProvider, child) {
         return Drawer(
-          child: ListView(
-            children: [
-              SizedBox(
-                height: 80,
-                child: DrawerHeader(
+          child: DefaultTabController(
+            length: 2,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                PinnedHeaderSliver(
+                  child: Material(
+                    color: Colors.lightGreen[100],
+                    child: SafeArea(
+                      bottom: false,
+                      child: TabBar(
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        tabs: [
+                          Tab(
+                            icon: Icon(Icons.history_outlined),
+                            text: 'History',
+                          ),
+                          Tab(
+                            icon: Icon(Icons.bookmark_outline),
+                            text: 'Bookmarks',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Text(
-                        "Bookmarks",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      Builder(
+                        builder: (context) => IconButton(
+                          icon: Icon(
+                            Icons.cleaning_services_outlined,
+                            color: Colors.red[700],
+                          ),
+                          onPressed: _clearAllHistory,
                         ),
                       ),
                       Builder(
                         builder: (context) => IconButton(
-                          icon: Icon(Icons.settings_backup_restore),
-                          onPressed: _restoreDefaultList,
-                        ),
-                      ),
-                      Builder(
-                        builder: (context) => IconButton(
-                          icon: Icon(Icons.bookmark_add_outlined),
+                          icon: Icon(Icons.add_link_outlined),
                           onPressed: _addBookmark,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              for (final url in provider.bookmarkList)
-                ListTile(
-                  title: Text(
-                    provider.title(url),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    url,
-                    style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  selected: provider.isSelectedBookmark(url),
-                  selectedTileColor: Colors.lightGreen.shade200,
-                  selectedColor: Colors.black,
-                  onTap: () {
-                    setState(() {
-                      provider.selectBookmark(url);
-                    });
-                    Navigator.pop(context);
-                  },
-                  trailing: IconButton(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: provider.bookmarkList.length > 1
-                          ? Colors.red[700]
-                          : Colors.grey,
-                    ),
-                    onPressed: provider.bookmarkList.length > 1
-                        ? () {
-                            setState(() {
-                              provider.removeBookMarkWithUrl(url);
-                            });
-                          }
-                        : null,
+                SliverFillRemaining(
+                  hasScrollBody: true,
+                  child: TabBarView(
+                    children: [
+                      _historyListView(provider),
+                      _bookmarkListView(bookmarkProvider),
+                    ],
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  void _restoreDefaultList() async {
-    final settings = context.read<BookmarkedUrlsProvider>();
+  Widget _historyListView(HistoryProvider provider) {
+    return Column(
+      children: [
+        for (final entry in provider.historyList)
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 0.0,
+              vertical: 0.0,
+            ),
+            minLeadingWidth: 0,
+            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+            leading: IconButton(
+              icon: Icon(Icons.star_border_outlined),
+              onPressed: () {},
+            ),
+            title: Text(
+              provider.title(entry['url']),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry['url'],
+                  style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  DateFormat.yMd().add_jm().format(
+                    DateTime.parse(entry['timestamp']),
+                  ),
+                  style: TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+            selected: provider.isSelected(entry['url']),
+            selectedTileColor: Colors.lightGreen.shade200,
+            selectedColor: Colors.black,
+            onTap: () {
+              setState(() {
+                provider.select(entry['url']);
+              });
+              Navigator.pop(context);
+            },
+            trailing: IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: provider.historyList.length > 1
+                    ? Colors.red[700]
+                    : Colors.grey,
+              ),
+              onPressed: provider.historyList.length > 1
+                  ? () {
+                      setState(() {
+                        provider.remove(entry['url']);
+                      });
+                    }
+                  : null,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _bookmarkListView(BookmarkedUrlsProvider provider) {
+    return Column(
+      children: [
+        for (final entry in provider.bookmarkList)
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 0.0,
+              vertical: 0.0,
+            ),
+            minLeadingWidth: 0,
+            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+            leading: IconButton(
+              icon: Icon(Icons.star_border_outlined),
+              onPressed: () {},
+            ),
+            title: Text(
+              provider.title(entry),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              entry,
+              style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            selected: provider.isSelectedBookmark(entry),
+            selectedTileColor: Colors.lightGreen.shade200,
+            selectedColor: Colors.black,
+            onTap: () {
+              setState(() {
+                provider.selectBookmark(entry);
+              });
+              Navigator.pop(context);
+            },
+            trailing: IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: provider.bookmarkList.length > 1
+                    ? Colors.red[700]
+                    : Colors.grey,
+              ),
+              onPressed: provider.bookmarkList.length > 1
+                  ? () {
+                      setState(() {
+                        provider.removeBookMarkWithUrl(entry);
+                      });
+                    }
+                  : null,
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _clearAllHistory() async {
+    final settings = context.read<HistoryProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Restore Default List'),
-        content: Text('Are you sure you want to restore the default list?'),
+        title: Text('Clear All History'),
+        content: Text('Are you sure you want to clear all history?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -137,13 +250,13 @@ class _BookmarkDrawersState extends State<BookmarkDrawers> {
     );
 
     if (confirm == true) {
-      settings.restoreDefaultList();
+      settings.clearAll();
     }
   }
 
   void _addBookmark() async {
     final callersContext = context;
-    final settings = callersContext.read<BookmarkedUrlsProvider>();
+    final settings = callersContext.read<HistoryProvider>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {
@@ -153,24 +266,26 @@ class _BookmarkDrawersState extends State<BookmarkDrawers> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (settings.containsBookmark(copiedText)) {
+            if (settings.contains(copiedText)) {
               if (callersContext.mounted) {
                 showDialog(
                   context: callersContext,
                   builder: (_) => AlertDialog(
-                    title: Text('Info'),
-                    content: Text('Bookmark already exists!'),
+                    title: Text('Already exists'),
+                    content: Text(
+                      'This link already exists. Try adding a different URL.',
+                    ),
                   ),
                 );
               }
             } else {
-              settings.addBookmark(copiedText);
+              settings.add(copiedText);
               if (callersContext.mounted) {
                 showDialog(
                   context: callersContext,
                   builder: (_) => AlertDialog(
-                    title: Text('Info'),
-                    content: Text('Bookmark added successfully!'),
+                    title: Text('Saved!'),
+                    content: Text('Link added successfully!'),
                   ),
                 );
                 /*

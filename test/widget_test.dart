@@ -2,25 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:readblank/db/word_list_provider.dart';
 import 'package:readblank/provider/bookmarked_urls_provider.dart';
+import 'package:readblank/provider/history_provider.dart';
 import 'package:readblank/screens/training_page.dart';
 
 void main() {
   testWidgets(
     'TrainingPage displays content without triggering real network call',
     (WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues({'bookmarks': []});
+      SharedPreferences.setMockInitialValues({
+        'bookmarks': [],
+        'history': '[{"url": "https://example.com"}]',
+      });
       final prefs = await SharedPreferences.getInstance();
 
-      // We cannot easily inject a mock provider, so we have to ensure the provider
-      // doesn't call _fetchData() when content is already cached.
-      final provider = BookmarkedUrlsProvider(prefs);
-      // Pretend we have data
-      // provider.cacheParagraphList(...)
+      final historyProvider = HistoryProvider(prefs);
+      final wordListProvider = WordListProvider(prefs);
+      final bookmarkedUrlsProvider = BookmarkedUrlsProvider(prefs);
 
       await tester.pumpWidget(
-        ChangeNotifierProvider.value(
-          value: provider,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: historyProvider),
+            ChangeNotifierProvider.value(value: wordListProvider),
+            ChangeNotifierProvider.value(value: bookmarkedUrlsProvider),
+          ],
           child: MaterialApp(
             home: Scaffold(body: TrainingPage(title: 'Test Page')),
           ),

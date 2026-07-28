@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/bookmarked_urls_provider.dart';
+import '../db/word_list_provider.dart';
 
 class StudyLogPage extends StatefulWidget {
   final String title;
@@ -37,7 +37,7 @@ class StudyLogPage extends StatefulWidget {
 class _StudyLogPageState extends State<StudyLogPage> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<BookmarkedUrlsProvider>(
+    return Consumer<WordListProvider>(
       builder: (context, provider, child) {
         return Center(
           child: ListView.builder(
@@ -60,10 +60,10 @@ class _StudyLogPageState extends State<StudyLogPage> {
                       DateFormat.yMd().add_jm().format(
                         DateTime.parse(timestamp),
                         /*
-                        DateTime.parse(
-                          provider.studyLog[index].split(',')[0],
-                        ).toLocal(),
-                         */
+                    DateTime.parse(
+                      provider.studyLog[index].split(',')[0],
+                    ).toLocal(),
+                     */
                       ),
                     ),
                   ],
@@ -72,7 +72,7 @@ class _StudyLogPageState extends State<StudyLogPage> {
             },
           ),
         );
-      },
+      }
     );
   }
 }

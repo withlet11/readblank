@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../provider/bookmarked_urls_provider.dart';
+import '../db/word_list_provider.dart';
 
 class ContentPane extends StatefulWidget {
   final String paragraph;
@@ -112,7 +112,7 @@ class _ContentPaneState extends State<ContentPane> {
         ? _wordList[_currentIndex]
         : (0, 0, true);
 
-    return Consumer<BookmarkedUrlsProvider>(
+    return Consumer<WordListProvider>(
       builder: (context, provider, child) {
         return Container(
           padding: EdgeInsets.all(8),
