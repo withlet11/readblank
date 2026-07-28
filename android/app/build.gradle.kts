@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.withlet11.wl11_fillblank"
+    namespace = "io.github.withlet11.readblank"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "io.github.withlet11.wl11_fillblank"
+        applicationId = "io.github.withlet11.readblank"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

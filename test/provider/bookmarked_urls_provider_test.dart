@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wl11_fillblank/provider/bookmarked_urls_provider.dart';
+import 'package:readblank/provider/bookmarked_urls_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

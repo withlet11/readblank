@@ -1,4 +1,4 @@
-package io.github.withlet11.wl11_fillblank
+package io.github.withlet11.readblank
 
 import io.flutter.embedding.android.FlutterActivity
 

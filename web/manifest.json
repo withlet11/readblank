@@ -1,6 +1,6 @@
 {
-    "name": "wl11_fillblank",
-    "short_name": "wl11_fillblank",
+    "name": "readblank",
+    "short_name": "readblank",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

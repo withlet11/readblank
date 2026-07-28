@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wl11_fillblank/screens/studylog_page.dart';
+import 'package:readblank/screens/studylog_page.dart';
 
 import 'drawers/bookmark_drawers.dart';
 import 'provider/bookmarked_urls_provider.dart';
@@ -111,16 +111,22 @@ class _MainPageState extends State<MainPage> {
               automaticallyImplyActions: false,
               actions: [
                 Builder(
-                  builder: (context) =>
-                      IconButton(icon: Icon(Icons.view_list_outlined), onPressed: () {}),
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.view_list_outlined),
+                    onPressed: () {},
+                  ),
                 ),
                 Builder(
-                  builder: (context) =>
-                      IconButton(icon: Icon(Icons.view_week_outlined), onPressed: () {}),
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.view_week_outlined),
+                    onPressed: () {},
+                  ),
                 ),
                 Builder(
-                  builder: (context) =>
-                      IconButton(icon: Icon(Icons.calendar_view_month_outlined), onPressed: () {}),
+                  builder: (context) => IconButton(
+                    icon: Icon(Icons.calendar_view_month_outlined),
+                    onPressed: () {},
+                  ),
                 ),
               ],
             )
