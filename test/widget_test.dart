@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/db/word_list_provider.dart';
-import 'package:readblank/provider/bookmarked_urls_provider.dart';
+import 'package:readblank/provider/bookmark_provider.dart';
 import 'package:readblank/provider/history_provider.dart';
 import 'package:readblank/screens/training_page.dart';
 
@@ -19,7 +19,7 @@ void main() {
 
       final historyProvider = HistoryProvider(prefs);
       final wordListProvider = WordListProvider(prefs);
-      final bookmarkedUrlsProvider = BookmarkedUrlsProvider(prefs);
+      final bookmarkedUrlsProvider = BookmarkProvider(prefs);
 
       await tester.pumpWidget(
         MultiProvider(

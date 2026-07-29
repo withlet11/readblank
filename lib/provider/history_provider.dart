@@ -39,17 +39,17 @@ class HistoryProvider extends ChangeNotifier {
   int _currentParagraphIndex = 0;
 
   HistoryProvider(this.prefs) {
-    final historyJson = prefs.getString('history');
-    if (historyJson != null) {
-      try {
+    try {
+      final historyJson = prefs.getString('history');
+      if (historyJson != null) {
         final decoded = jsonDecode(historyJson);
         if (decoded is List) {
           _historyList = List<Map<String, dynamic>>.from(decoded);
         }
-      } catch (e) {
+      } else {
         _historyList = [];
       }
-    } else {
+    } catch (e) {
       _historyList = [];
     }
   }
@@ -114,6 +114,8 @@ class HistoryProvider extends ChangeNotifier {
     }
   }
 
+  Map<String, (String?, List<String>)> get cachedContents => _cachedContents;
+
   List<Map<String, dynamic>> get historyList => _historyList;
 
   String get currentUrl =>
@@ -130,16 +132,13 @@ class HistoryProvider extends ChangeNotifier {
 
   String get currentTitle => _cachedContents[currentUrl]?.$1 ?? currentUrl;
 
-  bool isSelected(String entry) =>
-      // _historyList.indexWhere((e) => e['url'] == entry) ==
-      // _currentIndex;
-      _historyList.isNotEmpty && _historyList.first['url'] == entry;
+  bool isSelected(String url) =>
+      _historyList.isNotEmpty && _historyList.first['url'] == url;
 
   bool contains(String entry) => _historyList.any((e) => e['url'] == entry);
 
-  void select(String entry) {
-    // _currentIndex = _historyList.indexWhere((e) => e['url'] == entry);
-    final index = _historyList.indexWhere((e) => e['url'] == entry);
+  void select(String url) {
+    final index = _historyList.indexWhere((e) => e['url'] == url);
     if (index > 0) {
       final item = _historyList[index];
       _historyList.removeAt(index);
@@ -148,16 +147,18 @@ class HistoryProvider extends ChangeNotifier {
       _currentParagraphIndex = 0; // _currentIndex = 0;
       prefs.setString('history', jsonEncode(_historyList));
       notifyListeners();
+    } else {
+      add(url);
     }
   }
 
-  void add(String entry) async {
+  void add(String url) async {
     _historyList.insert(0, {
-      'url': entry,
+      'url': url,
       'timestamp': DateTime.now().toIso8601String(),
     });
     prefs.setString('history', jsonEncode(_historyList));
-    _cachedContents[entry] = await _fetchData(entry);
+    _cachedContents[url] = await _fetchData(url);
     notifyListeners();
   }
 
@@ -165,9 +166,6 @@ class HistoryProvider extends ChangeNotifier {
     if (_historyList.length > 1) {
       if (index >= 0 && index < _historyList.length) {
         _historyList.removeAt(index);
-        // if (_currentIndex >= _historyList.length) {
-        //   _currentIndex = _historyList.length - 1;
-        // }
         if (index == 0) _currentParagraphIndex = 0;
         prefs.setString('history', jsonEncode(_historyList));
         notifyListeners();
@@ -177,26 +175,18 @@ class HistoryProvider extends ChangeNotifier {
 
   void remove(String url) async {
     final index = _historyList.indexWhere((e) => e['url'] == url);
-    if (index != -1) {
-      removeAt(index);
-    }
+    removeAt(index);
   }
 
   void clearAll() async {
     _historyList = [];
     prefs.setString('history', jsonEncode(_historyList));
-    // _currentIndex = 0;
     notifyListeners();
   }
 
   String title(String url) => _cachedContents[url]?.$1 ?? 'no title';
 
   List<String>? get currentParagraphList => _cachedContents[currentUrl]?.$2;
-
-  // void cacheParagraphList(String url, (String?, List<String>) contents) {
-  //   _cachedContents[url] = contents;
-  //   _currentIndex = _historyList.indexWhere((e) => e['url'] == url);
-  // }
 
   int get currentParagraphIndex => _currentParagraphIndex;
 
