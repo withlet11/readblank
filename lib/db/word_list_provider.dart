@@ -22,53 +22,78 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+enum StudyLogViewMode { list, summary, calendar }
 
 class WordListProvider extends ChangeNotifier {
   bool _isLoading = false;
-  String? _data;
   String? _error;
-
-  final SharedPreferences prefs;
 
   // For database operations
   final DatabaseHelper _db = DatabaseHelper.instance;
   List<Map<String, dynamic>> _studyLog = List.empty(growable: true);
+  Map<String, int> _wordCounts = {};
+  StudyLogViewMode _viewMode = StudyLogViewMode.list;
 
-  WordListProvider(this.prefs) {
-    final log = prefs.getStringList('studyLog');
+  WordListProvider() {
     loadLogs();
   }
 
   // For database operations
   bool get isDbLoading => _isLoading;
   List<Map<String, dynamic>> get studyLog => _studyLog;
+  Map<String, int> get wordCounts => _wordCounts;
+  StudyLogViewMode get viewMode => _viewMode;
+
+  void setViewMode(StudyLogViewMode mode) {
+    _viewMode = mode;
+    if (mode == StudyLogViewMode.summary) {
+      loadWordCounts();
+    } else {
+      notifyListeners();
+    }
+  }
 
   Future<void> loadLogs() async {
     _isLoading = true;
     notifyListeners();
 
     // Fetch from database
-    _studyLog = await _db.getAllLogs();
+    final logs = await _db.getAllLogs();
+    _studyLog = List<Map<String, dynamic>>.from(logs);
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadWordCounts() async {
+    _isLoading = true;
+    notifyListeners();
+
+    final counts = await _db.getWordCounts();
+    _wordCounts = {for (var item in counts) item['word'] as String: item['count'] as int};
 
     _isLoading = false;
     notifyListeners();
   }
 
   Future<void> addLog(String word) async {
+    final timestamp = DateTime.now().toIso8601String();
     await _db.addLog(word);
-    _studyLog.insert(0, {'word': word, 'timestamp': DateTime.now().toIso8601String()});
+    
+    _studyLog.insert(0, {'word': word, 'timestamp': timestamp});
     if (_studyLog.length > 10000) _studyLog.removeLast();
-    notifyListeners();
-  }
 
-/*
-  void addStudyLog(DateTime dateTime, String word) {
-    _wordDb.studyLog.add('${dateTime.toIso8601String()},$word');
-    prefs.setStringList('studyLog', _wordDb.studyLog);
+    // Update wordCounts if it's already loaded or we are in summary mode
+    final lowerWord = word.toLowerCase();
+    if (_wordCounts.containsKey(lowerWord)) {
+      _wordCounts[lowerWord] = _wordCounts[lowerWord]! + 1;
+    } else if (_viewMode == StudyLogViewMode.summary) {
+      _wordCounts[lowerWord] = 1;
+    }
+
     notifyListeners();
   }
-   */
 }
 
 class DatabaseHelper {
@@ -135,28 +160,13 @@ class DatabaseHelper {
     return await db.query('logs', orderBy: 'id DESC', limit: 10000);
   }
 
-  /*
-  // Insert
-  Future<int> addBookmark(Map<String, dynamic> row) async {
-    final db = await instance.database;
-    return await db.insert('bookmarks', row);
+  Future<List<Map<String, dynamic>>> getWordCounts() async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT LOWER(word) as word, COUNT(*) as count 
+      FROM logs 
+      GROUP BY LOWER(word) 
+      ORDER BY count DESC
+    ''');
   }
-
-  // Query
-  Future<List<Map<String, dynamic>>> getAllBookmarks() async {
-    final db = await instance.database;
-    return await db.query('bookmarks');
-  }
-
-  // Delete
-  Future<int> deleteBookmark(int id) async {
-    final db = await instance.database;
-    return await db.delete('bookmarks', where: 'id = ?', whereArgs: [id]);
-  }
-
-  void saveUrl(String url, String title) async {
-    await DatabaseHelper.instance.addBookmark({'url': url, 'title': title});
-    print('Saved!');
-  }
-   */
 }

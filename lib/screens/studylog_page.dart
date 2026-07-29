@@ -36,43 +36,71 @@ class StudyLogPage extends StatefulWidget {
 
 class _StudyLogPageState extends State<StudyLogPage> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<WordListProvider>().loadLogs();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<WordListProvider>(
       builder: (context, provider, child) {
-        return Center(
-          child: ListView.builder(
-            itemCount: provider.studyLog.length,
-            itemBuilder: (context, index) {
-              final logItem = provider.studyLog[index];
-              final word = logItem['word'] ?? 'No title';
-              final timestamp = logItem['timestamp'] ?? '';
-              return Container(
-                height: 48,
-                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      word, // provider.studyLog[index].split(',')[1],
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    Text(
-                      DateFormat.yMd().add_jm().format(
-                        DateTime.parse(timestamp),
-                        /*
-                    DateTime.parse(
-                      provider.studyLog[index].split(',')[0],
-                    ).toLocal(),
-                     */
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+        if (provider.isDbLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (provider.viewMode == StudyLogViewMode.summary) {
+          return _buildSummaryView(provider);
+        }
+
+        return _buildListView(provider);
+      },
+    );
+  }
+
+  Widget _buildListView(WordListProvider provider) {
+    return ListView.builder(
+      itemCount: provider.studyLog.length,
+      itemBuilder: (context, index) {
+        final logItem = provider.studyLog[index];
+        final word = logItem['word'] ?? 'No title';
+        final timestamp = logItem['timestamp'] ?? '';
+        return Container(
+          height: 48,
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(word, style: TextStyle(fontSize: 16)),
+              Text(DateFormat.yMd().add_jm().format(DateTime.parse(timestamp))),
+            ],
           ),
         );
-      }
+      },
+    );
+  }
+
+  Widget _buildSummaryView(WordListProvider provider) {
+    final entries = provider.wordCounts.entries.toList();
+    return ListView.separated(
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return ListTile(
+          title: Text(entry.key, style: TextStyle(fontWeight: FontWeight.bold)),
+          trailing: Text(
+            entry.value.toString(),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        );
+      },
+      separatorBuilder: (context, index) {
+        return const Divider(height: 1, thickness: 0.5, color: Colors.grey);
+      },
     );
   }
 }

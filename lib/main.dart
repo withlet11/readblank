@@ -48,7 +48,7 @@ void main() async {
             return (bookmarkProvider!..update(historyProvider));
           },
         ),
-        ChangeNotifierProvider(create: (_) => WordListProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => WordListProvider()),
       ],
       child: ReadBlank(),
     ),
@@ -96,9 +96,10 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<HistoryProvider>();
+    final historyProvider = context.watch<HistoryProvider>();
+    final wordListProvider = context.watch<WordListProvider>();
 
-    if (provider.isLoading) {
+    if (historyProvider.isLoading) {
       return Scaffold(
         body: Center(
           child: CircularProgressIndicator(
@@ -111,7 +112,7 @@ class _MainPageState extends State<MainPage> {
     }
 
     return Scaffold(
-      appBar: _selectedIndex == 2
+      appBar: _selectedIndex == 1
           ? AppBar(
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,23 +124,27 @@ class _MainPageState extends State<MainPage> {
               backgroundColor: Colors.lightGreen,
               automaticallyImplyActions: false,
               actions: [
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: Icon(Icons.view_list_outlined),
-                    onPressed: () {},
+                IconButton(
+                  icon: Icon(
+                    wordListProvider.viewMode == StudyLogViewMode.list
+                        ? Icons.view_list
+                        : Icons.view_list_outlined,
                   ),
+                  onPressed: () => wordListProvider
+                      .setViewMode(StudyLogViewMode.list),
                 ),
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: Icon(Icons.view_week_outlined),
-                    onPressed: () {},
+                IconButton(
+                  icon: Icon(
+                    wordListProvider.viewMode == StudyLogViewMode.summary
+                        ? Icons.view_week
+                        : Icons.view_week_outlined,
                   ),
+                  onPressed: () => wordListProvider
+                      .setViewMode(StudyLogViewMode.summary),
                 ),
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: Icon(Icons.calendar_view_month_outlined),
-                    onPressed: () {},
-                  ),
+                IconButton(
+                  icon: Icon(Icons.calendar_view_month_outlined),
+                  onPressed: () {},
                 ),
               ],
             )
@@ -148,13 +153,13 @@ class _MainPageState extends State<MainPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    provider.currentTitle,
+                    historyProvider.currentTitle,
                     style: TextStyle(fontSize: 16),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    provider.currentDomainName,
+                    historyProvider.currentDomainName,
                     style: TextStyle(fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -181,9 +186,9 @@ class _MainPageState extends State<MainPage> {
                 ),
               ],
             ),
-      body: _selectedIndex == 2
-          ? StudyLogPage(title: 'Study Log')
-          : TrainingPage(title: 'Training'),
+      body: _selectedIndex == 1
+          ? StudyLogPage(key: Key('studyLogPage'), title: 'Study Log')
+          : TrainingPage(key: Key('trainingPage'), title: 'Training'),
       endDrawer: const ContentSelectorDrawers(),
       bottomNavigationBar: NavigationBar(
         backgroundColor: Colors.white,
@@ -199,12 +204,12 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.edit_note),
           ),
           const NavigationDestination(
-            label: 'Library',
-            icon: Icon(Icons.library_books_outlined),
-          ),
-          const NavigationDestination(
             label: 'Log',
             icon: Icon(Icons.bar_chart),
+          ),
+          const NavigationDestination(
+            label: 'Settings',
+            icon: Icon(Icons.settings),
           ),
         ],
       ),

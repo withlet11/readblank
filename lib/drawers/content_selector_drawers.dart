@@ -91,6 +91,26 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     ),
                   ),
                 ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      DropdownButton(
+                        value: 'abc',
+                        items: [
+                          for (final domain in <String>['abc', 'def', 'ghi'])
+                            DropdownMenuItem<String>(
+                              value: domain,
+                              child: Text(domain),
+                            ),
+                        ],
+                        onChanged: (value) {},
+                      ),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
