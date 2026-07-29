@@ -20,7 +20,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/provider/history_provider.dart';
@@ -34,29 +33,33 @@ class ContentSelectorDrawers extends StatefulWidget {
   State<ContentSelectorDrawers> createState() => _ContentSelectorDrawersState();
 }
 
-class _ContentSelectorDrawersState extends State<ContentSelectorDrawers> {
-  List<Map<String, IconData>> categoryAndIcon = [
-    {'Star': Icons.star_outlined},
-    {'Favorite': Icons.favorite_outlined},
-    {'Favorite': Icons.label_important_outlined},
-    {'Favorite': Icons.work_outlined},
-    {'Favorite': Icons.help_outlined},
-    {'Favorite': Icons.health_and_safety_outlined},
-    {'Favorite': Icons.person_outlined},
-    {'Favorite': Icons.directions_walk_outlined},
-    {'Favorite': Icons.directions_run_outlined},
-    {'Favorite': Icons.location_city_outlined},
-    {'Favorite': Icons.article_outlined},
-    {'Favorite': Icons.local_post_office_outlined},
-    {'Favorite': Icons.sports_outlined},
-    {'Favorite': Icons.shopping_bag_outlined},
-    {'Favorite': Icons.home_outlined},
-    {'Favorite': Icons.phone_outlined},
-    {'Favorite': Icons.cake_outlined},
-    {'Favorite': Icons.camera_outlined},
-    {'Favorite': Icons.dark_mode_outlined},
-    {'Favorite': Icons.edit_note_outlined},
-  ];
+class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging ||
+        _tabController.index != _activeIndex) {
+      setState(() {
+        _activeIndex = _tabController.index;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabSelection);
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +75,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers> {
                   child: SafeArea(
                     bottom: false,
                     child: TabBar(
+                      controller: _tabController,
+                      unselectedLabelColor: Colors.grey,
                       indicatorSize: TabBarIndicatorSize.tab,
                       tabs: [
                         Tab(
@@ -88,6 +93,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers> {
                 ),
                 Expanded(
                   child: TabBarView(
+                    controller: _tabController,
                     children: [
                       _historyListView(historyProvider, bookmarkProvider),
                       _bookmarkListView(historyProvider, bookmarkProvider),
@@ -100,28 +106,21 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Delete all entries',
-                        style: TextStyle(
+                      TextButton.icon(
+                        onPressed: _activeIndex == 0
+                            ? _clearAllHistory
+                            : _deleteAllBookmarks,
+                        icon: Icon(
+                          Icons.delete_sweep_outlined,
                           color: Colors.red.shade700,
-                          fontWeight: FontWeight.bold,
+                        ),
+                        label: Text(
+                          _activeIndex == 0
+                              ? 'Clear all history'
+                              : 'Delete all bookmarks',
+                          style: TextStyle(color: Colors.red.shade700),
                         ),
                       ),
-                      Builder(
-                        builder: (context) => IconButton(
-                          icon: Icon(
-                            Icons.delete_sweep_outlined,
-                            color: Colors.red.shade700,
-                          ),
-                          onPressed: _clearAllHistory,
-                        ),
-                      ),
-                      // Builder(
-                      //   builder: (context) => IconButton(
-                      //     icon: Icon(Icons.add_link_outlined),
-                      //     onPressed: _addBookmark,
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
@@ -285,7 +284,32 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Restore'),
+            child: Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      settings.clearAll();
+    }
+  }
+
+  void _deleteAllBookmarks() async {
+    final settings = context.read<BookmarkProvider>();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete All Bookmarks'),
+        content: Text('Are you sure you want to delete all bookmarks?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Yes'),
           ),
         ],
       ),

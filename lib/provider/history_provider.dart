@@ -147,7 +147,7 @@ class HistoryProvider extends ChangeNotifier {
       _currentParagraphIndex = 0; // _currentIndex = 0;
       prefs.setString('history', jsonEncode(_historyList));
       notifyListeners();
-    } else {
+    } else if (index != 0) {
       add(url);
     }
   }
