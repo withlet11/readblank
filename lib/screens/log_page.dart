@@ -1,5 +1,5 @@
 /*
- * bookmark_page.dart
+ * log_page.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -25,16 +25,16 @@ import 'package:provider/provider.dart';
 
 import '../db/word_list_provider.dart';
 
-class StudyLogPage extends StatefulWidget {
+class LogPage extends StatefulWidget {
   final String title;
 
-  const StudyLogPage({super.key, required this.title});
+  const LogPage({super.key, required this.title});
 
   @override
-  State<StudyLogPage> createState() => _StudyLogPageState();
+  State<LogPage> createState() => _LogPageState();
 }
 
-class _StudyLogPageState extends State<StudyLogPage> {
+class _LogPageState extends State<LogPage> {
   @override
   void initState() {
     super.initState();
@@ -49,7 +49,7 @@ class _StudyLogPageState extends State<StudyLogPage> {
   Widget build(BuildContext context) {
     return Consumer<WordListProvider>(
       builder: (context, provider, child) {
-        if (provider.isDbLoading) {
+        if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -91,7 +91,12 @@ class _StudyLogPageState extends State<StudyLogPage> {
       itemBuilder: (context, index) {
         final entry = entries[index];
         return ListTile(
-          title: Text(entry.key, style: TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(
+            entry.key,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           trailing: Text(
             entry.value.toString(),
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),

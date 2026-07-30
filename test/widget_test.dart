@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:readblank/db/word_list_provider.dart';
 import 'package:readblank/provider/bookmark_provider.dart';
 import 'package:readblank/provider/history_provider.dart';
-import 'package:readblank/screens/training_page.dart';
+import 'package:readblank/screens/read_page.dart';
 
 void main() {
   testWidgets(
@@ -18,7 +18,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
 
       final historyProvider = HistoryProvider(prefs);
-      final wordListProvider = WordListProvider(prefs);
+      final wordListProvider = WordListProvider();
       final bookmarkedUrlsProvider = BookmarkProvider(prefs);
 
       await tester.pumpWidget(
@@ -29,7 +29,7 @@ void main() {
             ChangeNotifierProvider.value(value: bookmarkedUrlsProvider),
           ],
           child: MaterialApp(
-            home: Scaffold(body: TrainingPage(title: 'Test Page')),
+            home: Scaffold(body: ReadPage(title: 'Test Page')),
           ),
         ),
       );

@@ -24,14 +24,15 @@ import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:readblank/screens/settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:readblank/screens/studylog_page.dart';
+import 'package:readblank/screens/log_page.dart';
 
 import 'db/word_list_provider.dart';
 import 'drawers/content_selector_drawers.dart';
 import 'provider/bookmark_provider.dart';
 import 'provider/history_provider.dart';
-import 'screens/training_page.dart';
+import 'screens/read_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,113 +113,135 @@ class _MainPageState extends State<MainPage> {
     }
 
     return Scaffold(
-      appBar: _selectedIndex == 1
-          ? AppBar(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Study Log', style: TextStyle(color: Colors.black87)),
-                ],
-              ),
-              foregroundColor: Colors.black,
-              backgroundColor: Colors.lightGreen,
-              automaticallyImplyActions: false,
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    wordListProvider.viewMode == StudyLogViewMode.list
-                        ? Icons.view_list
-                        : Icons.view_list_outlined,
-                  ),
-                  onPressed: () => wordListProvider
-                      .setViewMode(StudyLogViewMode.list),
-                ),
-                IconButton(
-                  icon: Icon(
-                    wordListProvider.viewMode == StudyLogViewMode.summary
-                        ? Icons.view_week
-                        : Icons.view_week_outlined,
-                  ),
-                  onPressed: () => wordListProvider
-                      .setViewMode(StudyLogViewMode.summary),
-                ),
-                IconButton(
-                  icon: Icon(Icons.calendar_view_month_outlined),
-                  onPressed: () {},
-                ),
-              ],
-            )
-          : AppBar(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    historyProvider.currentTitle,
-                    style: TextStyle(fontSize: 16),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    historyProvider.currentDomainName,
-                    style: TextStyle(fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-              foregroundColor: Colors.black,
-              backgroundColor: Colors.lightGreen,
-              automaticallyImplyActions: false,
-              actions: [
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: Icon(Icons.add_link_outlined),
-                    onPressed: _addBookmark,
-                  ),
-                ),
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: Icon(Icons.list_outlined),
-                    onPressed: () {
-                      Scaffold.of(context).openEndDrawer();
-                    },
-                  ),
-                ),
-              ],
-            ),
-      body: _selectedIndex == 1
-          ? StudyLogPage(key: Key('studyLogPage'), title: 'Study Log')
-          : TrainingPage(key: Key('trainingPage'), title: 'Training'),
+      appBar: _selectedIndex == 0
+          ? _buildAppBarForRead(historyProvider)
+          : _selectedIndex == 1
+          ? _buildAppBarForLog(wordListProvider)
+          : _buildAppBarForSettings(),
+      body: _selectedIndex == 0
+          ? ReadPage(key: Key('ReadPage'), title: 'Read')
+          : _selectedIndex == 1
+          ? LogPage(key: Key('LogPage'), title: 'Log')
+          : SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
       endDrawer: const ContentSelectorDrawers(),
-      bottomNavigationBar: NavigationBar(
-        backgroundColor: Colors.white,
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        destinations: [
-          const NavigationDestination(
-            label: 'Learn',
-            icon: Icon(Icons.edit_note),
-          ),
-          const NavigationDestination(
-            label: 'Log',
-            icon: Icon(Icons.bar_chart),
-          ),
-          const NavigationDestination(
-            label: 'Settings',
-            icon: Icon(Icons.settings),
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildNavigationBar(),
     );
   }
 
-  void _addBookmark() async {
-    final callersContext = context;
-    final historyProvider = callersContext.read<HistoryProvider>();
+  AppBar _buildAppBarForRead(HistoryProvider historyProvider) {
+    return AppBar(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            historyProvider.currentTitle,
+            style: TextStyle(fontSize: 16),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            historyProvider.currentDomainName,
+            style: TextStyle(fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+      foregroundColor: Colors.black,
+      backgroundColor: Colors.lightGreen,
+      automaticallyImplyActions: false,
+      actions: [
+        Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.add_link_outlined),
+            onPressed: _addLink,
+          ),
+        ),
+        Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.list_outlined),
+            onPressed: () {
+              Scaffold.of(context).openEndDrawer();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildAppBarForLog(WordListProvider wordListProvider) {
+    return AppBar(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [Text('Log', style: TextStyle(color: Colors.black87))],
+      ),
+      foregroundColor: Colors.black,
+      backgroundColor: Colors.lightGreen,
+      automaticallyImplyActions: false,
+      actions: [
+        IconButton(
+          icon: Icon(
+            wordListProvider.viewMode == StudyLogViewMode.list
+                ? Icons.view_list
+                : Icons.view_list_outlined,
+          ),
+          onPressed: () => wordListProvider.setViewMode(StudyLogViewMode.list),
+        ),
+        IconButton(
+          icon: Icon(
+            wordListProvider.viewMode == StudyLogViewMode.summary
+                ? Icons.view_week
+                : Icons.view_week_outlined,
+          ),
+          onPressed: () =>
+              wordListProvider.setViewMode(StudyLogViewMode.summary),
+        ),
+        IconButton(
+          icon: Icon(Icons.calendar_view_month_outlined),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildAppBarForSettings() {
+    return AppBar(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [Text('Settings')],
+      ),
+      foregroundColor: Colors.black,
+      backgroundColor: Colors.lightGreen,
+      automaticallyImplyActions: false,
+      actions: [],
+    );
+  }
+
+  NavigationBar _buildNavigationBar() {
+    return NavigationBar(
+      backgroundColor: Colors.white,
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      destinations: [
+        const NavigationDestination(
+          label: 'Read',
+          icon: Icon(Icons.article_outlined),
+        ),
+        const NavigationDestination(label: 'Log', icon: Icon(Icons.bar_chart)),
+        const NavigationDestination(
+          label: 'Settings',
+          icon: Icon(Icons.settings),
+        ),
+      ],
+    );
+  }
+
+  void _addLink() async {
+    final historyProvider = context.read<HistoryProvider>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {
@@ -229,10 +252,10 @@ class _MainPageState extends State<MainPage> {
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
             if (historyProvider.contains(copiedText)) {
-              if (callersContext.mounted) {
+              if (mounted) {
                 showDialog(
-                  context: callersContext,
-                  builder: (BuildContext callersContext) => AlertDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
                     title: Text('Already exists'),
                     content: Text(
                       'This link already exists. Do you want to select the link?',
@@ -255,8 +278,8 @@ class _MainPageState extends State<MainPage> {
               }
             } else {
               historyProvider.add(copiedText);
-              if (callersContext.mounted) {
-                ScaffoldMessenger.of(callersContext).showSnackBar(
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Link added successfully!'),
                     duration: Duration(seconds: 3),
@@ -265,9 +288,9 @@ class _MainPageState extends State<MainPage> {
               }
             }
           } else {
-            if (callersContext.mounted) {
+            if (mounted) {
               showDialog(
-                context: callersContext,
+                context: context,
                 builder: (context) => AlertDialog(
                   title: Text('No Text'),
                   content: Text(
@@ -285,9 +308,9 @@ class _MainPageState extends State<MainPage> {
             }
           }
         } else {
-          if (callersContext.mounted) {
+          if (mounted) {
             showDialog(
-              context: callersContext,
+              context: context,
               builder: (context) => AlertDialog(
                 title: Text('Invalid URL'),
                 content: Text(
@@ -304,9 +327,9 @@ class _MainPageState extends State<MainPage> {
           }
         }
       } catch (e) {
-        if (callersContext.mounted) {
+        if (mounted) {
           showDialog(
-            context: callersContext,
+            context: context,
             builder: (context) => AlertDialog(
               title: const Row(
                 children: [
@@ -331,16 +354,23 @@ class _MainPageState extends State<MainPage> {
         }
       }
     } else {
-      AlertDialog(
-        title: Text('No copied URL'),
-        content: Text('Please copy the URL from your browser\'s address bar.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('No copied URL'),
+            content: Text(
+              'Please copy the URL from your browser\'s address bar.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      );
+        );
+      }
     }
   }
 }

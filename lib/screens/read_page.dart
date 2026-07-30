@@ -1,5 +1,5 @@
 /*
- * content_pane.dart
+ * read_page.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -25,16 +25,16 @@ import 'package:readblank/provider/history_provider.dart';
 
 import '../panes/content_pane.dart';
 
-class TrainingPage extends StatefulWidget {
+class ReadPage extends StatefulWidget {
   final String title;
 
-  const TrainingPage({super.key, required this.title});
+  const ReadPage({super.key, required this.title});
 
   @override
-  State<TrainingPage> createState() => _TrainingPageState();
+  State<ReadPage> createState() => _ReadPageState();
 }
 
-class _TrainingPageState extends State<TrainingPage> {
+class _ReadPageState extends State<ReadPage> {
   @override
   void initState() {
     super.initState();

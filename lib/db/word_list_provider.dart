@@ -1,5 +1,5 @@
 /*
- * word_db.dart
+ * word_list_provider.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -40,7 +40,7 @@ class WordListProvider extends ChangeNotifier {
   }
 
   // For database operations
-  bool get isDbLoading => _isLoading;
+  bool get isLoading => _isLoading;
   List<Map<String, dynamic>> get studyLog => _studyLog;
   Map<String, int> get wordCounts => _wordCounts;
   StudyLogViewMode get viewMode => _viewMode;

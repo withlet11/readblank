@@ -113,6 +113,9 @@ class BookmarkProvider extends ChangeNotifier {
 
   bool contains(String url) => _bookmarkList.any((e) => e['url'] == url);
 
+  String exportBookmark() =>
+      _bookmarkList.map((e) => e['url'] as String).join('\n');
+
   void add(String url) async {
     _bookmarkList.add({'url': url});
     prefs.setString('bookmarks', jsonEncode(_bookmarkList));

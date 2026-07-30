@@ -1,5 +1,5 @@
 /*
- * contentselector_drawers.dart
+ * content_selector_drawers.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -65,6 +65,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   Widget build(BuildContext context) {
     return Consumer2<HistoryProvider, BookmarkProvider>(
       builder: (context, historyProvider, bookmarkProvider, child) {
+        if (historyProvider.isLoading || bookmarkProvider.isLoading) {
+          return Center(child: CircularProgressIndicator());
+        }
+
         return Drawer(
           child: DefaultTabController(
             length: 2,

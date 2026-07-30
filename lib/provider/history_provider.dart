@@ -132,6 +132,9 @@ class HistoryProvider extends ChangeNotifier {
 
   String get currentTitle => _cachedContents[currentUrl]?.$1 ?? currentUrl;
 
+  String exportHistory() =>
+      _historyList.map((e) => e['url'] as String).join('\n');
+
   bool isSelected(String url) =>
       _historyList.isNotEmpty && _historyList.first['url'] == url;
 
@@ -157,6 +160,7 @@ class HistoryProvider extends ChangeNotifier {
       'url': url,
       'timestamp': DateTime.now().toIso8601String(),
     });
+    _currentParagraphIndex = 0;
     prefs.setString('history', jsonEncode(_historyList));
     _cachedContents[url] = await _fetchData(url);
     notifyListeners();
