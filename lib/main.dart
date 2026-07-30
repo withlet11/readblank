@@ -76,11 +76,7 @@ class ReadBlank extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       locale: appPreferencesProvider.locale,
-      supportedLocales: [
-        Locale('en'),
-        Locale('hu'),
-        Locale('ja'),
-      ],
+      supportedLocales: [Locale('en'), Locale('hu'), Locale('ja')],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -118,7 +114,7 @@ class _MainPageState extends State<MainPage> {
     return Consumer2<HistoryNotifier, WordListNotifier>(
       builder: (context, historyNotifier, wordListNotifier, child) {
         if (historyNotifier.isLoading) {
-          return Scaffold(
+          return const Scaffold(
             body: Center(
               child: CircularProgressIndicator(
                 strokeWidth: 5,
@@ -136,10 +132,10 @@ class _MainPageState extends State<MainPage> {
               ? _buildAppBarForLog(wordListNotifier)
               : _buildAppBarForSettings(),
           body: _selectedIndex == 0
-              ? ReadPage(key: Key('ReadPage'), title: 'Read')
+              ? const ReadPage(key: Key('ReadPage'), title: 'Read')
               : _selectedIndex == 1
-              ? LogPage(key: Key('LogPage'), title: 'Log')
-              : SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
+              ? const LogPage(key: Key('LogPage'), title: 'Log')
+              : const SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
           endDrawer: const ContentSelectorDrawers(),
           bottomNavigationBar: _buildNavigationBar(),
         );
@@ -154,13 +150,13 @@ class _MainPageState extends State<MainPage> {
         children: [
           Text(
             historyProvider.currentTitle,
-            style: TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: 16),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             historyProvider.currentDomainName,
-            style: TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 12),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -172,13 +168,13 @@ class _MainPageState extends State<MainPage> {
       actions: [
         Builder(
           builder: (context) => IconButton(
-            icon: Icon(Icons.add_link_outlined),
+            icon: const Icon(Icons.add_link_outlined),
             onPressed: _addLink,
           ),
         ),
         Builder(
           builder: (context) => IconButton(
-            icon: Icon(Icons.list_outlined),
+            icon: const Icon(Icons.list_outlined),
             onPressed: () {
               Scaffold.of(context).openEndDrawer();
             },
@@ -189,10 +185,14 @@ class _MainPageState extends State<MainPage> {
   }
 
   AppBar _buildAppBarForLog(WordListNotifier wordListProvider) {
+    final l10n = AppLocalizations.of(context)!;
+
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text('Log', style: TextStyle(color: Colors.black87))],
+        children: [
+          Text(l10n.logLabel, style: TextStyle(color: Colors.black87)),
+        ],
       ),
       foregroundColor: Colors.black,
       backgroundColor: Colors.lightGreen,
@@ -216,7 +216,7 @@ class _MainPageState extends State<MainPage> {
               wordListProvider.setViewMode(StudyLogViewMode.summary),
         ),
         IconButton(
-          icon: Icon(Icons.calendar_view_month_outlined),
+          icon: const Icon(Icons.calendar_view_month_outlined),
           onPressed: () {},
         ),
       ],
@@ -254,7 +254,10 @@ class _MainPageState extends State<MainPage> {
           label: l10n.readLabel,
           icon: const Icon(Icons.article_outlined),
         ),
-        NavigationDestination(label: l10n.logLabel, icon: const Icon(Icons.bar_chart)),
+        NavigationDestination(
+          label: l10n.logLabel,
+          icon: const Icon(Icons.bar_chart),
+        ),
         NavigationDestination(
           label: l10n.settingsLabel,
           icon: const Icon(Icons.settings),
@@ -264,6 +267,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _addLink() async {
+    final l10n = AppLocalizations.of(context)!;
     final historyProvider = context.read<HistoryNotifier>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
@@ -279,21 +283,19 @@ class _MainPageState extends State<MainPage> {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: Text('Already exists'),
-                    content: Text(
-                      'This link already exists. Do you want to select the link?',
-                    ),
+                    title: Text(l10n.alreadyExists),
+                    content: Text(l10n.linkAlreadyExists),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
+                        child: Text(l10n.cancelLabel),
                       ),
                       FilledButton(
                         onPressed: () async {
                           Navigator.of(context).pop();
                           historyProvider.select(copiedText);
                         },
-                        child: const Text('Open'),
+                        child: Text(l10n.openLabel),
                       ),
                     ],
                   ),
@@ -303,9 +305,9 @@ class _MainPageState extends State<MainPage> {
               historyProvider.add(copiedText);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Link added successfully!'),
-                    duration: Duration(seconds: 3),
+                  SnackBar(
+                    content: Text(l10n.linkAddedSuccessfully),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               }
@@ -315,15 +317,12 @@ class _MainPageState extends State<MainPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: Text('No Text'),
-                  content: Text(
-                    'The copied URL does not contain any paragraph text. '
-                    'Please try a different URL',
-                  ),
+                  title: Text(l10n.noTextLabel),
+                  content: Text(l10n.notContainsParagraph),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
+                      child: Text(l10n.okLabel),
                     ),
                   ],
                 ),
@@ -335,14 +334,12 @@ class _MainPageState extends State<MainPage> {
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                title: Text('Invalid URL'),
-                content: Text(
-                  'Please copy the URL from your browser\'s address bar.',
-                ),
+                title: Text(l10n.invalidUrlLabel),
+                content: Text(l10n.urlCopyRequest),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+                    child: Text(l10n.okLabel),
                   ),
                 ],
               ),
@@ -354,22 +351,18 @@ class _MainPageState extends State<MainPage> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Row(
+              title: Row(
                 children: [
-                  Icon(Icons.error, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Error'),
+                  const Icon(Icons.error, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Text(l10n.errorLabel),
                 ],
               ),
-              content: Text(
-                'Connection error or invalid URL.\n'
-                'The copied text is "$copiedText".',
-                maxLines: 5,
-              ),
+              content: Text(l10n.connectionError(copiedText), maxLines: 5),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(l10n.okLabel),
                 ),
               ],
             ),
@@ -381,14 +374,12 @@ class _MainPageState extends State<MainPage> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('No copied URL'),
-            content: Text(
-              'Please copy the URL from your browser\'s address bar.',
-            ),
+            title: Text(l10n.noCopiedUrlLabel),
+            content: Text(l10n.urlCopyRequest),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
+                child: Text(l10n.okLabel),
               ),
             ],
           ),

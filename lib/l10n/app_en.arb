@@ -1,5 +1,36 @@
 {
   "@@locale": "en",
+  "alreadyExists": "Already exists",
+  "connectionError": "Connection error or invalid URL.\nThe copied text is \"{copiedText}\".",
+  "@connectionError": {
+    "description": "A message of connection error or invalid URL.",
+    "placeholders": {
+      "copiedText": {
+        "type": "String"
+      }
+    }
+  },
+  "errorLabel": "Error",
+  "invalidUrlLabel": "Invalid URL",
+  "linkAlreadyExists": "This link already exists. Do you want to select the link?",
+  "@linkAlreadyExists": {
+    "description": "A message of link already exists."
+  },
+  "linkAddedSuccessfully": "Link added successfully!",
+  "@linkAddedSuccessfully": {
+    "description": "A message of link added successfully."
+  },
+  "noCopiedUrlLabel": "No copied URL",
+  "noTextLabel": "No text",
+  "notContainsParagraph": "The copied URL does not contain any paragraph text.\nPlease try a different URL",
+  "@notContainsParagraph": {
+    "description": "A message of no paragraph text."
+  },
+  "openLabel": "Open",
+  "urlCopyRequest": "Please copy the URL from your browser's address bar.",
+  "@urlCopyRequest": {
+    "description": "A message of URL copy request."
+  },
   "bookmarksCopiedToClipboard": "Bookmarks copied to clipboard",
   "bookmarksLabel": "Bookmarks",
   "cancelLabel": "Cancel",
@@ -80,7 +111,7 @@
   },
   "importSummary": "Already exists: {existsCount}\nNo paragraph: {noParagraphCount}\nInvalid URL: {invalidUrlCount}\nError: {errorCount}",
   "@importSummary": {
-    "description": "A message of summary of import/export process.",
+    "description": "A message of summary of import process.",
     "placeholders": {
       "existsCount": {
         "type": "int"
@@ -99,8 +130,8 @@
   "importHistoryLabel": "Import History",
   "languageLabel": "Language",
   "logLabel": "Log",
-  "noTitle": "No title",
-  "ok": "OK",
+  "noTitleLabel": "No title",
+  "okLabel": "OK",
   "pasteLabel": "Paste",
   "pleaseAddAUrl": "Please add a URL",
   "readLabel": "Read",

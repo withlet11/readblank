@@ -153,7 +153,7 @@ class BookmarkListNotifier extends ChangeNotifier {
   }
 
   String title(String url, AppLocalizations l10n) =>
-      cachedContents[url]?.$1 ?? l10n.noTitle;
+      cachedContents[url]?.$1 ?? l10n.noTitleLabel;
 
   void cacheParagraphList(String url, (String?, List<String>) contents) {
     cachedContents[url] = contents;

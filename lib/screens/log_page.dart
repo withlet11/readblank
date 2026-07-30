@@ -73,7 +73,7 @@ class _LogPageState extends State<LogPage> {
       itemCount: provider.studyLog.length,
       itemBuilder: (context, index) {
         final logItem = provider.studyLog[index];
-        final word = logItem[_keyWord] ?? l10n.noTitle;
+        final word = logItem[_keyWord] ?? l10n.noTitleLabel;
         final timestamp = logItem[_keyTimestamp] ?? '';
         return Container(
           height: 48,

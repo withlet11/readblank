@@ -282,7 +282,7 @@ class _SettingsPageState extends State<SettingsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.ok),
+                  child: Text(l10n.okLabel),
                 ),
               ],
             ),
@@ -442,7 +442,7 @@ class _SettingsPageState extends State<SettingsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.ok),
+                  child: Text(l10n.okLabel),
                 ),
               ],
             ),

@@ -207,9 +207,10 @@ class _ContentPaneState extends State<ContentPane> {
                     ),
                   ),
                   SizedBox(
-                    height: constraints.maxHeight * 0.1,
+                    height: constraints.maxHeight * 0.12,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         IconButton.filled(
                           onPressed: _currentIndex > 0
@@ -258,7 +259,8 @@ class _ContentPaneState extends State<ContentPane> {
                     thumbVisibility: true,
                     interactive: false,
                     child: SizedBox(
-                      height: constraints.maxHeight * 0.45,
+                      height: constraints.maxHeight * 0.43,
+                      width: double.infinity,
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         controller: _scrollController2,
