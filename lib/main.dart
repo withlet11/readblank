@@ -21,6 +21,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -28,10 +29,12 @@ import 'package:readblank/screens/settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:readblank/screens/log_page.dart';
 
-import 'db/word_list_provider.dart';
 import 'drawers/content_selector_drawers.dart';
-import 'provider/bookmark_provider.dart';
-import 'provider/history_provider.dart';
+import 'l10n/app_localizations.dart';
+import 'provider/app_preferences_notifier.dart';
+import 'provider/bookmark_list_notifier.dart';
+import 'provider/history_notifier.dart';
+import 'provider/word_list_notifier.dart';
 import 'screens/read_page.dart';
 
 void main() async {
@@ -42,14 +45,15 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => HistoryProvider(prefs)),
-        ChangeNotifierProxyProvider<HistoryProvider, BookmarkProvider>(
-          create: (_) => BookmarkProvider(prefs),
+        ChangeNotifierProvider(create: (_) => AppPreferencesNotifier()),
+        ChangeNotifierProvider(create: (_) => HistoryNotifier(prefs)),
+        ChangeNotifierProxyProvider<HistoryNotifier, BookmarkListNotifier>(
+          create: (_) => BookmarkListNotifier(prefs),
           update: (_, historyProvider, bookmarkProvider) {
             return (bookmarkProvider!..update(historyProvider));
           },
         ),
-        ChangeNotifierProvider(create: (_) => WordListProvider()),
+        ChangeNotifierProvider(create: (_) => WordListNotifier()),
       ],
       child: ReadBlank(),
     ),
@@ -61,8 +65,22 @@ class ReadBlank extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appPreferencesProvider = context.watch<AppPreferencesNotifier>();
+
     return MaterialApp(
       title: 'ReadBlank',
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      locale: appPreferencesProvider.locale,
+      supportedLocales: [
+        Locale('en'),
+        Locale('hu'),
+        Locale('ja'),
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -91,44 +109,45 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HistoryProvider>().fetchAllUrls();
+      context.read<HistoryNotifier>().fetchAllUrls();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final historyProvider = context.watch<HistoryProvider>();
-    final wordListProvider = context.watch<WordListProvider>();
+    return Consumer2<HistoryNotifier, WordListNotifier>(
+      builder: (context, historyNotifier, wordListNotifier, child) {
+        if (historyNotifier.isLoading) {
+          return Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 5,
+                color: Colors.lightGreen,
+                backgroundColor: Colors.white,
+              ),
+            ),
+          );
+        }
 
-    if (historyProvider.isLoading) {
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 5,
-            color: Colors.lightGreen,
-            backgroundColor: Colors.white,
-          ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: _selectedIndex == 0
-          ? _buildAppBarForRead(historyProvider)
-          : _selectedIndex == 1
-          ? _buildAppBarForLog(wordListProvider)
-          : _buildAppBarForSettings(),
-      body: _selectedIndex == 0
-          ? ReadPage(key: Key('ReadPage'), title: 'Read')
-          : _selectedIndex == 1
-          ? LogPage(key: Key('LogPage'), title: 'Log')
-          : SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
-      endDrawer: const ContentSelectorDrawers(),
-      bottomNavigationBar: _buildNavigationBar(),
+        return Scaffold(
+          appBar: _selectedIndex == 0
+              ? _buildAppBarForRead(historyNotifier)
+              : _selectedIndex == 1
+              ? _buildAppBarForLog(wordListNotifier)
+              : _buildAppBarForSettings(),
+          body: _selectedIndex == 0
+              ? ReadPage(key: Key('ReadPage'), title: 'Read')
+              : _selectedIndex == 1
+              ? LogPage(key: Key('LogPage'), title: 'Log')
+              : SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
+          endDrawer: const ContentSelectorDrawers(),
+          bottomNavigationBar: _buildNavigationBar(),
+        );
+      },
     );
   }
 
-  AppBar _buildAppBarForRead(HistoryProvider historyProvider) {
+  AppBar _buildAppBarForRead(HistoryNotifier historyProvider) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +188,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForLog(WordListProvider wordListProvider) {
+  AppBar _buildAppBarForLog(WordListNotifier wordListProvider) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,10 +224,12 @@ class _MainPageState extends State<MainPage> {
   }
 
   AppBar _buildAppBarForSettings() {
+    final l10n = AppLocalizations.of(context)!;
+
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text('Settings')],
+        children: [Text(l10n.settingsLabel)],
       ),
       foregroundColor: Colors.black,
       backgroundColor: Colors.lightGreen,
@@ -218,6 +239,8 @@ class _MainPageState extends State<MainPage> {
   }
 
   NavigationBar _buildNavigationBar() {
+    final l10n = AppLocalizations.of(context)!;
+
     return NavigationBar(
       backgroundColor: Colors.white,
       selectedIndex: _selectedIndex,
@@ -227,21 +250,21 @@ class _MainPageState extends State<MainPage> {
         });
       },
       destinations: [
-        const NavigationDestination(
-          label: 'Read',
-          icon: Icon(Icons.article_outlined),
+        NavigationDestination(
+          label: l10n.readLabel,
+          icon: const Icon(Icons.article_outlined),
         ),
-        const NavigationDestination(label: 'Log', icon: Icon(Icons.bar_chart)),
-        const NavigationDestination(
-          label: 'Settings',
-          icon: Icon(Icons.settings),
+        NavigationDestination(label: l10n.logLabel, icon: const Icon(Icons.bar_chart)),
+        NavigationDestination(
+          label: l10n.settingsLabel,
+          icon: const Icon(Icons.settings),
         ),
       ],
     );
   }
 
   void _addLink() async {
-    final historyProvider = context.read<HistoryProvider>();
+    final historyProvider = context.read<HistoryNotifier>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {

@@ -1,5 +1,5 @@
 /*
- * history_provider.dart
+ * history_notifier.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -26,7 +26,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class HistoryProvider extends ChangeNotifier {
+class HistoryNotifier extends ChangeNotifier {
   // For fetching data from the web
   bool _isLoading = false;
   String? _data;
@@ -38,7 +38,7 @@ class HistoryProvider extends ChangeNotifier {
   final Map<String, (String?, List<String>)> _cachedContents = {};
   int _currentParagraphIndex = 0;
 
-  HistoryProvider(this.prefs) {
+  HistoryNotifier(this.prefs) {
     try {
       final historyJson = prefs.getString('history');
       if (historyJson != null) {

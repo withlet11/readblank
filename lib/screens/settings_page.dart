@@ -25,14 +25,16 @@ import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-import '../db/word_list_provider.dart';
-import '../provider/bookmark_provider.dart';
-import '../provider/history_provider.dart';
+import '../l10n/app_localizations.dart';
+import '../provider/app_preferences_notifier.dart';
+import '../provider/bookmark_list_notifier.dart';
+import '../provider/history_notifier.dart';
+import '../provider/word_list_notifier.dart';
 
 class SettingsPage extends StatefulWidget {
-  final String title;
-
   const SettingsPage({super.key, required this.title});
+
+  final String title;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -61,73 +63,100 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     final settingsList = <Widget>[
       ListTile(
-        leading: Icon(Icons.history_outlined),
-        title: Text('Import history'),
+        leading: const Icon(Icons.language_outlined),
+        title: Text(l10n.languageLabel),
+        trailing: DropdownButton<Locale>(
+          value: context.watch<AppPreferencesNotifier>().locale,
+          onChanged: (Locale? locale) {
+            if (locale != null) {
+              setState(() {
+                context.read<AppPreferencesNotifier>().setLocale(locale);
+              });
+            }
+          },
+          items: const [
+            DropdownMenuItem(value: Locale('en'), child: Text('English')),
+            DropdownMenuItem(value: Locale('hu'), child: Text('Magyar')),
+            DropdownMenuItem(value: Locale('ja'), child: Text('日本語')),
+          ],
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.history_outlined),
+        title: Text(l10n.importHistoryLabel),
         trailing: TextButton.icon(
-          label: Text('Paste'),
+          label: Text(l10n.pasteLabel),
           icon: _isImportingHistory
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : Icon(Icons.paste_rounded),
+              : const Icon(Icons.paste_rounded),
           onPressed: _isImportingOrExporting ? null : _importHistory,
         ),
       ),
       ListTile(
-        leading: Icon(Icons.history_outlined),
-        title: Text('Export history'),
+        leading: const Icon(Icons.history_outlined),
+        title: Text(l10n.exportHistoryLabel),
         trailing: TextButton.icon(
-          label: Text('Copy all'),
+          label: Text(l10n.copyAllLabel),
           icon: _isExportingHistory
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : Icon(Icons.copy_all_outlined),
+              : const Icon(Icons.copy_all_outlined),
           onPressed: _isImportingOrExporting ? null : _exportHistory,
         ),
       ),
       ListTile(
-        leading: Icon(Icons.bookmarks_outlined),
-        title: Text('Import bookmarks'),
+        leading: const Icon(Icons.bookmarks_outlined),
+        title: Text(l10n.importBookmarksLabel),
         trailing: TextButton.icon(
-          label: Text('Paste'),
+          label: Text(l10n.pasteLabel),
           icon: _isImportingBookmark
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : Icon(Icons.paste_rounded),
+              : const Icon(Icons.paste_rounded),
           onPressed: _isImportingOrExporting ? null : _importBookmark,
         ),
       ),
       ListTile(
-        leading: Icon(Icons.bookmarks_outlined),
-        title: Text('Export bookmarks'),
+        leading: const Icon(Icons.bookmarks_outlined),
+        title: Text(l10n.exportBookmarksLabel),
         trailing: TextButton.icon(
-          label: Text('Copy all'),
+          label: Text(l10n.copyAllLabel),
           icon: _isExportingBookmark
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : Icon(Icons.copy_all_outlined),
+              : const Icon(Icons.copy_all_outlined),
           onPressed: _isImportingOrExporting ? null : _exportBookmark,
         ),
       ),
     ];
 
-    return Consumer3<HistoryProvider, BookmarkProvider, WordListProvider>(
+    return Consumer4<
+      AppPreferencesNotifier,
+      HistoryNotifier,
+      BookmarkListNotifier,
+      WordListNotifier
+    >(
       builder:
           (
             context,
+            appPreferencesProvider,
             historyProvider,
             bookmarkProvider,
             wordListProvider,
@@ -136,7 +165,7 @@ class _SettingsPageState extends State<SettingsPage> {
             if (historyProvider.isLoading ||
                 bookmarkProvider.isLoading ||
                 wordListProvider.isLoading) {
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
 
             return ListView.separated(
@@ -157,19 +186,21 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _exportHistory() async {
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isExportingHistory = true;
     });
 
     try {
-      final historyProvider = context.read<HistoryProvider>();
+      final historyProvider = context.read<HistoryNotifier>();
       final String exportedData = historyProvider.exportHistory();
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('History copied to clipboard'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(l10n.historyCopiedToClipboard),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -177,8 +208,8 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to export history: $e'),
-            duration: Duration(seconds: 3),
+            content: Text(l10n.failedToExportHistory(e.toString())),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -192,6 +223,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _importHistory() async {
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isImportingHistory = true;
     });
@@ -212,7 +245,7 @@ class _SettingsPageState extends State<SettingsPage> {
         int invalidUrlCount = 0;
         int errorCount = 0;
 
-        final results = await Future.wait(lines.map((line) => _addLink(line)));
+        final results = await Future.wait(lines.map(_addLink));
 
         for (final result in results) {
           switch (result) {
@@ -237,17 +270,19 @@ class _SettingsPageState extends State<SettingsPage> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text('$successCount imported'),
+              title: Text(l10n.importCount(successCount)),
               content: Text(
-                'Already exists: $existsCount\n'
-                'No paragraph: $noParagraphCount\n'
-                'Invalid URL: $invalidUrlCount\n'
-                'Error: $errorCount',
+                l10n.importSummary(
+                  existsCount,
+                  noParagraphCount,
+                  invalidUrlCount,
+                  errorCount,
+                ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(l10n.ok),
                 ),
               ],
             ),
@@ -257,8 +292,8 @@ class _SettingsPageState extends State<SettingsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Clipboard empty. Please copy URL List'),
-              duration: Duration(seconds: 3),
+              content: Text(l10n.clipboardEmpty),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -267,8 +302,8 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to import history: $e'),
-            duration: Duration(seconds: 3),
+            content: Text(l10n.failedToImportHistory(e.toString())),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -282,7 +317,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<ImportProcessResult> _addLink(String url) async {
-    final historyProvider = context.read<HistoryProvider>();
+    final historyProvider = context.read<HistoryNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -311,19 +346,21 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _exportBookmark() async {
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isExportingBookmark = true;
     });
 
     try {
-      final bookmarkProvider = context.read<BookmarkProvider>();
+      final bookmarkProvider = context.read<BookmarkListNotifier>();
       final String exportedData = bookmarkProvider.exportBookmark();
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bookmarks copied to clipboard'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(l10n.bookmarksCopiedToClipboard),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -331,8 +368,8 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to export bookmarks: $e'),
-            duration: Duration(seconds: 3),
+            content: Text(l10n.failedToExportBookmarks(e.toString())),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -346,6 +383,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _importBookmark() async {
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isImportingBookmark = true;
     });
@@ -391,17 +430,19 @@ class _SettingsPageState extends State<SettingsPage> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text('$successCount imported'),
+              title: Text(l10n.importCount(successCount)),
               content: Text(
-                'Already exists: $existsCount\n'
-                'No paragraph: $noParagraphCount\n'
-                'Invalid URL: $invalidUrlCount\n'
-                'Error: $errorCount',
+                l10n.importSummary(
+                  existsCount,
+                  noParagraphCount,
+                  invalidUrlCount,
+                  errorCount,
+                ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(l10n.ok),
                 ),
               ],
             ),
@@ -411,8 +452,8 @@ class _SettingsPageState extends State<SettingsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Clipboard empty. Please copy URL List'),
-              duration: Duration(seconds: 3),
+              content: Text(l10n.clipboardEmpty),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -421,8 +462,8 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to import bookmarks: $e'),
-            duration: Duration(seconds: 3),
+            content: Text(l10n.failedToImportBookmarks(e.toString())),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -436,7 +477,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<ImportProcessResult> _addBookmark(String url) async {
-    final bookmakrProvider = context.read<BookmarkProvider>();
+    final l10n = AppLocalizations.of(context)!;
+
+    final bookmarkListNotifier = context.read<BookmarkListNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -444,10 +487,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (bookmakrProvider.contains(url)) {
+            if (bookmarkListNotifier.contains(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              bookmakrProvider.add(url);
+              bookmarkListNotifier.add(url, l10n);
               return ImportProcessResult.success;
             }
           } else {

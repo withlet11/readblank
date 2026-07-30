@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:readblank/db/word_list_provider.dart';
-import 'package:readblank/provider/bookmark_provider.dart';
-import 'package:readblank/provider/history_provider.dart';
+import 'package:readblank/provider/bookmark_list_notifier.dart';
+import 'package:readblank/provider/history_notifier.dart';
+import 'package:readblank/provider/word_list_notifier.dart';
 import 'package:readblank/screens/read_page.dart';
 
 void main() {
@@ -17,9 +17,9 @@ void main() {
       });
       final prefs = await SharedPreferences.getInstance();
 
-      final historyProvider = HistoryProvider(prefs);
-      final wordListProvider = WordListProvider();
-      final bookmarkedUrlsProvider = BookmarkProvider(prefs);
+      final historyProvider = HistoryNotifier(prefs);
+      final wordListProvider = WordListNotifier();
+      final bookmarkedUrlsProvider = BookmarkListNotifier(prefs);
 
       await tester.pumpWidget(
         MultiProvider(

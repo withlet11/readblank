@@ -22,9 +22,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:readblank/provider/history_provider.dart';
 
-import '../provider/bookmark_provider.dart';
+import '../l10n/app_localizations.dart';
+import '../provider/bookmark_list_notifier.dart';
+import '../provider/history_notifier.dart';
 
 class ContentSelectorDrawers extends StatefulWidget {
   const ContentSelectorDrawers({super.key});
@@ -35,6 +36,9 @@ class ContentSelectorDrawers extends StatefulWidget {
 
 class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     with SingleTickerProviderStateMixin {
+  static const String _keyTimestamp = 'timestamp';
+  static const String _keyUrl = 'url';
+
   late TabController _tabController;
   int _activeIndex = 0;
 
@@ -63,7 +67,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<HistoryProvider, BookmarkProvider>(
+    final l10n = AppLocalizations.of(context)!;
+
+    return Consumer2<HistoryNotifier, BookmarkListNotifier>(
       builder: (context, historyProvider, bookmarkProvider, child) {
         if (historyProvider.isLoading || bookmarkProvider.isLoading) {
           return Center(child: CircularProgressIndicator());
@@ -84,12 +90,12 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                       indicatorSize: TabBarIndicatorSize.tab,
                       tabs: [
                         Tab(
-                          icon: Icon(Icons.history_outlined),
-                          text: 'History',
+                          icon: const Icon(Icons.history_outlined),
+                          text: l10n.historyLabel,
                         ),
                         Tab(
-                          icon: Icon(Icons.bookmark_outline),
-                          text: 'Bookmarks',
+                          icon: const Icon(Icons.bookmark_outline),
+                          text: l10n.bookmarksLabel,
                         ),
                       ],
                     ),
@@ -140,8 +146,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                         ),
                         label: Text(
                           _activeIndex == 0
-                              ? 'Clear all history'
-                              : 'Delete all bookmarks',
+                              ? l10n.clearAllHistory
+                              : l10n.deleteAllBookmarks,
                           style: TextStyle(color: Colors.red.shade700),
                         ),
                       ),
@@ -157,9 +163,11 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   }
 
   Widget _historyListView(
-    HistoryProvider historyProvider,
-    BookmarkProvider bookmarkProvider,
+    HistoryNotifier historyProvider,
+    BookmarkListNotifier bookmarkProvider,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -172,19 +180,19 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
             minLeadingWidth: 0,
             visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
             leading: IconButton(
-              icon: bookmarkProvider.contains(entry['url'])
-                  ? Icon(Icons.star_outlined)
-                  : Icon(Icons.star_border_outlined),
-              onPressed: bookmarkProvider.contains(entry['url'])
+              icon: bookmarkProvider.contains(entry[_keyUrl])
+                  ? const Icon(Icons.star_outlined)
+                  : const Icon(Icons.star_border_outlined),
+              onPressed: bookmarkProvider.contains(entry[_keyUrl])
                   ? null
                   : () {
                       setState(() {
-                        bookmarkProvider.add(entry['url']);
+                        bookmarkProvider.add(entry[_keyUrl], l10n);
                       });
                     },
             ),
             title: Text(
-              historyProvider.title(entry['url']),
+              historyProvider.title(entry[_keyUrl]),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -192,26 +200,26 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry['url'],
-                  style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  entry[_keyUrl],
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   DateFormat.yMd().add_jm().format(
-                    DateTime.parse(entry['timestamp']),
+                    DateTime.parse(entry[_keyTimestamp]),
                   ),
-                  style: TextStyle(fontSize: 12),
+                  style: const TextStyle(fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-            selected: historyProvider.isSelected(entry['url']),
+            selected: historyProvider.isSelected(entry[_keyUrl]),
             selectedTileColor: Colors.lightGreen.shade300,
             selectedColor: Colors.black,
             onTap: () {
               setState(() {
-                historyProvider.select(entry['url']);
+                historyProvider.select(entry[_keyUrl]);
               });
               Navigator.pop(context);
             },
@@ -225,7 +233,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               onPressed: historyProvider.historyList.length > 1
                   ? () {
                       setState(() {
-                        historyProvider.remove(entry['url']);
+                        historyProvider.remove(entry[_keyUrl]);
                       });
                     }
                   : null,
@@ -236,9 +244,11 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   }
 
   Widget _bookmarkListView(
-    HistoryProvider historyProvider,
-    BookmarkProvider bookmarkProvider,
+    HistoryNotifier historyProvider,
+    BookmarkListNotifier bookmarkProvider,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -251,26 +261,26 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
             minLeadingWidth: 0,
             visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
             leading: IconButton(
-              icon: Icon(Icons.edit_note_outlined),
+              icon: const Icon(Icons.edit_note_outlined),
               onPressed: () {},
             ),
             title: Text(
-              bookmarkProvider.title(entry['url']),
+              bookmarkProvider.title(entry[_keyUrl], l10n),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(
-              entry['url'],
-              style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              entry[_keyUrl],
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            selected: historyProvider.isSelected(entry['url']),
+            selected: historyProvider.isSelected(entry[_keyUrl]),
             selectedTileColor: Colors.lightGreen.shade300,
             selectedColor: Colors.black,
             onTap: () {
               setState(() {
-                historyProvider.select(entry['url']);
+                historyProvider.select(entry[_keyUrl]);
               });
               Navigator.pop(context);
             },
@@ -284,7 +294,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               onPressed: bookmarkProvider.bookmarkList.length > 1
                   ? () {
                       setState(() {
-                        bookmarkProvider.remove(entry['url']);
+                        bookmarkProvider.remove(entry[_keyUrl]);
                       });
                     }
                   : null,
@@ -295,20 +305,21 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   }
 
   void _clearAllHistory() async {
-    final settings = context.read<HistoryProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final settings = context.read<HistoryNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Clear All History'),
-        content: Text('Are you sure you want to clear all history?'),
+        title: Text(l10n.clearAllHistory),
+        content: Text(l10n.confirmClearAllHistory),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
+            child: Text(l10n.cancelLabel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Yes'),
+            child: Text(l10n.yesLabel),
           ),
         ],
       ),
@@ -320,20 +331,21 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   }
 
   void _deleteAllBookmarks() async {
-    final settings = context.read<BookmarkProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final settings = context.read<BookmarkListNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete All Bookmarks'),
-        content: Text('Are you sure you want to delete all bookmarks?'),
+        title: Text(l10n.deleteAllBookmarks),
+        content: Text(l10n.confirmDeleteAllBookmarks),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
+            child: Text(l10n.cancelLabel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Yes'),
+            child: Text(l10n.yesLabel),
           ),
         ],
       ),

@@ -1,5 +1,5 @@
 /*
- * word_list_provider.dart
+ * word_list_notifier.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -25,7 +25,7 @@ import 'package:sqflite/sqflite.dart';
 
 enum StudyLogViewMode { list, summary, calendar }
 
-class WordListProvider extends ChangeNotifier {
+class WordListNotifier extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
@@ -35,7 +35,7 @@ class WordListProvider extends ChangeNotifier {
   Map<String, int> _wordCounts = {};
   StudyLogViewMode _viewMode = StudyLogViewMode.list;
 
-  WordListProvider() {
+  WordListNotifier() {
     loadLogs();
   }
 

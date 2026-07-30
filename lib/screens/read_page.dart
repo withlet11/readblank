@@ -21,9 +21,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:readblank/provider/history_provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../panes/content_pane.dart';
+import '../provider/history_notifier.dart';
 
 class ReadPage extends StatefulWidget {
   final String title;
@@ -39,16 +40,16 @@ class _ReadPageState extends State<ReadPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HistoryProvider>(context, listen: false).fetchCurrentUrl();
+      Provider.of<HistoryNotifier>(context, listen: false).fetchCurrentUrl();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<HistoryProvider>(
+    return Consumer<HistoryNotifier>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
-          return Center(
+          return const Center(
             child: CircularProgressIndicator(
               strokeWidth: 5,
               color: Colors.lightGreen,
@@ -62,7 +63,9 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
-  Widget _buildContent(HistoryProvider provider) {
+  Widget _buildContent(HistoryNotifier provider) {
+    final l10n = AppLocalizations.of(context)!;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -74,7 +77,7 @@ class _ReadPageState extends State<ReadPage> {
                   '${provider.currentParagraphIndex}_${provider.currentParagraph}',
                 ),
                 paragraph: provider.currentParagraph.isEmpty
-                    ? 'Please add an URL'
+                    ? l10n.pleaseAddAUrl
                     : provider.currentParagraph,
               ),
             ),
@@ -86,13 +89,13 @@ class _ReadPageState extends State<ReadPage> {
                     onPressed: provider.isNotFirstParagraph
                         ? () => setState(() => provider.moveToFirstParagraph())
                         : null,
-                    icon: Icon(Icons.first_page),
+                    icon: const Icon(Icons.first_page),
                   ),
                   IconButton(
                     onPressed: provider.isNotFirstParagraph
                         ? () => setState(() => provider.movePreviousParagraph())
                         : null,
-                    icon: Icon(Icons.keyboard_arrow_left),
+                    icon: const Icon(Icons.keyboard_arrow_left),
                   ),
                   DropdownButton<int>(
                     value: provider.currentParagraphIndex,
@@ -113,13 +116,13 @@ class _ReadPageState extends State<ReadPage> {
                     onPressed: provider.isNotLastParagraph
                         ? () => setState(() => provider.moveNextParagraph())
                         : null,
-                    icon: Icon(Icons.keyboard_arrow_right),
+                    icon: const Icon(Icons.keyboard_arrow_right),
                   ),
                   IconButton(
                     onPressed: provider.isNotLastParagraph
                         ? () => setState(() => provider.moveToLastParagraph())
                         : null,
-                    icon: Icon(Icons.last_page),
+                    icon: const Icon(Icons.last_page),
                   ),
                 ],
               ),

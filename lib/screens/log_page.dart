@@ -22,8 +22,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:readblank/l10n/app_localizations.dart';
 
-import '../db/word_list_provider.dart';
+import '../provider/word_list_notifier.dart';
 
 class LogPage extends StatefulWidget {
   final String title;
@@ -35,19 +36,22 @@ class LogPage extends StatefulWidget {
 }
 
 class _LogPageState extends State<LogPage> {
+  static const String _keyTimestamp = 'timestamp';
+  static const String _keyWord = 'word';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<WordListProvider>().loadLogs();
+        context.read<WordListNotifier>().loadLogs();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WordListProvider>(
+    return Consumer<WordListNotifier>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -62,20 +66,22 @@ class _LogPageState extends State<LogPage> {
     );
   }
 
-  Widget _buildListView(WordListProvider provider) {
+  Widget _buildListView(WordListNotifier provider) {
+    final l10n = AppLocalizations.of(context)!;
+
     return ListView.builder(
       itemCount: provider.studyLog.length,
       itemBuilder: (context, index) {
         final logItem = provider.studyLog[index];
-        final word = logItem['word'] ?? 'No title';
-        final timestamp = logItem['timestamp'] ?? '';
+        final word = logItem[_keyWord] ?? l10n.noTitle;
+        final timestamp = logItem[_keyTimestamp] ?? '';
         return Container(
           height: 48,
-          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(word, style: TextStyle(fontSize: 16)),
+              Text(word, style: const TextStyle(fontSize: 16)),
               Text(DateFormat.yMd().add_jm().format(DateTime.parse(timestamp))),
             ],
           ),
@@ -84,7 +90,7 @@ class _LogPageState extends State<LogPage> {
     );
   }
 
-  Widget _buildSummaryView(WordListProvider provider) {
+  Widget _buildSummaryView(WordListNotifier provider) {
     final entries = provider.wordCounts.entries.toList();
     return ListView.separated(
       itemCount: entries.length,
@@ -95,11 +101,11 @@ class _LogPageState extends State<LogPage> {
             entry.key,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           trailing: Text(
             entry.value.toString(),
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         );
       },
