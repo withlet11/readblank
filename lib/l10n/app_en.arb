@@ -1,5 +1,6 @@
 {
   "@@locale": "en",
+  "activityNavButton": "Activity",
   "allBookmarksDeleteButton": "Delete all bookmarks",
   "@allBookmarksDeleteButton": {
     "description": "A label of delete all bookmarks."
@@ -120,7 +121,6 @@
   "@linkAdditionSuccessMessage": {
     "description": "A message of link added successfully."
   },
-  "logNavButton": "Log",
   "noCopiedUrlLabel": "No copied URL",
   "noTextLabel": "No text",
   "noTitle": "No title",
@@ -139,5 +139,14 @@
   "@urlCopyRequest": {
     "description": "A message of URL copy request."
   },
-  "urlRequestMessage": "Please add a URL"
+  "urlRequestMessage": "Please add a URL",
+  "wordCount": "{count, plural, zero {no words} one {1 word} other {{count} words}}",
+  "@wordCount": {
+    "description": "A message of word count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

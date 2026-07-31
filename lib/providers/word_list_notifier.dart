@@ -41,8 +41,11 @@ class WordListNotifier extends ChangeNotifier {
 
   // For database operations
   bool get isLoading => _isLoading;
+
   List<Map<String, dynamic>> get studyLog => _studyLog;
+
   Map<String, int> get wordCounts => _wordCounts;
+
   StudyLogViewMode get viewMode => _viewMode;
 
   void setViewMode(StudyLogViewMode mode) {
@@ -71,16 +74,41 @@ class WordListNotifier extends ChangeNotifier {
     notifyListeners();
 
     final counts = await _db.getWordCounts();
-    _wordCounts = {for (var item in counts) item['word'] as String: item['count'] as int};
+    _wordCounts = {
+      for (var item in counts) item['word'] as String: item['count'] as int,
+    };
 
     _isLoading = false;
     notifyListeners();
   }
 
+  int getDayWordCount(DateTime date) => getDayStudyLog(date).length;
+
+  List<Map<String, dynamic>> getDayStudyLog(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    return _studyLog.where((log) {
+      final logDate = DateTime.parse(log['timestamp'] as String);
+      return logDate.isAfter(startOfDay) && logDate.isBefore(endOfDay);
+    }).toList();
+  }
+
+  List<int> getHalfHourlyCountList(DateTime date) {
+    final studyLog = getDayStudyLog(date);
+    final result = List<int>.filled(48, 0);
+    for (var log in studyLog) {
+      final logDate = DateTime.parse(log['timestamp'] as String);
+      final hour = logDate.hour;
+      final minute = logDate.minute;
+      result[hour * 2 + (minute >= 30 ? 1 : 0)] += 1;
+    }
+    return result;
+  }
+
   Future<void> addLog(String word) async {
     final timestamp = DateTime.now().toIso8601String();
     await _db.addLog(word);
-    
+
     _studyLog.insert(0, {'word': word, 'timestamp': timestamp});
     if (_studyLog.length > 10000) _studyLog.removeLast();
 

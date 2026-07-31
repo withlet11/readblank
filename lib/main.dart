@@ -31,10 +31,10 @@ import 'package:readblank/screens/log_page.dart';
 
 import 'drawers/content_selector_drawers.dart';
 import 'l10n/app_localizations.dart';
-import 'provider/app_preferences_notifier.dart';
-import 'provider/bookmark_list_notifier.dart';
-import 'provider/history_notifier.dart';
-import 'provider/word_list_notifier.dart';
+import 'providers/app_preferences_notifier.dart';
+import 'providers/bookmark_list_notifier.dart';
+import 'providers/history_notifier.dart';
+import 'providers/word_list_notifier.dart';
 import 'screens/read_page.dart';
 
 void main() async {
@@ -49,8 +49,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => HistoryNotifier(prefs)),
         ChangeNotifierProxyProvider<HistoryNotifier, BookmarkListNotifier>(
           create: (_) => BookmarkListNotifier(prefs),
-          update: (_, historyProvider, bookmarkProvider) {
-            return (bookmarkProvider!..update(historyProvider));
+          update: (_, historyNotifier, bookmarkListNotifier) {
+            return (bookmarkListNotifier!..update(historyNotifier));
           },
         ),
         ChangeNotifierProvider(create: (_) => WordListNotifier()),
@@ -65,7 +65,7 @@ class ReadBlank extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appPreferencesProvider = context.watch<AppPreferencesNotifier>();
+    final appPreferencesNotifier = context.watch<AppPreferencesNotifier>();
 
     final lightColorScheme = ColorScheme.fromSeed(
       seedColor: Colors.lightGreen,
@@ -103,15 +103,17 @@ class ReadBlank extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      locale: appPreferencesProvider.locale,
+      locale: appPreferencesNotifier.locale,
       supportedLocales: [Locale('en'), Locale('hu'), Locale('ja')],
       theme: lightTheme,
       darkTheme: darkTheme,
-      themeMode: appPreferencesProvider.themeMode,
+      themeMode: appPreferencesNotifier.themeMode,
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(appPreferencesProvider.fontSizeFactor),
+            textScaler: TextScaler.linear(
+              appPreferencesNotifier.fontSizeFactor,
+            ),
           ),
           child: child!,
         );
@@ -170,19 +172,19 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForRead(HistoryNotifier historyProvider) {
+  AppBar _buildAppBarForRead(HistoryNotifier historyNotifier) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            historyProvider.currentTitle,
+            historyNotifier.currentTitle,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            historyProvider.currentDomainName,
+            historyNotifier.currentDomainName,
             style: Theme.of(context).textTheme.bodySmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -209,32 +211,32 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForLog(WordListNotifier wordListProvider) {
+  AppBar _buildAppBarForLog(WordListNotifier wordListNotifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text(l10n.logNavButton)],
+        children: [Text(l10n.activityNavButton)],
       ),
       automaticallyImplyActions: false,
       actions: [
         IconButton(
           icon: Icon(
-            wordListProvider.viewMode == StudyLogViewMode.list
+            wordListNotifier.viewMode == StudyLogViewMode.list
                 ? Icons.view_list
                 : Icons.view_list_outlined,
           ),
-          onPressed: () => wordListProvider.setViewMode(StudyLogViewMode.list),
+          onPressed: () => wordListNotifier.setViewMode(StudyLogViewMode.list),
         ),
         IconButton(
           icon: Icon(
-            wordListProvider.viewMode == StudyLogViewMode.summary
+            wordListNotifier.viewMode == StudyLogViewMode.summary
                 ? Icons.view_week
                 : Icons.view_week_outlined,
           ),
           onPressed: () =>
-              wordListProvider.setViewMode(StudyLogViewMode.summary),
+              wordListNotifier.setViewMode(StudyLogViewMode.summary),
         ),
         IconButton(
           icon: const Icon(Icons.calendar_view_month_outlined),
@@ -273,7 +275,7 @@ class _MainPageState extends State<MainPage> {
           icon: const Icon(Icons.article_outlined),
         ),
         NavigationDestination(
-          label: l10n.logNavButton,
+          label: l10n.activityNavButton,
           icon: const Icon(Icons.bar_chart),
         ),
         NavigationDestination(
@@ -286,7 +288,7 @@ class _MainPageState extends State<MainPage> {
 
   void _addLink() async {
     final l10n = AppLocalizations.of(context)!;
-    final historyProvider = context.read<HistoryNotifier>();
+    final historyNotifier = context.read<HistoryNotifier>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {
@@ -296,7 +298,7 @@ class _MainPageState extends State<MainPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (historyProvider.contains(copiedText)) {
+            if (historyNotifier.contains(copiedText)) {
               if (mounted) {
                 showDialog(
                   context: context,
@@ -311,7 +313,7 @@ class _MainPageState extends State<MainPage> {
                       FilledButton(
                         onPressed: () async {
                           Navigator.of(context).pop();
-                          historyProvider.select(copiedText);
+                          historyNotifier.select(copiedText);
                         },
                         child: Text(l10n.commonOpen),
                       ),
@@ -320,7 +322,7 @@ class _MainPageState extends State<MainPage> {
                 );
               }
             } else {
-              historyProvider.add(copiedText);
+              historyNotifier.add(copiedText);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

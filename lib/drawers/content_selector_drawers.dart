@@ -24,8 +24,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../provider/bookmark_list_notifier.dart';
-import '../provider/history_notifier.dart';
+import '../providers/bookmark_list_notifier.dart';
+import '../providers/history_notifier.dart';
 
 class ContentSelectorDrawers extends StatefulWidget {
   const ContentSelectorDrawers({super.key});
@@ -70,8 +70,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     final l10n = AppLocalizations.of(context)!;
 
     return Consumer2<HistoryNotifier, BookmarkListNotifier>(
-      builder: (context, historyProvider, bookmarkProvider, child) {
-        if (historyProvider.isLoading || bookmarkProvider.isLoading) {
+      builder: (context, historyNotifier, bookmarkListNotifier, child) {
+        if (historyNotifier.isLoading || bookmarkListNotifier.isLoading) {
           return Center(child: CircularProgressIndicator());
         }
 
@@ -101,8 +101,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _historyListView(historyProvider, bookmarkProvider),
-                      _bookmarkListView(historyProvider, bookmarkProvider),
+                      _historyListView(historyNotifier, bookmarkListNotifier),
+                      _bookmarkListView(historyNotifier, bookmarkListNotifier),
                     ],
                   ),
                 ),
@@ -138,8 +138,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   }
 
   Widget _historyListView(
-    HistoryNotifier historyProvider,
-    BookmarkListNotifier bookmarkProvider,
+    HistoryNotifier historyNotifier,
+    BookmarkListNotifier bookmarkListNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -168,7 +168,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
           ),
         ),
         children: [
-          for (final entry in historyProvider.historyList)
+          for (final entry in historyNotifier.historyList)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
@@ -177,19 +177,19 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               minLeadingWidth: 0,
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               leading: IconButton(
-                icon: bookmarkProvider.contains(entry[_keyUrl])
+                icon: bookmarkListNotifier.contains(entry[_keyUrl])
                     ? const Icon(Icons.star_outlined)
                     : const Icon(Icons.star_border_outlined),
-                onPressed: bookmarkProvider.contains(entry[_keyUrl])
+                onPressed: bookmarkListNotifier.contains(entry[_keyUrl])
                     ? null
                     : () {
                         setState(() {
-                          bookmarkProvider.add(entry[_keyUrl], l10n);
+                          bookmarkListNotifier.add(entry[_keyUrl], l10n);
                         });
                       },
               ),
               title: Text(
-                historyProvider.title(entry[_keyUrl]),
+                historyNotifier.title(entry[_keyUrl]),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -213,10 +213,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   ),
                 ],
               ),
-              selected: historyProvider.isSelected(entry[_keyUrl]),
+              selected: historyNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
                 setState(() {
-                  historyProvider.select(entry[_keyUrl]);
+                  historyNotifier.select(entry[_keyUrl]);
                 });
                 Navigator.pop(context);
               },
@@ -225,10 +225,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 icon: const Icon(Icons.delete_outline),
-                onPressed: historyProvider.historyList.length > 1
+                onPressed: historyNotifier.historyList.length > 1
                     ? () {
                         setState(() {
-                          historyProvider.remove(entry[_keyUrl]);
+                          historyNotifier.remove(entry[_keyUrl]);
                         });
                       }
                     : null,
@@ -240,8 +240,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   }
 
   Widget _bookmarkListView(
-    HistoryNotifier historyProvider,
-    BookmarkListNotifier bookmarkProvider,
+    HistoryNotifier historyNotifier,
+    BookmarkListNotifier bookmarkListNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -270,7 +270,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
           ),
         ),
         children: [
-          for (final entry in bookmarkProvider.bookmarkList)
+          for (final entry in bookmarkListNotifier.bookmarkList)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
@@ -283,7 +283,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 onPressed: () {},
               ),
               title: Text(
-                bookmarkProvider.title(entry[_keyUrl], l10n),
+                bookmarkListNotifier.title(entry[_keyUrl], l10n),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -295,10 +295,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              selected: historyProvider.isSelected(entry[_keyUrl]),
+              selected: historyNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
                 setState(() {
-                  historyProvider.select(entry[_keyUrl]);
+                  historyNotifier.select(entry[_keyUrl]);
                 });
                 Navigator.pop(context);
               },
@@ -307,10 +307,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 icon: const Icon(Icons.delete_outline),
-                onPressed: bookmarkProvider.bookmarkList.length > 1
+                onPressed: bookmarkListNotifier.bookmarkList.length > 1
                     ? () {
                         setState(() {
-                          bookmarkProvider.remove(entry[_keyUrl]);
+                          bookmarkListNotifier.remove(entry[_keyUrl]);
                         });
                       }
                     : null,

@@ -90,8 +90,8 @@ class BookmarkListNotifier extends ChangeNotifier {
     }
   }
 
-  void update(HistoryNotifier historyProvider) {
-    cachedContents = historyProvider.cachedContents;
+  void update(HistoryNotifier historyNotifier) {
+    cachedContents = historyNotifier.cachedContents;
     notifyListeners();
   }
 

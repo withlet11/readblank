@@ -26,10 +26,10 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../provider/app_preferences_notifier.dart';
-import '../provider/bookmark_list_notifier.dart';
-import '../provider/history_notifier.dart';
-import '../provider/word_list_notifier.dart';
+import '../providers/app_preferences_notifier.dart';
+import '../providers/bookmark_list_notifier.dart';
+import '../providers/history_notifier.dart';
+import '../providers/word_list_notifier.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key, required this.title});
@@ -193,14 +193,14 @@ class _SettingsPageState extends State<SettingsPage> {
       builder:
           (
             context,
-            historyProvider,
-            bookmarkProvider,
-            wordListProvider,
+            historyNotifier,
+            bookmarkListNotifier,
+            wordListNotifier,
             child,
           ) {
-            if (historyProvider.isLoading ||
-                bookmarkProvider.isLoading ||
-                wordListProvider.isLoading) {
+            if (historyNotifier.isLoading ||
+                bookmarkListNotifier.isLoading ||
+                wordListNotifier.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -225,8 +225,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final historyProvider = context.read<HistoryNotifier>();
-      final String exportedData = historyProvider.exportHistory();
+      final historyNotifier = context.read<HistoryNotifier>();
+      final String exportedData = historyNotifier.exportHistory();
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -349,7 +349,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<ImportProcessResult> _addLink(String url) async {
-    final historyProvider = context.read<HistoryNotifier>();
+    final historyNotifier = context.read<HistoryNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -357,10 +357,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (historyProvider.contains(url)) {
+            if (historyNotifier.contains(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              historyProvider.add(url);
+              historyNotifier.add(url);
               return ImportProcessResult.success;
             }
           } else {
@@ -385,8 +385,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final bookmarkProvider = context.read<BookmarkListNotifier>();
-      final String exportedData = bookmarkProvider.exportBookmark();
+      final bookmarkListNotifier = context.read<BookmarkListNotifier>();
+      final String exportedData = bookmarkListNotifier.exportBookmark();
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

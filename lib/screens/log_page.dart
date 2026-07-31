@@ -19,12 +19,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/l10n/app_localizations.dart';
 
-import '../provider/word_list_notifier.dart';
+import '../charts/bar_chart.dart';
+import '../providers/app_preferences_notifier.dart';
+import '../providers/word_list_notifier.dart';
 
 class LogPage extends StatefulWidget {
   final String title;
@@ -38,6 +42,10 @@ class LogPage extends StatefulWidget {
 class _LogPageState extends State<LogPage> {
   static const String _keyTimestamp = 'timestamp';
   static const String _keyWord = 'word';
+  static final DateTime _startDate = DateTime(2026, 7, 1);
+
+  late DateTime _selectedDate = ((now) =>
+      DateTime(now.year, now.month, now.day))(DateTime.now());
 
   @override
   void initState() {
@@ -52,60 +60,134 @@ class _LogPageState extends State<LogPage> {
   @override
   Widget build(BuildContext context) {
     return Consumer<WordListNotifier>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
+      builder: (context, notifier, child) {
+        if (notifier.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (provider.viewMode == StudyLogViewMode.summary) {
-          return _buildSummaryView(provider);
+        if (notifier.viewMode == StudyLogViewMode.summary) {
+          return _buildSummaryView(notifier);
         }
 
-        return _buildListView(provider);
+        return _buildListView(notifier);
       },
     );
   }
 
-  Widget _buildListView(WordListNotifier provider) {
+  Widget _buildListView(WordListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
+    final prefs = context.watch<AppPreferencesNotifier>();
+    final data = notifier.getHalfHourlyCountList(_selectedDate);
 
-    return ListView.builder(
-      itemCount: provider.studyLog.length,
-      itemBuilder: (context, index) {
-        final logItem = provider.studyLog[index];
-        final word = logItem[_keyWord] ?? l10n.noTitle;
-        final timestamp = logItem[_keyTimestamp] ?? '';
-        return Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                flex: 2,
-                child: Text(
-                  word,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    return Column(
+      children: [
+        Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.keyboard_arrow_left),
+                  onPressed:
+                      _startDate.difference(_selectedDate) >=
+                          const Duration(days: 0)
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedDate = _selectedDate.subtract(
+                              const Duration(days: 1),
+                            );
+                          });
+                        },
+                ),
+                Text(
+                  DateFormat.MMMMEEEEd(l10n.localeName).format(_selectedDate),
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                IconButton(
+                  icon: Icon(Icons.keyboard_arrow_right),
+
+                  onPressed:
+                      DateTime.now().difference(_selectedDate) <=
+                          const Duration(days: 1)
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedDate = _selectedDate.add(
+                              const Duration(days: 1),
+                            );
+                          });
+                        },
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.abc),
+                Text(l10n.wordCount(notifier.getDayWordCount(_selectedDate))),
+              ],
+            ),
+            SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: BarChartPainter(
+                  data: data,
+                  barColor: Theme.of(context).colorScheme.tertiary,
+                  textColor: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12.0 * prefs.fontSizeFactor,
                 ),
               ),
-              Flexible(
-                flex: 2,
-                child: Text(
-                  DateFormat.yMd().add_jm().format(DateTime.parse(timestamp)),
-                  style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: notifier.studyLog.length,
+            itemBuilder: (context, index) {
+              final logItem = notifier.studyLog[index];
+              final word = logItem[_keyWord] ?? l10n.noTitle;
+              final timestamp = logItem[_keyTimestamp] ?? '';
+              return Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
                 ),
-              ),
-            ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      flex: 2,
+                      child: Text(
+                        word,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Flexible(
+                      flex: 2,
+                      child: Text(
+                        DateFormat.yMd().add_jm().format(
+                          DateTime.parse(timestamp),
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
-  Widget _buildSummaryView(WordListNotifier provider) {
-    final entries = provider.wordCounts.entries.toList();
+  Widget _buildSummaryView(WordListNotifier notifier) {
+    final entries = notifier.wordCounts.entries.toList();
     return ListView.separated(
       itemCount: entries.length,
       itemBuilder: (context, index) {

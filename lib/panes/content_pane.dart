@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../provider/word_list_notifier.dart';
+import '../providers/word_list_notifier.dart';
 import '../style.dart';
 
 class ContentPane extends StatefulWidget {
@@ -111,41 +111,37 @@ class _ContentPaneState extends State<ContentPane> {
   Widget build(BuildContext context) {
     final palette = ContentPanePalette.of(context);
 
-    return Consumer<WordListNotifier>(
-      builder: (context, provider, child) {
-        return Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: palette.background,
-            border: Border(
-              left: BorderSide.none,
-              right: BorderSide.none,
-              top: BorderSide.none,
-              bottom: BorderSide(
-                color: palette.border,
-                width: 1,
-                style: BorderStyle.solid,
-              ),
-            ),
+    return Container(
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: palette.background,
+        border: Border(
+          left: BorderSide.none,
+          right: BorderSide.none,
+          top: BorderSide.none,
+          bottom: BorderSide(
+            color: palette.border,
+            width: 1,
+            style: BorderStyle.solid,
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _textField(constraints.maxHeight * 0.45, palette),
-                  _wordSelector(constraints.maxHeight * 0.12, palette),
-                  _wordSelection(constraints.maxHeight * 0.43, palette, provider),
-                ],
-              );
-            },
-          ),
-        );
-      },
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTextView(constraints.maxHeight * 0.45, palette),
+              _buildWordSelectorView(constraints.maxHeight * 0.12, palette),
+              _buildWordSelectionView(constraints.maxHeight * 0.43, palette),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _textField(double height, ContentPanePalette palette) {
+  Widget _buildTextView(double height, ContentPanePalette palette) {
     final (selectedStart, selectedEnd, _) = _wordList.isNotEmpty
         ? _wordList[_currentIndex]
         : (0, 0, true);
@@ -217,7 +213,7 @@ class _ContentPaneState extends State<ContentPane> {
     );
   }
 
-  Widget _wordSelector(double height, ContentPanePalette palette) {
+  Widget _buildWordSelectorView(double height, ContentPanePalette palette) {
     return SizedBox(
       height: height,
       child: Row(
@@ -268,9 +264,13 @@ class _ContentPaneState extends State<ContentPane> {
     );
   }
 
-  Widget _wordSelection(double height, ContentPanePalette palette, WordListNotifier provider) {
-    print("Is Dark: ${Theme.of(context).brightness == Brightness.dark}");
-    print("Body Large Color: ${Theme.of(context).textTheme.bodyLarge?.color}");
+  Widget _buildWordSelectionView(
+    double height,
+    ContentPanePalette palette,
+    // WordListNotifier notifier,
+  ) {
+    final notifier = context.read<WordListNotifier>();
+
     return Scrollbar(
       controller: _scrollController2,
       thumbVisibility: true,
@@ -305,7 +305,7 @@ class _ContentPaneState extends State<ContentPane> {
                                 _wordList[index].$2,
                                 false,
                               );
-                              provider.addLog(
+                              notifier.addLog(
                                 _paragraph.substring(
                                   _wordList[index].$1,
                                   _wordList[index].$2,

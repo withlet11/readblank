@@ -24,7 +24,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../panes/content_pane.dart';
-import '../provider/history_notifier.dart';
+import '../providers/history_notifier.dart';
 
 class ReadPage extends StatefulWidget {
   final String title;
@@ -47,17 +47,17 @@ class _ReadPageState extends State<ReadPage> {
   @override
   Widget build(BuildContext context) {
     return Consumer<HistoryNotifier>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
+      builder: (context, notifier, child) {
+        if (notifier.isLoading) {
           return const Center(child: CircularProgressIndicator(strokeWidth: 5));
         } else {
-          return _buildContent(provider);
+          return _buildContent(notifier);
         }
       },
     );
   }
 
-  Widget _buildContent(HistoryNotifier provider) {
+  Widget _buildContent(HistoryNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return LayoutBuilder(
@@ -68,11 +68,11 @@ class _ReadPageState extends State<ReadPage> {
               height: constraints.maxHeight * 0.9,
               child: ContentPane(
                 key: ValueKey(
-                  '${provider.currentParagraphIndex}_${provider.currentParagraph}',
+                  '${notifier.currentParagraphIndex}_${notifier.currentParagraph}',
                 ),
-                paragraph: provider.currentParagraph.isEmpty
+                paragraph: notifier.currentParagraph.isEmpty
                     ? l10n.urlRequestMessage
-                    : provider.currentParagraph,
+                    : notifier.currentParagraph,
               ),
             ),
             Expanded(
@@ -80,21 +80,21 @@ class _ReadPageState extends State<ReadPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    onPressed: provider.isNotFirstParagraph
-                        ? () => setState(() => provider.moveToFirstParagraph())
+                    onPressed: notifier.isNotFirstParagraph
+                        ? () => setState(() => notifier.moveToFirstParagraph())
                         : null,
                     icon: const Icon(Icons.first_page),
                   ),
                   IconButton(
-                    onPressed: provider.isNotFirstParagraph
-                        ? () => setState(() => provider.movePreviousParagraph())
+                    onPressed: notifier.isNotFirstParagraph
+                        ? () => setState(() => notifier.movePreviousParagraph())
                         : null,
                     icon: const Icon(Icons.keyboard_arrow_left),
                   ),
                   DropdownButton<int>(
-                    value: provider.currentParagraphIndex,
+                    value: notifier.currentParagraphIndex,
                     items: List.generate(
-                      provider.currentParagraphList?.length ?? 0,
+                      notifier.currentParagraphList?.length ?? 0,
                       (index) => DropdownMenuItem(
                         value: index,
                         child: Text((index + 1).toString()),
@@ -102,19 +102,19 @@ class _ReadPageState extends State<ReadPage> {
                     ),
                     onChanged: (int? value) {
                       if (value != null) {
-                        setState(() => provider.currentParagraphIndex = value);
+                        setState(() => notifier.currentParagraphIndex = value);
                       }
                     },
                   ),
                   IconButton(
-                    onPressed: provider.isNotLastParagraph
-                        ? () => setState(() => provider.moveNextParagraph())
+                    onPressed: notifier.isNotLastParagraph
+                        ? () => setState(() => notifier.moveNextParagraph())
                         : null,
                     icon: const Icon(Icons.keyboard_arrow_right),
                   ),
                   IconButton(
-                    onPressed: provider.isNotLastParagraph
-                        ? () => setState(() => provider.moveToLastParagraph())
+                    onPressed: notifier.isNotLastParagraph
+                        ? () => setState(() => notifier.moveToLastParagraph())
                         : null,
                     icon: const Icon(Icons.last_page),
                   ),

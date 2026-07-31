@@ -1,5 +1,6 @@
 {
   "@@locale": "hu",
+  "activityNavButton": "Tevékenység",
   "allBookmarksDeleteButton": "Összes könyvjelző törlése",
   "allBookmarksDeleteConfirmation": "Biztosan törli az összes könyvjelzőt?",
   "allHistoryClearButton": "Összes előzmény törlése",
@@ -37,7 +38,6 @@
   "invalidUrlLabel": "Érvénytelen URL",
   "languageLabel": "Nyelv",
   "linkAdditionSuccessMessage": "Hivatkozás sikeresen hozzáadva!",
-  "logNavButton": "Napló",
   "noCopiedUrlLabel": "Nincs másolt URL-cím",
   "noTextLabel": "Nincs szöveg",
   "noTitle": "Cím nélkül",
@@ -47,5 +47,14 @@
   "readNavButton": "Olvasás",
   "settingsNavButton": "Beállítások",
   "urlCopyRequest": "Kérjük, másolja ki az URL-címet a böngésző címsorából.",
-  "urlRequestMessage": "Kérjük, adjon meg egy URL-címet"
+  "urlRequestMessage": "Kérjük, adjon meg egy URL-címet",
+  "wordCount": "{count} szó",
+  "@wordCount": {
+    "description": "A message of word count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1,5 +1,6 @@
 {
   "@@locale": "ja",
+  "activityNavButton": "アクティビティ",
   "allBookmarksDeleteButton": "全てのブックマークの削除",
   "allBookmarksDeleteConfirmation": "全てのブックマークを削除します。よろしいですか？",
   "allHistoryClearButton": "全ての履歴の削除",
@@ -37,7 +38,6 @@
   "invalidUrlLabel": "無効なURL",
   "languageLabel": "言語",
   "linkAdditionSuccessMessage": "リンクを追加しました",
-  "logNavButton": "ログ",
   "noCopiedUrlLabel": "コピーされたURLがありません",
   "noTextLabel": "テキストなし",
   "noTitle": "タイトル無し",
@@ -47,5 +47,14 @@
   "readNavButton": "読む",
   "settingsNavButton": "設定",
   "urlCopyRequest": "ブラウザのアドレスバーからURLをコピーしてください。" ,
-  "urlRequestMessage": "URLを追加してください"
+  "urlRequestMessage": "URLを追加してください",
+  "wordCount": "{count}単語",
+  "@wordCount": {
+    "description": "A message of word count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
