@@ -64,17 +64,18 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final pref = context.watch<AppPreferencesNotifier>();
 
     final settingsList = <Widget>[
       ListTile(
         leading: const Icon(Icons.language_outlined),
         title: Text(l10n.languageLabel),
         trailing: DropdownButton<Locale>(
-          value: context.watch<AppPreferencesNotifier>().locale,
+          value: pref.locale,
           onChanged: (Locale? locale) {
             if (locale != null) {
               setState(() {
-                context.read<AppPreferencesNotifier>().setLocale(locale);
+                pref.setLocale(locale);
               });
             }
           },
@@ -86,10 +87,51 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       ListTile(
+        leading: const Icon(Icons.dark_mode_outlined),
+        title: Text(l10n.darkModeLabel),
+        trailing: Switch(
+          value: pref.isDarkMode,
+          onChanged: (bool value) {
+            setState(() {
+              pref.setDarkMode(value);
+            });
+          },
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.font_download_outlined),
+        title: Text(l10n.fontSizeLabel),
+        trailing: DropdownButton(
+          items: pref.fontSizeFactorList.indexed.map((entry) {
+            final (index, factor) = entry;
+            return DropdownMenuItem(
+              value: index,
+              child: Text(
+                factor < 0.9
+                    ? l10n.fontSizeSmall
+                    : factor < 1.1
+                    ? l10n.fontSizeMedium
+                    : factor < 1.3
+                    ? l10n.fontSizeLarge
+                    : l10n.fontSizeXLarge,
+              ),
+            );
+          }).toList(),
+          value: pref.fontSizeIndex,
+          onChanged: (int? index) {
+            if (index != null) {
+              setState(() {
+                pref.setFontSizeIndex(index);
+              });
+            }
+          },
+        ),
+      ),
+      ListTile(
         leading: const Icon(Icons.history_outlined),
-        title: Text(l10n.importHistoryLabel),
+        title: Text(l10n.historyImportLabel),
         trailing: TextButton.icon(
-          label: Text(l10n.pasteLabel),
+          label: Text(l10n.pasteButton),
           icon: _isImportingHistory
               ? const SizedBox(
                   width: 24,
@@ -102,9 +144,9 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       ListTile(
         leading: const Icon(Icons.history_outlined),
-        title: Text(l10n.exportHistoryLabel),
+        title: Text(l10n.historyExportLabel),
         trailing: TextButton.icon(
-          label: Text(l10n.copyAllLabel),
+          label: Text(l10n.copyAllButton),
           icon: _isExportingHistory
               ? const SizedBox(
                   width: 24,
@@ -117,9 +159,9 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       ListTile(
         leading: const Icon(Icons.bookmarks_outlined),
-        title: Text(l10n.importBookmarksLabel),
+        title: Text(l10n.bookmarkImportLabel),
         trailing: TextButton.icon(
-          label: Text(l10n.pasteLabel),
+          label: Text(l10n.pasteButton),
           icon: _isImportingBookmark
               ? const SizedBox(
                   width: 24,
@@ -132,9 +174,9 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       ListTile(
         leading: const Icon(Icons.bookmarks_outlined),
-        title: Text(l10n.exportBookmarksLabel),
+        title: Text(l10n.bookmarkExportLabel),
         trailing: TextButton.icon(
-          label: Text(l10n.copyAllLabel),
+          label: Text(l10n.copyAllButton),
           icon: _isExportingBookmark
               ? const SizedBox(
                   width: 24,
@@ -147,16 +189,10 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     ];
 
-    return Consumer4<
-      AppPreferencesNotifier,
-      HistoryNotifier,
-      BookmarkListNotifier,
-      WordListNotifier
-    >(
+    return Consumer3<HistoryNotifier, BookmarkListNotifier, WordListNotifier>(
       builder:
           (
             context,
-            appPreferencesProvider,
             historyProvider,
             bookmarkProvider,
             wordListProvider,
@@ -171,11 +207,7 @@ class _SettingsPageState extends State<SettingsPage> {
             return ListView.separated(
               itemCount: settingsList.length,
               separatorBuilder: (context, index) {
-                return const Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  color: Colors.grey,
-                );
+                return const Divider(height: 1, thickness: 1);
               },
               itemBuilder: (context, index) {
                 return settingsList[index];
@@ -199,7 +231,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.historyCopiedToClipboard),
+            content: Text(l10n.historyCopySuccessMessage),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -208,7 +240,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToExportHistory(e.toString())),
+            content: Text(l10n.historyExportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -282,7 +314,7 @@ class _SettingsPageState extends State<SettingsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.okLabel),
+                  child: Text(l10n.commonOk),
                 ),
               ],
             ),
@@ -292,7 +324,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.clipboardEmpty),
+              content: Text(l10n.clipboardEmptyMessage),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -302,7 +334,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToImportHistory(e.toString())),
+            content: Text(l10n.historyImportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -359,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.bookmarksCopiedToClipboard),
+            content: Text(l10n.bookmarksCopySuccessMessage),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -368,7 +400,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToExportBookmarks(e.toString())),
+            content: Text(l10n.bookmarkExportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -442,7 +474,7 @@ class _SettingsPageState extends State<SettingsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.okLabel),
+                  child: Text(l10n.commonOk),
                 ),
               ],
             ),
@@ -452,7 +484,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.clipboardEmpty),
+              content: Text(l10n.clipboardEmptyMessage),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -462,7 +494,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToImportBookmarks(e.toString())),
+            content: Text(l10n.bookmarkImportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );

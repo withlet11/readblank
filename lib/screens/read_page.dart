@@ -49,13 +49,7 @@ class _ReadPageState extends State<ReadPage> {
     return Consumer<HistoryNotifier>(
       builder: (context, provider, child) {
         if (provider.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 5,
-              color: Colors.lightGreen,
-              backgroundColor: Colors.white,
-            ),
-          );
+          return const Center(child: CircularProgressIndicator(strokeWidth: 5));
         } else {
           return _buildContent(provider);
         }
@@ -77,7 +71,7 @@ class _ReadPageState extends State<ReadPage> {
                   '${provider.currentParagraphIndex}_${provider.currentParagraph}',
                 ),
                 paragraph: provider.currentParagraph.isEmpty
-                    ? l10n.pleaseAddAUrl
+                    ? l10n.urlRequestMessage
                     : provider.currentParagraph,
               ),
             ),

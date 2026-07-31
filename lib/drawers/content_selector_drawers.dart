@@ -80,43 +80,19 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
             length: 2,
             child: Column(
               children: [
-                Material(
-                  color: Colors.lightGreen.shade100,
-                  child: SafeArea(
-                    bottom: false,
-                    child: TabBar(
-                      controller: _tabController,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      tabs: [
-                        Tab(
-                          icon: const Icon(Icons.history_outlined),
-                          text: l10n.historyLabel,
-                        ),
-                        Tab(
-                          icon: const Icon(Icons.bookmark_outline),
-                          text: l10n.bookmarksLabel,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      DropdownButton(
-                        value: 'abc',
-                        items: [
-                          for (final domain in <String>['abc', 'def', 'ghi'])
-                            DropdownMenuItem<String>(
-                              value: domain,
-                              child: Text(domain),
-                            ),
-                        ],
-                        onChanged: (value) {},
+                SafeArea(
+                  bottom: false,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    tabs: [
+                      Tab(
+                        icon: const Icon(Icons.history_outlined),
+                        text: l10n.historyLabel,
+                      ),
+                      Tab(
+                        icon: const Icon(Icons.bookmark_outline),
+                        text: l10n.bookmarksLabel,
                       ),
                     ],
                   ),
@@ -137,18 +113,17 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       TextButton.icon(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
                         onPressed: _activeIndex == 0
                             ? _clearAllHistory
                             : _deleteAllBookmarks,
-                        icon: Icon(
-                          Icons.delete_sweep_outlined,
-                          color: Colors.red.shade700,
-                        ),
+                        icon: const Icon(Icons.delete_sweep_outlined),
                         label: Text(
                           _activeIndex == 0
-                              ? l10n.clearAllHistory
-                              : l10n.deleteAllBookmarks,
-                          style: TextStyle(color: Colors.red.shade700),
+                              ? l10n.allHistoryClearButton
+                              : l10n.allBookmarksDeleteButton,
                         ),
                       ),
                     ],
@@ -168,78 +143,99 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   ) {
     final l10n = AppLocalizations.of(context)!;
 
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        for (final entry in historyProvider.historyList)
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 0.0,
-              vertical: 0.0,
-            ),
-            minLeadingWidth: 0,
-            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-            leading: IconButton(
-              icon: bookmarkProvider.contains(entry[_keyUrl])
-                  ? const Icon(Icons.star_outlined)
-                  : const Icon(Icons.star_border_outlined),
-              onPressed: bookmarkProvider.contains(entry[_keyUrl])
-                  ? null
-                  : () {
-                      setState(() {
-                        bookmarkProvider.add(entry[_keyUrl], l10n);
-                      });
-                    },
-            ),
-            title: Text(
-              historyProvider.title(entry[_keyUrl]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry[_keyUrl],
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  DateFormat.yMd().add_jm().format(
-                    DateTime.parse(entry[_keyTimestamp]),
-                  ),
-                  style: const TextStyle(fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-            selected: historyProvider.isSelected(entry[_keyUrl]),
-            selectedTileColor: Colors.lightGreen.shade300,
-            selectedColor: Colors.black,
-            onTap: () {
-              setState(() {
-                historyProvider.select(entry[_keyUrl]);
-              });
-              Navigator.pop(context);
-            },
-            trailing: IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                color: historyProvider.historyList.length > 1
-                    ? Colors.red.shade700
-                    : Colors.grey,
+    return MediaQuery.removePadding(
+      context: context,
+      removeTop: true,
+      child: NavigationDrawer(
+        header: SizedBox(
+          width: double.infinity,
+          height: 40,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              DropdownButton(
+                value: 'abc',
+                items: [
+                  for (final domain in <String>['abc', 'def', 'ghi'])
+                    DropdownMenuItem<String>(
+                      value: domain,
+                      child: Text(domain),
+                    ),
+                ],
+                onChanged: (value) {},
               ),
-              onPressed: historyProvider.historyList.length > 1
-                  ? () {
-                      setState(() {
-                        historyProvider.remove(entry[_keyUrl]);
-                      });
-                    }
-                  : null,
-            ),
+            ],
           ),
-      ],
+        ),
+        children: [
+          for (final entry in historyProvider.historyList)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 0.0,
+                vertical: 0.0,
+              ),
+              minLeadingWidth: 0,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+              leading: IconButton(
+                icon: bookmarkProvider.contains(entry[_keyUrl])
+                    ? const Icon(Icons.star_outlined)
+                    : const Icon(Icons.star_border_outlined),
+                onPressed: bookmarkProvider.contains(entry[_keyUrl])
+                    ? null
+                    : () {
+                        setState(() {
+                          bookmarkProvider.add(entry[_keyUrl], l10n);
+                        });
+                      },
+              ),
+              title: Text(
+                historyProvider.title(entry[_keyUrl]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry[_keyUrl],
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    DateFormat.yMd().add_jm().format(
+                      DateTime.parse(entry[_keyTimestamp]),
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+              selected: historyProvider.isSelected(entry[_keyUrl]),
+              onTap: () {
+                setState(() {
+                  historyProvider.select(entry[_keyUrl]);
+                });
+                Navigator.pop(context);
+              },
+              trailing: IconButton(
+                style: IconButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                icon: const Icon(Icons.delete_outline),
+                onPressed: historyProvider.historyList.length > 1
+                    ? () {
+                        setState(() {
+                          historyProvider.remove(entry[_keyUrl]);
+                        });
+                      }
+                    : null,
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -249,58 +245,79 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   ) {
     final l10n = AppLocalizations.of(context)!;
 
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        for (final entry in bookmarkProvider.bookmarkList)
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 0.0,
-              vertical: 0.0,
-            ),
-            minLeadingWidth: 0,
-            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-            leading: IconButton(
-              icon: const Icon(Icons.edit_note_outlined),
-              onPressed: () {},
-            ),
-            title: Text(
-              bookmarkProvider.title(entry[_keyUrl], l10n),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              entry[_keyUrl],
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            selected: historyProvider.isSelected(entry[_keyUrl]),
-            selectedTileColor: Colors.lightGreen.shade300,
-            selectedColor: Colors.black,
-            onTap: () {
-              setState(() {
-                historyProvider.select(entry[_keyUrl]);
-              });
-              Navigator.pop(context);
-            },
-            trailing: IconButton(
-              icon: Icon(
-                Icons.delete_outline,
-                color: bookmarkProvider.bookmarkList.length > 1
-                    ? Colors.red.shade700
-                    : Colors.grey,
+    return MediaQuery.removePadding(
+      context: context,
+      removeTop: true,
+      child: NavigationDrawer(
+        header: SizedBox(
+          width: double.infinity,
+          height: 40,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              DropdownButton(
+                value: 'abc',
+                items: [
+                  for (final domain in <String>['abc', 'def', 'ghi'])
+                    DropdownMenuItem<String>(
+                      value: domain,
+                      child: Text(domain),
+                    ),
+                ],
+                onChanged: (value) {},
               ),
-              onPressed: bookmarkProvider.bookmarkList.length > 1
-                  ? () {
-                      setState(() {
-                        bookmarkProvider.remove(entry[_keyUrl]);
-                      });
-                    }
-                  : null,
-            ),
+            ],
           ),
-      ],
+        ),
+        children: [
+          for (final entry in bookmarkProvider.bookmarkList)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 0.0,
+                vertical: 0.0,
+              ),
+              minLeadingWidth: 0,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+              leading: IconButton(
+                icon: const Icon(Icons.edit_note_outlined),
+                onPressed: () {},
+              ),
+              title: Text(
+                bookmarkProvider.title(entry[_keyUrl], l10n),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                entry[_keyUrl],
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              selected: historyProvider.isSelected(entry[_keyUrl]),
+              onTap: () {
+                setState(() {
+                  historyProvider.select(entry[_keyUrl]);
+                });
+                Navigator.pop(context);
+              },
+              trailing: IconButton(
+                style: IconButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                icon: const Icon(Icons.delete_outline),
+                onPressed: bookmarkProvider.bookmarkList.length > 1
+                    ? () {
+                        setState(() {
+                          bookmarkProvider.remove(entry[_keyUrl]);
+                        });
+                      }
+                    : null,
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -310,16 +327,16 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.clearAllHistory),
-        content: Text(l10n.confirmClearAllHistory),
+        title: Text(l10n.allHistoryClearButton),
+        content: Text(l10n.allHistoryClearConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancelLabel),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.yesLabel),
+            child: Text(l10n.commonYes),
           ),
         ],
       ),
@@ -336,16 +353,16 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.deleteAllBookmarks),
-        content: Text(l10n.confirmDeleteAllBookmarks),
+        title: Text(l10n.allBookmarksDeleteButton),
+        content: Text(l10n.allBookmarksDeleteConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancelLabel),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.yesLabel),
+            child: Text(l10n.commonYes),
           ),
         ],
       ),

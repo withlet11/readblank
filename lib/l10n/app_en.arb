@@ -1,6 +1,52 @@
 {
   "@@locale": "en",
-  "alreadyExists": "Already exists",
+  "allBookmarksDeleteButton": "Delete all bookmarks",
+  "@allBookmarksDeleteButton": {
+    "description": "A label of delete all bookmarks."
+  },
+  "allBookmarksDeleteConfirmation": "Are you sure you want to delete all bookmarks?",
+  "@allBookmarksDeleteConfirmation": {
+    "description": "A message of confirm delete all bookmarks."
+  },
+  "allHistoryClearButton": "Clear all history",
+  "@allHistoryClearButton": {
+    "description": "A label of clear all history."
+  },
+  "allHistoryClearConfirmation": "Are you sure you want to clear all history?",
+  "@allHistoryClearConfirmation": {
+    "description": "A message of confirm clear all history."
+  },
+  "alreadyExistsMessage": "Already exists",
+  "bookmarkExportErrorMessage": "Failed to export bookmarks: {error}",
+  "@bookmarkExportErrorMessage": {
+    "description": "A message of failed to export bookmarks.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarkExportLabel": "Export Bookmarks",
+  "bookmarkImportErrorMessage": "Failed to import bookmarks: {error}",
+  "@bookmarkImportErrorMessage": {
+    "description": "A message of failed to import bookmarks.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "bookmarkImportLabel": "Import Bookmarks",
+  "bookmarksCopySuccessMessage": "Bookmarks copied to clipboard",
+  "bookmarksLabel": "Bookmarks",
+  "clipboardEmptyMessage": "Clipboard empty. Please copy URL List",
+  "@clipboardEmptyMessage": {
+    "description": "A message of empty clipboard."
+  },
+  "commonCancel": "Cancel",
+  "commonOpen": "Open",
+  "commonOk": "OK",
+  "commonYes": "Yes",
   "connectionError": "Connection error or invalid URL.\nThe copied text is \"{copiedText}\".",
   "@connectionError": {
     "description": "A message of connection error or invalid URL.",
@@ -10,64 +56,18 @@
       }
     }
   },
+  "copyAllButton": "Copy all",
+  "darkModeLabel": "Dark Mode",
   "errorLabel": "Error",
-  "invalidUrlLabel": "Invalid URL",
-  "linkAlreadyExists": "This link already exists. Do you want to select the link?",
-  "@linkAlreadyExists": {
-    "description": "A message of link already exists."
-  },
-  "linkAddedSuccessfully": "Link added successfully!",
-  "@linkAddedSuccessfully": {
-    "description": "A message of link added successfully."
-  },
-  "noCopiedUrlLabel": "No copied URL",
-  "noTextLabel": "No text",
-  "notContainsParagraph": "The copied URL does not contain any paragraph text.\nPlease try a different URL",
-  "@notContainsParagraph": {
-    "description": "A message of no paragraph text."
-  },
-  "openLabel": "Open",
-  "urlCopyRequest": "Please copy the URL from your browser's address bar.",
-  "@urlCopyRequest": {
-    "description": "A message of URL copy request."
-  },
-  "bookmarksCopiedToClipboard": "Bookmarks copied to clipboard",
-  "bookmarksLabel": "Bookmarks",
-  "cancelLabel": "Cancel",
-  "clearAllHistory": "Clear all history",
-  "@clearAllHistory": {
-    "description": "A label of clear all history."
-  },
-  "clipboardEmpty": "Clipboard empty. Please copy URL List",
-  "@clipboardEmpty": {
-    "description": "A message of empty clipboard."
-  },
-  "confirmClearAllHistory": "Are you sure you want to clear all history?",
-  "@confirmClearAllHistory": {
-    "description": "A message of confirm clear all history."
-  },
-  "confirmDeleteAllBookmarks": "Are you sure you want to delete all bookmarks?",
-  "@confirmDeleteAllBookmarks": {
-    "description": "A message of confirm delete all bookmarks."
-  },
-  "copyAllLabel": "Copy all",
-  "deleteAllBookmarks": "Delete all bookmarks",
-  "@deleteAllBookmarks": {
-    "description": "A label of delete all bookmarks."
-  },
-  "exportBookmarksLabel": "Export Bookmarks",
-  "exportHistoryLabel": "Export History",
-  "failedToExportBookmarks": "Failed to export bookmarks: {error}",
-  "@failedToExportBookmarks": {
-    "description": "A message of failed to export bookmarks.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "failedToExportHistory": "Failed to export history: {error}",
-  "@failedToExportHistory": {
+  "existingLinkOpenConfirmation": "This link already exists. Do you want to select the link?",
+  "fontSizeLabel": "Font Size",
+  "fontSizeLarge": "Large",
+  "fontSizeMedium": "Medium",
+  "fontSizeSmall": "Small",
+  "fontSizeXLarge": "X-Large",
+  "historyCopySuccessMessage": "History copied to clipboard",
+  "historyExportErrorMessage": "Failed to export history: {error}",
+  "@historyExportErrorMessage": {
     "description": "A message of failed to export history.",
     "placeholders": {
       "error": {
@@ -75,17 +75,9 @@
       }
     }
   },
-  "failedToImportBookmarks": "Failed to import bookmarks: {error}",
-  "@failedToImportBookmarks": {
-    "description": "A message of failed to import bookmarks.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "failedToImportHistory": "Failed to import history: {error}",
-  "@failedToImportHistory": {
+  "historyExportLabel": "Export History",
+  "historyImportErrorMessage": "Failed to import history: {error}",
+  "@historyImportErrorMessage": {
     "description": "A message of failed to import history.",
     "placeholders": {
       "error": {
@@ -93,13 +85,8 @@
       }
     }
   },
-  "failedToLoadPage": "Failed to load page",
-  "@failedToLoadPage": {
-    "description": "A message of failed to load page."
-  },
+  "historyImportLabel": "Import History",
   "historyLabel": "History",
-  "historyCopiedToClipboard": "History copied to clipboard",
-  "importBookmarksLabel": "Import Bookmarks",
   "importCount": "{successCount} imported",
   "@importCount": {
     "description": "A message of count of imported items.",
@@ -127,14 +114,30 @@
       }
     }
   },
-  "importHistoryLabel": "Import History",
+  "invalidUrlLabel": "Invalid URL",
   "languageLabel": "Language",
-  "logLabel": "Log",
-  "noTitleLabel": "No title",
-  "okLabel": "OK",
-  "pasteLabel": "Paste",
-  "pleaseAddAUrl": "Please add a URL",
-  "readLabel": "Read",
-  "settingsLabel": "Settings",
-  "yesLabel": "Yes"
+  "linkAdditionSuccessMessage": "Link added successfully!",
+  "@linkAdditionSuccessMessage": {
+    "description": "A message of link added successfully."
+  },
+  "logNavButton": "Log",
+  "noCopiedUrlLabel": "No copied URL",
+  "noTextLabel": "No text",
+  "noTitle": "No title",
+  "notContainsParagraphMessage": "The copied URL does not contain any paragraph text.\nPlease try a different URL",
+  "@notContainsParagraphMessage": {
+    "description": "A message of no paragraph text."
+  },
+  "pageLoadFailMessage": "Failed to load page",
+  "@failedToLoadPage": {
+    "description": "A message of failed to load page."
+  },
+  "pasteButton": "Paste",
+  "readNavButton": "Read",
+  "settingsNavButton": "Settings",
+  "urlCopyRequest": "Please copy the URL from your browser's address bar.",
+  "@urlCopyRequest": {
+    "description": "A message of URL copy request."
+  },
+  "urlRequestMessage": "Please add a URL"
 }

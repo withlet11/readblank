@@ -25,12 +25,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AppPreferencesNotifier extends ChangeNotifier {
   static const String _keyThemeMode = 'theme_mode';
   static const String _keyLanguageCode = 'language_code';
+  static const String _keyFontSizeIndex = 'font_size_index';
+
+  static const _fontSizeFactorList = [0.8, 1.0, 1.2, 1.4];
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale _locale = const Locale('en');
+  int _fontSizeIndex = 1;
+
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
 
   ThemeMode get themeMode => _themeMode;
+
   Locale get locale => _locale;
+
+  int get fontSizeIndex => _fontSizeIndex;
+
+  double get fontSizeFactor => _fontSizeFactorList[_fontSizeIndex];
+
+  List<double> get fontSizeFactorList => _fontSizeFactorList;
 
   AppPreferencesNotifier() {
     _loadPreferences();
@@ -49,6 +62,13 @@ class AppPreferencesNotifier extends ChangeNotifier {
       _locale = Locale(langCode);
     }
 
+    final fontSizeIndex = prefs.getInt(_keyFontSizeIndex);
+    if (fontSizeIndex != null &&
+        fontSizeIndex >= 0 &&
+        fontSizeIndex < _fontSizeFactorList.length) {
+      _fontSizeIndex = fontSizeIndex;
+    }
+
     notifyListeners();
   }
 
@@ -59,6 +79,11 @@ class AppPreferencesNotifier extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyThemeMode, mode.index);
+  }
+
+  void setDarkMode(bool value) {
+    if (isDarkMode == value) return;
+    setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
   }
 
   void toggleTheme() {
@@ -76,5 +101,14 @@ class AppPreferencesNotifier extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyLanguageCode, newLocale.languageCode);
+  }
+
+  Future<void> setFontSizeIndex(int index) async {
+    if (_fontSizeIndex == index) return;
+    _fontSizeIndex = index;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyFontSizeIndex, index);
   }
 }

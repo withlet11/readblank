@@ -67,6 +67,34 @@ class ReadBlank extends StatelessWidget {
   Widget build(BuildContext context) {
     final appPreferencesProvider = context.watch<AppPreferencesNotifier>();
 
+    final lightColorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.lightGreen,
+      brightness: Brightness.light,
+    );
+
+    final darkColorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.lightGreen,
+      brightness: Brightness.dark,
+    );
+
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: lightColorScheme,
+      listTileTheme: ListTileThemeData(
+        selectedTileColor: lightColorScheme.primaryContainer,
+        selectedColor: lightColorScheme.onPrimaryContainer,
+      ),
+    );
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: darkColorScheme,
+      listTileTheme: ListTileThemeData(
+        selectedTileColor: darkColorScheme.secondaryContainer,
+        selectedColor: darkColorScheme.onSecondaryContainer,
+      ),
+    );
+
     return MaterialApp(
       title: 'ReadBlank',
       localizationsDelegates: const [
@@ -77,12 +105,17 @@ class ReadBlank extends StatelessWidget {
       ],
       locale: appPreferencesProvider.locale,
       supportedLocales: [Locale('en'), Locale('hu'), Locale('ja')],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lightGreen,
-        ).copyWith(surface: Colors.white),
-      ),
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: appPreferencesProvider.themeMode,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(appPreferencesProvider.fontSizeFactor),
+          ),
+          child: child!,
+        );
+      },
       home: const MainPage(title: 'ReadBlank'),
       debugShowCheckedModeBanner: false,
     );
@@ -115,13 +148,7 @@ class _MainPageState extends State<MainPage> {
       builder: (context, historyNotifier, wordListNotifier, child) {
         if (historyNotifier.isLoading) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 5,
-                color: Colors.lightGreen,
-                backgroundColor: Colors.white,
-              ),
-            ),
+            body: Center(child: CircularProgressIndicator(strokeWidth: 5)),
           );
         }
 
@@ -150,20 +177,18 @@ class _MainPageState extends State<MainPage> {
         children: [
           Text(
             historyProvider.currentTitle,
-            style: const TextStyle(fontSize: 16),
+            style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             historyProvider.currentDomainName,
-            style: const TextStyle(fontSize: 12),
+            style: Theme.of(context).textTheme.bodySmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
-      foregroundColor: Colors.black,
-      backgroundColor: Colors.lightGreen,
       automaticallyImplyActions: false,
       actions: [
         Builder(
@@ -190,12 +215,8 @@ class _MainPageState extends State<MainPage> {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.logLabel, style: TextStyle(color: Colors.black87)),
-        ],
+        children: [Text(l10n.logNavButton)],
       ),
-      foregroundColor: Colors.black,
-      backgroundColor: Colors.lightGreen,
       automaticallyImplyActions: false,
       actions: [
         IconButton(
@@ -229,10 +250,8 @@ class _MainPageState extends State<MainPage> {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text(l10n.settingsLabel)],
+        children: [Text(l10n.settingsNavButton)],
       ),
-      foregroundColor: Colors.black,
-      backgroundColor: Colors.lightGreen,
       automaticallyImplyActions: false,
       actions: [],
     );
@@ -242,7 +261,6 @@ class _MainPageState extends State<MainPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return NavigationBar(
-      backgroundColor: Colors.white,
       selectedIndex: _selectedIndex,
       onDestinationSelected: (index) {
         setState(() {
@@ -251,15 +269,15 @@ class _MainPageState extends State<MainPage> {
       },
       destinations: [
         NavigationDestination(
-          label: l10n.readLabel,
+          label: l10n.readNavButton,
           icon: const Icon(Icons.article_outlined),
         ),
         NavigationDestination(
-          label: l10n.logLabel,
+          label: l10n.logNavButton,
           icon: const Icon(Icons.bar_chart),
         ),
         NavigationDestination(
-          label: l10n.settingsLabel,
+          label: l10n.settingsNavButton,
           icon: const Icon(Icons.settings),
         ),
       ],
@@ -283,19 +301,19 @@ class _MainPageState extends State<MainPage> {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: Text(l10n.alreadyExists),
-                    content: Text(l10n.linkAlreadyExists),
+                    title: Text(l10n.alreadyExistsMessage),
+                    content: Text(l10n.existingLinkOpenConfirmation),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: Text(l10n.cancelLabel),
+                        child: Text(l10n.commonCancel),
                       ),
                       FilledButton(
                         onPressed: () async {
                           Navigator.of(context).pop();
                           historyProvider.select(copiedText);
                         },
-                        child: Text(l10n.openLabel),
+                        child: Text(l10n.commonOpen),
                       ),
                     ],
                   ),
@@ -306,7 +324,7 @@ class _MainPageState extends State<MainPage> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(l10n.linkAddedSuccessfully),
+                    content: Text(l10n.linkAdditionSuccessMessage),
                     duration: const Duration(seconds: 3),
                   ),
                 );
@@ -318,11 +336,11 @@ class _MainPageState extends State<MainPage> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: Text(l10n.noTextLabel),
-                  content: Text(l10n.notContainsParagraph),
+                  content: Text(l10n.notContainsParagraphMessage),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(l10n.okLabel),
+                      child: Text(l10n.commonOk),
                     ),
                   ],
                 ),
@@ -339,7 +357,7 @@ class _MainPageState extends State<MainPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text(l10n.okLabel),
+                    child: Text(l10n.commonOk),
                   ),
                 ],
               ),
@@ -348,21 +366,26 @@ class _MainPageState extends State<MainPage> {
         }
       } catch (e) {
         if (mounted) {
+          final colorScheme = Theme.of(context).colorScheme;
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
+              backgroundColor: colorScheme.errorContainer,
               title: Row(
                 children: [
-                  const Icon(Icons.error, color: Colors.red),
+                  Icon(Icons.error, color: colorScheme.onErrorContainer),
                   const SizedBox(width: 8),
-                  Text(l10n.errorLabel),
+                  Text(
+                    l10n.errorLabel,
+                    style: TextStyle(color: colorScheme.onErrorContainer),
+                  ),
                 ],
               ),
-              content: Text(l10n.connectionError(copiedText), maxLines: 5),
+              content: Text(e.toString(), maxLines: 5),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.okLabel),
+                  child: Text(l10n.commonOk),
                 ),
               ],
             ),
@@ -379,7 +402,7 @@ class _MainPageState extends State<MainPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(l10n.okLabel),
+                child: Text(l10n.commonOk),
               ),
             ],
           ),

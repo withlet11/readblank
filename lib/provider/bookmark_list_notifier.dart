@@ -113,7 +113,7 @@ class BookmarkListNotifier extends ChangeNotifier {
             .toList(),
       );
     } else {
-      throw Exception(l10n.failedToLoadPage);
+      throw Exception(l10n.pageLoadFailMessage);
     }
   }
 
@@ -153,7 +153,7 @@ class BookmarkListNotifier extends ChangeNotifier {
   }
 
   String title(String url, AppLocalizations l10n) =>
-      cachedContents[url]?.$1 ?? l10n.noTitleLabel;
+      cachedContents[url]?.$1 ?? l10n.noTitle;
 
   void cacheParagraphList(String url, (String?, List<String>) contents) {
     cachedContents[url] = contents;

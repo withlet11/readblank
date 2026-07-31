@@ -73,7 +73,7 @@ class _LogPageState extends State<LogPage> {
       itemCount: provider.studyLog.length,
       itemBuilder: (context, index) {
         final logItem = provider.studyLog[index];
-        final word = logItem[_keyWord] ?? l10n.noTitleLabel;
+        final word = logItem[_keyWord] ?? l10n.noTitle;
         final timestamp = logItem[_keyTimestamp] ?? '';
         return Container(
           height: 48,
@@ -81,8 +81,22 @@ class _LogPageState extends State<LogPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(word, style: const TextStyle(fontSize: 16)),
-              Text(DateFormat.yMd().add_jm().format(DateTime.parse(timestamp))),
+              Flexible(
+                flex: 2,
+                child: Text(
+                  word,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Flexible(
+                flex: 2,
+                child: Text(
+                  DateFormat.yMd().add_jm().format(DateTime.parse(timestamp)),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             ],
           ),
         );
@@ -105,12 +119,14 @@ class _LogPageState extends State<LogPage> {
           ),
           trailing: Text(
             entry.value.toString(),
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
         );
       },
       separatorBuilder: (context, index) {
-        return const Divider(height: 1, thickness: 0.5, color: Colors.grey);
+        return const Divider(height: 1, thickness: 1);
       },
     );
   }
