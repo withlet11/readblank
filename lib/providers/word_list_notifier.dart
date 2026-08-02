@@ -27,13 +27,15 @@ enum StudyLogViewMode { list, summary, calendar }
 
 class WordListNotifier extends ChangeNotifier {
   bool _isLoading = false;
-  String? _error;
 
   // For database operations
   final DatabaseHelper _db = DatabaseHelper.instance;
   List<Map<String, dynamic>> _studyLog = List.empty(growable: true);
   Map<String, int> _wordCounts = {};
+  List<Map<String, dynamic>> _dailyStudyLog = [];
+  Map<String, int> _dailyWordCounts = {};
   StudyLogViewMode _viewMode = StudyLogViewMode.list;
+  DateTime? _currentDate;
 
   WordListNotifier() {
     loadLogs();
@@ -45,6 +47,27 @@ class WordListNotifier extends ChangeNotifier {
   List<Map<String, dynamic>> get studyLog => _studyLog;
 
   Map<String, int> get wordCounts => _wordCounts;
+
+  List<Map<String, dynamic>> get dailyStudyLog => _dailyStudyLog;
+
+  Map<String, int> get dailyWordCounts => _dailyWordCounts;
+
+  Map<String, int> getDailyWordCounts(DateTime date) {
+    if (_currentDate != null &&
+        _currentDate!.year == date.year &&
+        _currentDate!.month == date.month &&
+        _currentDate!.day == date.day) {
+      return _dailyWordCounts;
+    }
+    // Fallback to filtering in-memory if not loaded (though we should load it)
+    final studyLog = getDayStudyLog(date);
+    final result = <String, int>{};
+    for (var log in studyLog) {
+      final word = log['word'] as String;
+      result[word] = (result[word] ?? 0) + 1;
+    }
+    return result;
+  }
 
   StudyLogViewMode get viewMode => _viewMode;
 
@@ -82,9 +105,41 @@ class WordListNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  int getDayWordCount(DateTime date) => getDayStudyLog(date).length;
+  Future<void> loadDailyData(DateTime date) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final targetDate = DateTime(date.year, date.month, date.day);
+    final logs = await _db.getLogsForDay(targetDate);
+    final counts = await _db.getWordCountsForDay(targetDate);
+
+    _currentDate = targetDate;
+    _dailyStudyLog = List<Map<String, dynamic>>.from(logs);
+    _dailyWordCounts = {
+      for (var item in counts) item['word'] as String: item['count'] as int,
+    };
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  int getDayWordCount(DateTime date) {
+    if (_currentDate != null &&
+        _currentDate!.year == date.year &&
+        _currentDate!.month == date.month &&
+        _currentDate!.day == date.day) {
+      return _dailyStudyLog.length;
+    }
+    return getDayStudyLog(date).length;
+  }
 
   List<Map<String, dynamic>> getDayStudyLog(DateTime date) {
+    if (_currentDate != null &&
+        _currentDate!.year == date.year &&
+        _currentDate!.month == date.month &&
+        _currentDate!.day == date.day) {
+      return _dailyStudyLog;
+    }
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     return _studyLog.where((log) {
@@ -111,6 +166,17 @@ class WordListNotifier extends ChangeNotifier {
 
     _studyLog.insert(0, {'word': word, 'timestamp': timestamp});
     if (_studyLog.length > 10000) _studyLog.removeLast();
+
+    // Update daily data if it's the current date
+    final now = DateTime.now();
+    if (_currentDate != null &&
+        _currentDate!.year == now.year &&
+        _currentDate!.month == now.month &&
+        _currentDate!.day == now.day) {
+      _dailyStudyLog.add({'word': word, 'timestamp': timestamp});
+      final lowerWord = word.toLowerCase();
+      _dailyWordCounts[lowerWord] = (_dailyWordCounts[lowerWord] ?? 0) + 1;
+    }
 
     // Update wordCounts if it's already loaded or we are in summary mode
     final lowerWord = word.toLowerCase();
@@ -196,5 +262,41 @@ class DatabaseHelper {
       GROUP BY LOWER(word) 
       ORDER BY count DESC
     ''');
+  }
+
+  Future<List<Map<String, dynamic>>> getLogsForDay(DateTime date) async {
+    final db = await database;
+    final startOfDay =
+        DateTime(date.year, date.month, date.day).toIso8601String();
+    final endOfDay =
+        DateTime(date.year, date.month, date.day)
+            .add(const Duration(days: 1))
+            .toIso8601String();
+    return await db.query(
+      'logs',
+      where: 'timestamp >= ? AND timestamp < ?',
+      whereArgs: [startOfDay, endOfDay],
+      orderBy: 'timestamp ASC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getWordCountsForDay(DateTime date) async {
+    final db = await database;
+    final startOfDay =
+        DateTime(date.year, date.month, date.day).toIso8601String();
+    final endOfDay =
+        DateTime(date.year, date.month, date.day)
+            .add(const Duration(days: 1))
+            .toIso8601String();
+    return await db.rawQuery(
+      '''
+      SELECT LOWER(word) as word, COUNT(*) as count 
+      FROM logs 
+      WHERE timestamp >= ? AND timestamp < ?
+      GROUP BY LOWER(word) 
+      ORDER BY count DESC
+    ''',
+      [startOfDay, endOfDay],
+    );
   }
 }

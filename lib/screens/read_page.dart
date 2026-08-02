@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../panes/content_pane.dart';
+import '../views/content_view.dart';
 import '../providers/history_notifier.dart';
 
 class ReadPage extends StatefulWidget {
@@ -66,7 +66,7 @@ class _ReadPageState extends State<ReadPage> {
           children: [
             SizedBox(
               height: constraints.maxHeight * 0.9,
-              child: ContentPane(
+              child: ContentView(
                 key: ValueKey(
                   '${notifier.currentParagraphIndex}_${notifier.currentParagraph}',
                 ),

@@ -21,42 +21,42 @@
 
 import 'package:flutter/material.dart';
 
-class ContentPanePalette {
+class ContentViewPalette {
   final Color background;
   final Color border;
-  final Color textPane;
+  final Color textField;
   final Color text;
   final Color accent;
   final Color muted;
 
-  const ContentPanePalette({
+  const ContentViewPalette({
     required this.background,
     required this.border,
-    required this.textPane,
+    required this.textField,
     required this.text,
     required this.accent,
     required this.muted,
   });
 
-  factory ContentPanePalette.of(BuildContext context) {
+  factory ContentViewPalette.of(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return isDark ? _dark : _light;
   }
 
-  static const _light = ContentPanePalette(
+  static const _light = ContentViewPalette(
     background: Colors.black12,
     border: Colors.grey,
-    textPane: Colors.white,
+    textField: Colors.white,
     text: Colors.black,
     accent: Colors.deepOrangeAccent,
     muted: Colors.grey,
   );
 
-  static const _dark = ContentPanePalette(
+  static const _dark = ContentViewPalette(
     background: Colors.black,
     border: Colors.white24,
-    textPane: Colors.white12,
+    textField: Colors.white12,
     text: Colors.white,
     accent: Colors.deepOrangeAccent,
     muted: Colors.white38,

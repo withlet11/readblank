@@ -26,16 +26,16 @@ import 'package:share_plus/share_plus.dart';
 import '../providers/word_list_notifier.dart';
 import '../style.dart';
 
-class ContentPane extends StatefulWidget {
-  const ContentPane({super.key, required this.paragraph});
+class ContentView extends StatefulWidget {
+  const ContentView({super.key, required this.paragraph});
 
   final String paragraph;
 
   @override
-  State<ContentPane> createState() => _ContentPaneState();
+  State<ContentView> createState() => _ContentViewState();
 }
 
-class _ContentPaneState extends State<ContentPane> {
+class _ContentViewState extends State<ContentView> {
   late String _paragraph;
   final List<(int, int, bool)> _wordList = [];
   late List<int> _sortedIndexList;
@@ -109,7 +109,7 @@ class _ContentPaneState extends State<ContentPane> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = ContentPanePalette.of(context);
+    final palette = ContentViewPalette.of(context);
 
     return Container(
       padding: EdgeInsets.all(8),
@@ -141,7 +141,7 @@ class _ContentPaneState extends State<ContentPane> {
     );
   }
 
-  Widget _buildTextView(double height, ContentPanePalette palette) {
+  Widget _buildTextView(double height, ContentViewPalette palette) {
     final (selectedStart, selectedEnd, _) = _wordList.isNotEmpty
         ? _wordList[_currentIndex]
         : (0, 0, true);
@@ -154,7 +154,7 @@ class _ContentPaneState extends State<ContentPane> {
         height: height,
         width: double.infinity,
         padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(color: palette.textPane),
+        decoration: BoxDecoration(color: palette.textField),
         child: SingleChildScrollView(
           controller: _scrollController1,
           child: Text.rich(
@@ -213,7 +213,7 @@ class _ContentPaneState extends State<ContentPane> {
     );
   }
 
-  Widget _buildWordSelectorView(double height, ContentPanePalette palette) {
+  Widget _buildWordSelectorView(double height, ContentViewPalette palette) {
     return SizedBox(
       height: height,
       child: Row(
@@ -266,7 +266,7 @@ class _ContentPaneState extends State<ContentPane> {
 
   Widget _buildWordSelectionView(
     double height,
-    ContentPanePalette palette,
+    ContentViewPalette palette,
     // WordListNotifier notifier,
   ) {
     final notifier = context.read<WordListNotifier>();
@@ -289,7 +289,7 @@ class _ContentPaneState extends State<ContentPane> {
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     textStyle: Theme.of(context).textTheme.bodyMedium,
-                    backgroundColor: palette.textPane,
+                    backgroundColor: palette.textField,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,

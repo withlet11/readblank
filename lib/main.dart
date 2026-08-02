@@ -27,7 +27,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:readblank/screens/settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:readblank/screens/log_page.dart';
+import 'package:readblank/screens/activity_page.dart';
 
 import 'drawers/content_selector_drawers.dart';
 import 'l10n/app_localizations.dart';
@@ -163,7 +163,7 @@ class _MainPageState extends State<MainPage> {
           body: _selectedIndex == 0
               ? const ReadPage(key: Key('ReadPage'), title: 'Read')
               : _selectedIndex == 1
-              ? const LogPage(key: Key('LogPage'), title: 'Log')
+              ? const ActivityPage(key: Key('ActivityPage'), title: 'Activity')
               : const SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
           endDrawer: const ContentSelectorDrawers(),
           bottomNavigationBar: _buildNavigationBar(),
