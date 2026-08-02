@@ -20,14 +20,6 @@ class BarChartController {
   void swipeRight() {
     _state?._swipeRight();
   }
-
-  void moveLeft() {
-    _state?._moveLeft();
-  }
-
-  void moveRight() {
-    _state?._moveRight();
-  }
 }
 
 class BarChart extends StatefulWidget {
@@ -63,6 +55,8 @@ class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
   double _dragShift = 0.0;
   bool _isAnimating = false;
   double _lastWidth = 0.0;
+  double _currentUpperBound = 50.0;
+  double _previousUpperBound = 50.0;
 
   @override
   void initState() {
@@ -72,6 +66,12 @@ class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
+
+    final maxVal = widget.currentData
+        .fold(50, (prev, element) => max(prev, element))
+        .toDouble();
+    _currentUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
+    _previousUpperBound = _currentUpperBound;
   }
 
   @override
@@ -80,6 +80,22 @@ class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?._detach();
       widget.controller?._attach(this);
+    }
+
+    if (widget.currentData != oldWidget.currentData) {
+      final maxVal = widget.currentData
+          .fold(50, (prev, element) => max(prev, element))
+          .toDouble();
+      final targetUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
+      if (targetUpperBound == _currentUpperBound) {
+        _previousUpperBound = _currentUpperBound;
+      } else {
+        setState(() {
+          _previousUpperBound = _currentUpperBound;
+          _currentUpperBound = targetUpperBound;
+        });
+        _animationController.forward(from: 0.0);
+      }
     }
   }
 
@@ -110,18 +126,14 @@ class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
     });
   }
 
-  void _moveLeft() {
-    if (_isAnimating || widget.nextData.isEmpty) return;
-    widget.onSwipeLeft?.call();
-  }
-
-  void _moveRight() {
-    if (_isAnimating || widget.previousData.isEmpty) return;
-    widget.onSwipeRight?.call();
-  }
-
   void _onDragUpdate(DragUpdateDetails details) {
-    if (_isAnimating || _dragShift.abs() >= _lastWidth) return;
+    if (_isAnimating ||
+        _dragShift.abs() >= _lastWidth ||
+        (details.delta.dx > 0 && widget.previousData.isEmpty) ||
+        (details.delta.dx < 0 && widget.nextData.isEmpty)) {
+      return;
+    }
+
     setState(() {
       _dragShift += details.delta.dx;
     });
@@ -170,17 +182,33 @@ class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
           behavior: HitTestBehavior.opaque,
           onHorizontalDragUpdate: _onDragUpdate,
           onHorizontalDragEnd: _onDragEnd,
-          child: CustomPaint(
-            size: const Size(double.infinity, 180),
-            painter: BarChartPainter(
-              currentData: widget.currentData,
-              previousData: widget.previousData,
-              nextData: widget.nextData,
-              shift: _dragShift,
-              barColor: widget.barColor,
-              textColor: widget.textColor,
-              fontSize: widget.fontSize,
-            ),
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, _) {
+              final curve = CurvedAnimation(
+                parent: _animationController,
+                curve: Curves.easeOutCubic,
+              );
+              final upperBound =
+                  _previousUpperBound +
+                  (_currentUpperBound - _previousUpperBound) * curve.value;
+
+              return CustomPaint(
+                size: const Size(double.infinity, 180),
+                painter: BarChartPainter(
+                  currentData: widget.currentData,
+                  previousData: widget.previousData,
+                  nextData: widget.nextData,
+                  shift: _dragShift,
+                  barColor: widget.barColor,
+                  textColor: widget.textColor,
+                  fontSize: widget.fontSize,
+                  tempUpperBound: upperBound,
+                  beginUpperBound: _previousUpperBound,
+                  endUpperBound: _currentUpperBound,
+                ),
+              );
+            },
           ),
         );
       },
@@ -196,6 +224,10 @@ class BarChartPainter extends CustomPainter {
   final Color barColor;
   final Color textColor;
   final double fontSize;
+  final double tempUpperBound;
+  final double beginUpperBound;
+  final double endUpperBound;
+
   static const Rect margin = Rect.fromLTRB(50, 20, 50, 20);
 
   BarChartPainter({
@@ -206,16 +238,30 @@ class BarChartPainter extends CustomPainter {
     required this.barColor,
     required this.textColor,
     required this.fontSize,
+    required this.tempUpperBound,
+    required this.beginUpperBound,
+    required this.endUpperBound,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final proceed =
+        (((tempUpperBound - beginUpperBound) /
+                        (endUpperBound - beginUpperBound))
+                    .clamp(0.0, 1.0) *
+                255)
+            .toInt();
+
     final axisPaint = Paint()
       ..color = Colors.grey
       ..strokeWidth = 1.5;
 
-    final gridPaint = Paint()
-      ..color = Colors.grey.withAlpha(100)
+    final gridPaint1 = Paint()
+      ..color = Colors.grey.withAlpha(proceed)
+      ..strokeWidth = 1.0;
+
+    final gridPaint2 = Paint()
+      ..color = Colors.grey.withAlpha(255 - proceed)
       ..strokeWidth = 1.0;
 
     final barPaint = Paint()
@@ -227,6 +273,24 @@ class BarChartPainter extends CustomPainter {
       margin.top,
       size.width - margin.right,
       size.height - margin.bottom,
+    );
+
+    final Rect beginCharRect = Rect.fromLTRB(
+      chartRect.left,
+      chartRect.top +
+          chartRect.height *
+              (1.0 - beginUpperBound.toDouble() / tempUpperBound.toDouble()),
+      chartRect.right,
+      chartRect.bottom,
+    );
+
+    final Rect endChartRect = Rect.fromLTRB(
+      chartRect.left,
+      chartRect.top +
+          chartRect.height *
+              (1.0 - endUpperBound.toDouble() / tempUpperBound.toDouble()),
+      chartRect.right,
+      chartRect.bottom,
     );
 
     final Size chartSize = chartRect.size;
@@ -251,12 +315,6 @@ class BarChartPainter extends CustomPainter {
     final barWidth = (chartSize.width - totalSpacing) / divisionCount;
     final spacing = totalSpacing / (divisionCount + 1);
 
-    final double maxVal = currentData
-        .fold(0, (prev, element) => max(prev, element))
-        .toDouble();
-
-    final double upperBound = max(50.0, (maxVal / 50.0).ceil() * 50.0);
-
     final clipPath = Path()
       ..addRect(Rect.fromLTRB(chartRect.left, 0, chartRect.right, size.height));
 
@@ -273,7 +331,7 @@ class BarChartPainter extends CustomPainter {
         barWidth: barWidth,
         spacing: spacing,
         barPaint: barPaint,
-        upperBound: upperBound,
+        upperBound: tempUpperBound,
       );
     }
 
@@ -285,7 +343,7 @@ class BarChartPainter extends CustomPainter {
       barWidth: barWidth,
       spacing: spacing,
       barPaint: barPaint,
-      upperBound: upperBound,
+      upperBound: tempUpperBound,
     );
 
     // Draw hour grids and labels
@@ -312,22 +370,61 @@ class BarChartPainter extends CustomPainter {
     canvas.restore();
 
     // Draw static grid lines (Upper and Middle)
+    if (tempUpperBound != endUpperBound) {
+      for (final (Offset start, Offset end, Paint paint) in [
+        if (beginCharRect.top >= chartRect.top)
+          (beginCharRect.topLeft, beginCharRect.topRight, gridPaint2),
+        if (beginCharRect.center.dy >= chartRect.top)
+          (beginCharRect.centerLeft, beginCharRect.centerRight, gridPaint2),
+      ]) {
+        canvas.drawLine(start, end, paint);
+      }
+
+      for (final (Offset gridEnd, double value) in [
+        if (beginCharRect.top >= chartRect.top)
+          (beginCharRect.topRight, beginUpperBound),
+        if (beginCharRect.center.dy >= chartRect.top)
+          (beginCharRect.centerRight, beginUpperBound / 2),
+      ]) {
+        final label = value.toStringAsFixed(0);
+        const gridLabelMargin = Offset(4, 0);
+        const alignment = Alignment.centerLeft;
+        _drawText(
+          canvas,
+          label,
+          gridEnd + gridLabelMargin,
+          alignment,
+          proceed: 255 - proceed,
+        );
+      }
+    }
+
     for (final (Offset start, Offset end, Paint paint) in [
-      (chartRect.topLeft, chartRect.topRight, gridPaint),
-      (chartRect.centerLeft, chartRect.centerRight, gridPaint),
-      (chartRect.bottomLeft, chartRect.bottomRight, axisPaint),
+      if (endChartRect.top >= chartRect.top)
+        (endChartRect.topLeft, endChartRect.topRight, gridPaint1),
+      if (endChartRect.center.dy >= chartRect.top)
+        (endChartRect.centerLeft, endChartRect.centerRight, gridPaint1),
+      (endChartRect.bottomLeft, endChartRect.bottomRight, axisPaint),
     ]) {
       canvas.drawLine(start, end, paint);
     }
 
     for (final (Offset gridEnd, double value) in [
-      (chartRect.topRight, upperBound),
-      (chartRect.centerRight, upperBound / 2),
+      if (endChartRect.top >= chartRect.top)
+        (endChartRect.topRight, endUpperBound),
+      if (endChartRect.center.dy >= chartRect.top)
+        (endChartRect.centerRight, endUpperBound / 2),
     ]) {
       final label = value.toStringAsFixed(0);
       const gridLabelMargin = Offset(4, 0);
       const alignment = Alignment.centerLeft;
-      _drawText(canvas, label, gridEnd + gridLabelMargin, alignment);
+      _drawText(
+        canvas,
+        label,
+        gridEnd + gridLabelMargin,
+        alignment,
+        proceed: proceed,
+      );
     }
   }
 
@@ -335,12 +432,16 @@ class BarChartPainter extends CustomPainter {
     Canvas canvas,
     String text,
     Offset position,
-    Alignment alignment,
-  ) {
+    Alignment alignment, {
+    int proceed = 255,
+  }) {
     final textPainter = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(color: textColor, fontSize: fontSize),
+        style: TextStyle(
+          color: textColor.withAlpha(proceed),
+          fontSize: fontSize,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -414,6 +515,9 @@ class BarChartPainter extends CustomPainter {
         oldDelegate.shift != shift ||
         oldDelegate.barColor != barColor ||
         oldDelegate.textColor != textColor ||
-        oldDelegate.fontSize != fontSize;
+        oldDelegate.fontSize != fontSize ||
+        oldDelegate.tempUpperBound != tempUpperBound ||
+        oldDelegate.beginUpperBound != beginUpperBound ||
+        oldDelegate.endUpperBound != endUpperBound;
   }
 }

@@ -69,21 +69,18 @@ class _ActivityPageState extends State<ActivityPage> {
             ? _buildSummaryView(notifier)
             : _buildDailyView(notifier);
 
-        if (notifier.isLoading) {
-          return Stack(
-            children: [
-              view,
+        return Stack(
+          children: [
+            view,
+            if (notifier.isLoading)
               const Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
                 child: LinearProgressIndicator(minHeight: 2),
               ),
-            ],
-          );
-        }
-
-        return view;
+          ],
+        );
       },
     );
   }
@@ -117,10 +114,12 @@ class _ActivityPageState extends State<ActivityPage> {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
     final currentData = notifier.getHalfHourlyCountList(_selectedDate);
-    final previousData = notifier.getHalfHourlyCountList(
-      _previousDate(_selectedDate),
-    );
-    final nextData = notifier.getHalfHourlyCountList(_nextDate(_selectedDate));
+    final previousData = _isStartDate(_selectedDate)
+        ? <int>[]
+        : notifier.getHalfHourlyCountList(_previousDate(_selectedDate));
+    final nextData = _isTodayOrAfter(_selectedDate)
+        ? <int>[]
+        : notifier.getHalfHourlyCountList(_nextDate(_selectedDate));
     final entries = notifier.getDailyWordCounts(_selectedDate).entries.toList();
 
     return Column(
