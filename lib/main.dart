@@ -224,25 +224,25 @@ class _MainPageState extends State<MainPage> {
       actions: [
         IconButton(
           icon: Icon(
-            wordListNotifier.viewMode == StudyLogViewMode.daily
+            wordListNotifier.viewMode == ActivityViewMode.daily
                 ? Icons.view_list
                 : Icons.view_list_outlined,
           ),
-          onPressed: () => wordListNotifier.setViewMode(StudyLogViewMode.daily),
+          onPressed: () => wordListNotifier.viewMode = ActivityViewMode.daily,
         ),
         IconButton(
           icon: Icon(
-            wordListNotifier.viewMode == StudyLogViewMode.weekly
+            wordListNotifier.viewMode == ActivityViewMode.weekly
                 ? Icons.view_week
                 : Icons.view_week_outlined,
           ),
           onPressed: () =>
-              wordListNotifier.setViewMode(StudyLogViewMode.weekly),
+              wordListNotifier.viewMode = ActivityViewMode.weekly,
         ),
         IconButton(
           icon: const Icon(Icons.calendar_view_month_outlined),
           onPressed: () =>
-              wordListNotifier.setViewMode(StudyLogViewMode.weekly),
+              wordListNotifier.viewMode = ActivityViewMode.weekly,
         ),
       ],
     );

@@ -75,6 +75,14 @@ class _WeeklyBarChartState
       endUpperBound: endUpperBound,
     );
   }
+
+  @override
+  double targetUpperBound(List<int> data) {
+    final maxVal = data
+        .fold(200, (prev, element) => max(prev, element))
+        .toDouble();
+    return (maxVal / 200.0).ceilToDouble() * 200.0;
+  }
 }
 
 class WeeklyBarChartPainter extends BaseBarChartPainter {
@@ -120,7 +128,7 @@ class WeeklyBarChartPainter extends BaseBarChartPainter {
     final chartHeight = chartRect.size.height;
     final origin =
         chartRect.bottomLeft + Offset(spacing - barWidth / 2 + shift, 0);
-    for (int i = 0; i < barCount; i++) {
+    for (int i = 0; i < barCount; ++i) {
       final count = data[i];
       if (count <= 0) continue;
 

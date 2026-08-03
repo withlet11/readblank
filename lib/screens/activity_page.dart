@@ -39,28 +39,30 @@ class ActivityPage extends StatefulWidget {
 
 class _ActivityPageState extends State<ActivityPage> {
   static final DateTime _startDate = DateTime(2026, 7, 1);
-  final DailyChartViewController _dailyChartController = DailyChartViewController();
-  final WeeklyChartViewController _weeklyChartController = WeeklyChartViewController();
+  final DailyChartViewController _dailyChartController =
+      DailyChartViewController();
+  final WeeklyChartViewController _weeklyChartController =
+      WeeklyChartViewController();
   late DateTime _selectedDate = today;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<WordListNotifier>().loadDailyData(_selectedDate);
-      }
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   // if (mounted) {
+    //   //   context.read<wordlistnotifier>().loaddailydata(_selecteddate, 1);
+    //   // }
+    // });
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<WordListNotifier>(
       builder: (context, notifier, child) {
-        final isSummary = notifier.viewMode == StudyLogViewMode.weekly;
+        final isSummary = notifier.viewMode == ActivityViewMode.weekly;
         final hasData = isSummary
             ? notifier.wordCounts.isNotEmpty
-            : notifier.studyLog.isNotEmpty;
+            : notifier.wordLog.isNotEmpty;
 
         if (notifier.isLoading && !hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -114,14 +116,16 @@ class _ActivityPageState extends State<ActivityPage> {
   Widget _buildDailyView(WordListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
-    final currentData = notifier.getHalfHourlyCountList(_selectedDate);
+
+    final currentData = notifier.getHalfHourlyCountsPerDay(_selectedDate);
     final previousData = _isStartDateOrBefore(_selectedDate)
         ? <int>[]
-        : notifier.getHalfHourlyCountList(_previousDate(_selectedDate));
+        : notifier.getHalfHourlyCountsPerDay(_previousDate(_selectedDate));
     final nextData = _isTodayOrAfter(_selectedDate)
         ? <int>[]
-        : notifier.getHalfHourlyCountList(_nextDate(_selectedDate));
-    final entries = notifier.getDailyWordCounts(_selectedDate).entries.toList();
+        : notifier.getHalfHourlyCountsPerDay(_nextDate(_selectedDate));
+
+    final entries = notifier.getWordCountsForDuration(_selectedDate, 1);
 
     return Column(
       children: [
@@ -138,9 +142,6 @@ class _ActivityPageState extends State<ActivityPage> {
                           setState(() {
                             _selectedDate = _previousDate(_selectedDate);
                           });
-                          context.read<WordListNotifier>().loadDailyData(
-                            _selectedDate,
-                          );
                         },
                 ),
                 Text(
@@ -155,9 +156,6 @@ class _ActivityPageState extends State<ActivityPage> {
                           setState(() {
                             _selectedDate = _nextDate(_selectedDate);
                           });
-                          context.read<WordListNotifier>().loadDailyData(
-                            _selectedDate,
-                          );
                         },
                 ),
               ],
@@ -166,7 +164,7 @@ class _ActivityPageState extends State<ActivityPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.abc),
-                Text(l10n.wordCount(notifier.getDayWordCount(_selectedDate))),
+                Text(l10n.wordCount(notifier.getDailyWordCount(_selectedDate))),
               ],
             ),
             DailyChartView(
@@ -183,9 +181,6 @@ class _ActivityPageState extends State<ActivityPage> {
                       setState(() {
                         _selectedDate = _nextDate(_selectedDate);
                       });
-                      context.read<WordListNotifier>().loadDailyData(
-                        _selectedDate,
-                      );
                     },
               onSwipeRight: _isStartDateOrBefore(_selectedDate)
                   ? null
@@ -193,9 +188,6 @@ class _ActivityPageState extends State<ActivityPage> {
                       setState(() {
                         _selectedDate = _previousDate(_selectedDate);
                       });
-                      context.read<WordListNotifier>().loadDailyData(
-                        _selectedDate,
-                      );
                     },
             ),
             SizedBox(height: 16),
@@ -216,13 +208,10 @@ class _ActivityPageState extends State<ActivityPage> {
                   entry.key,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 trailing: Text(
                   entry.value.toString(),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               );
             },
@@ -242,8 +231,6 @@ class _ActivityPageState extends State<ActivityPage> {
   DateTime _getLastDayOfWeek(DateTime date) {
     return date.subtract(Duration(days: date.weekday - 7));
   }
-
-  DateTime get firstDayInThisWeek => _getFirstDayOfWeek(today);
 
   bool _isInStartWeekOrBefore(DateTime date) {
     return _getFirstDayOfWeek(
@@ -268,25 +255,39 @@ class _ActivityPageState extends State<ActivityPage> {
     return _getFirstDayOfWeek(date).add(const Duration(days: 7));
   }
 
+  bool _isInSameMonth(DateTime date1, DateTime date2) {
+    return date1.year == date2.year && date1.month == date2.month;
+  }
+
   bool _isInSameYear(DateTime date1, DateTime date2) {
     return date1.year == date2.year;
   }
 
-  bool _isInSameMonth(DateTime date1, DateTime date2) {
-    return date1.year == date2.year && date1.month == date2.month;
+  String _dateLabelForWeeklyChart() {
+    final l10n = AppLocalizations.of(context)!;
+    final firstDay = _getFirstDayOfWeek(_selectedDate);
+    final lastDay = _getLastDayOfWeek(_selectedDate);
+    return (_isInSameMonth(firstDay, lastDay)
+        ? l10n.dateFormatForWeeklyChartInSameMonth
+        : _isInSameYear(firstDay, lastDay)
+        ? l10n.dateFormatForWeeklyChartInSameYear
+        : l10n.dateFormatForWeeklyChart)(firstDay, lastDay);
   }
 
   Widget _buildWeeklyView(WordListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
-    final currentData = notifier.getDailyCountList(_selectedDate);
-    final previousData = _isInStartWeekOrBefore(_selectedDate)
+    final firstDay = _getFirstDayOfWeek(_selectedDate);
+
+    final currentData = notifier.getDailyCountsPerList(firstDay);
+    final previousData = _isInStartWeekOrBefore(firstDay)
         ? <int>[]
-        : notifier.getDailyCountList(_previousWeek(_selectedDate));
-    final nextData = _isInThisWeekOrAfter(_selectedDate)
+        : notifier.getDailyCountsPerList(_previousWeek(firstDay));
+    final nextData = _isInThisWeekOrAfter(firstDay)
         ? <int>[]
-        : notifier.getDailyCountList(_nextWeek(_selectedDate));
-    final entries = notifier.getWeeklyWordCounts(_selectedDate).entries.toList();
+        : notifier.getDailyCountsPerList(_nextWeek(firstDay));
+
+    final entries = notifier.getWordCountsForDuration(firstDay, 7);
 
     return Column(
       children: [
@@ -297,51 +298,17 @@ class _ActivityPageState extends State<ActivityPage> {
               children: [
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_left),
-                  onPressed: _isStartDateOrBefore(_selectedDate)
+                  onPressed: _isStartDateOrBefore(firstDay)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _previousWeek(_selectedDate);
+                            _selectedDate = _previousWeek(firstDay);
                           });
-                          context.read<WordListNotifier>().loadWeeklyData(
-                            _selectedDate,
-                          );
                         },
                 ),
                 Expanded(
                   child: Text(
-                    // en
-                    // December 29, 2025 − January 4, 2026
-                    // July 27 − August 2
-                    // August 3 − 9
-                    // hu
-                    // 2025. december 29. − 2026. január 4.
-                    // július 24. − augusztus 2.
-                    // augusztus 3−9.
-                    // ja
-                    // 2025年12月29日〜2026年1月4日
-                    // 7月27日〜8月2日
-                    // 8月3日〜9日
-                    _isInSameMonth(
-                          _getFirstDayOfWeek(_selectedDate),
-                          _getLastDayOfWeek(_selectedDate),
-                        )
-                        ? l10n.dateFormatForWeeklyChartInSameMonth(
-                            _getFirstDayOfWeek(_selectedDate),
-                            _getLastDayOfWeek(_selectedDate),
-                          )
-                        : _isInSameYear(
-                            _getFirstDayOfWeek(_selectedDate),
-                            _getLastDayOfWeek(_selectedDate),
-                          )
-                        ? l10n.dateFormatForWeeklyChartInSameYear(
-                            _getFirstDayOfWeek(_selectedDate),
-                            _getLastDayOfWeek(_selectedDate),
-                          )
-                        : l10n.dateFormatForWeeklyChart(
-                            _getFirstDayOfWeek(_selectedDate),
-                            _getLastDayOfWeek(_selectedDate),
-                          ),
+                    _dateLabelForWeeklyChart(),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     style: Theme.of(context).textTheme.bodyLarge,
@@ -349,15 +316,12 @@ class _ActivityPageState extends State<ActivityPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_right),
-                  onPressed: _isTodayOrAfter(_selectedDate)
+                  onPressed: _isInThisWeekOrAfter(firstDay)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _nextWeek(_selectedDate);
+                            _selectedDate = _nextWeek(firstDay);
                           });
-                          context.read<WordListNotifier>().loadWeeklyData(
-                            _selectedDate,
-                          );
                         },
                 ),
               ],
@@ -366,7 +330,7 @@ class _ActivityPageState extends State<ActivityPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.abc),
-                Text(l10n.wordCount(notifier.getWeeklyWordCount(_selectedDate))),
+                Text(l10n.wordCount(notifier.getWeeklyWordCount(firstDay))),
               ],
             ),
             WeeklyChartView(
@@ -377,25 +341,19 @@ class _ActivityPageState extends State<ActivityPage> {
               barColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
               fontSize: 12.0 * prefs.fontSizeFactor,
-              onSwipeLeft: _isToday(_selectedDate)
+              onSwipeLeft: _isInThisWeekOrAfter(firstDay)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _nextWeek(_selectedDate);
+                        _selectedDate = _nextWeek(firstDay);
                       });
-                      context.read<WordListNotifier>().loadWeeklyData(
-                        _selectedDate,
-                      );
                     },
-              onSwipeRight: _isInStartWeekOrBefore(_selectedDate)
+              onSwipeRight: _isInStartWeekOrBefore(firstDay)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _previousWeek(_selectedDate);
+                        _selectedDate = _previousWeek(firstDay);
                       });
-                      context.read<WordListNotifier>().loadWeeklyData(
-                        _selectedDate,
-                      );
                     },
             ),
             SizedBox(height: 16),
@@ -416,13 +374,10 @@ class _ActivityPageState extends State<ActivityPage> {
                   entry.key,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 trailing: Text(
                   entry.value.toString(),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               );
             },

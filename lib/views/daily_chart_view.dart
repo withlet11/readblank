@@ -65,6 +65,14 @@ class _DailyBarChartState extends BaseBarChartState<DailyChartView, DailyBarChar
       endUpperBound: endUpperBound,
     );
   }
+
+  @override
+  double targetUpperBound(List<int> data) {
+    final maxVal = data
+        .fold(50, (prev, element) => max(prev, element))
+        .toDouble();
+    return (maxVal / 50.0).ceilToDouble() * 50.0;
+  }
 }
 
 class DailyBarChartPainter extends BaseBarChartPainter {

@@ -305,7 +305,7 @@ class _ContentViewState extends State<ContentView> {
                                 _wordList[index].$2,
                                 false,
                               );
-                              notifier.addLog(
+                              notifier.addWord(
                                 _paragraph.substring(
                                   _wordList[index].$1,
                                   _wordList[index].$2,

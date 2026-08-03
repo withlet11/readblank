@@ -79,6 +79,7 @@ abstract class BaseBarChartState<
   double _lastWidth = 0.0;
   double _currentUpperBound = 50.0;
   double _previousUpperBound = 50.0;
+  late Animation<double> _curve;
 
   @override
   void initState() {
@@ -94,30 +95,16 @@ abstract class BaseBarChartState<
         .toDouble();
     _currentUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
     _previousUpperBound = _currentUpperBound;
+    _curve = AlwaysStoppedAnimation<double>(_currentUpperBound);
   }
 
   @override
   void didUpdateWidget(covariant W oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?._detach();
       widget.controller?._attach(this);
-    }
-
-    if (widget.currentData != oldWidget.currentData) {
-      final maxVal = widget.currentData
-          .fold(50, (prev, element) => max(prev, element))
-          .toDouble();
-      final targetUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
-      if (targetUpperBound == _currentUpperBound) {
-        _previousUpperBound = _currentUpperBound;
-      } else {
-        setState(() {
-          _previousUpperBound = _currentUpperBound;
-          _currentUpperBound = targetUpperBound;
-        });
-        _animationController.forward(from: 0.0);
-      }
     }
   }
 
@@ -130,7 +117,7 @@ abstract class BaseBarChartState<
 
   void _swipeLeft() {
     if (_isAnimating || widget.nextData.isEmpty) return;
-    _animateTo(-_lastWidth, () {
+    _animateTo(-_lastWidth, widget.nextData, () {
       widget.onSwipeLeft?.call();
       setState(() {
         _dragShift = 0.0;
@@ -140,7 +127,7 @@ abstract class BaseBarChartState<
 
   void _swipeRight() {
     if (_isAnimating || widget.previousData.isEmpty) return;
-    _animateTo(_lastWidth, () {
+    _animateTo(_lastWidth, widget.previousData, () {
       widget.onSwipeRight?.call();
       setState(() {
         _dragShift = 0.0;
@@ -170,14 +157,19 @@ abstract class BaseBarChartState<
     } else if (_dragShift > threshold) {
       _swipeRight();
     } else {
-      _animateTo(0.0, null);
+      _animateTo(0.0, widget.currentData, null);
     }
   }
 
-  void _animateTo(double target, VoidCallback? onComplete) {
+  double targetUpperBound(List<int> data);
+
+  void _animateTo(double target, List<int> newData, VoidCallback? onComplete) {
     _isAnimating = true;
     final animation = Tween<double>(begin: _dragShift, end: target).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+      ),
     );
 
     void listener() {
@@ -187,6 +179,23 @@ abstract class BaseBarChartState<
     }
 
     animation.addListener(listener);
+
+    // final maxVal = newData
+    //     .fold(50, (prev, element) => max(prev, element))
+    //     .toDouble();
+    // final targetUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
+
+    _previousUpperBound = _currentUpperBound;
+    _currentUpperBound = targetUpperBound(newData);
+
+    _curve = Tween<double>(begin: _previousUpperBound, end: _currentUpperBound)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Interval(0.5, 1.0, curve: Curves.linear),
+          ),
+        );
+
     _animationController.forward(from: 0.0).then((_) {
       animation.removeListener(listener);
       _isAnimating = false;
@@ -214,19 +223,11 @@ abstract class BaseBarChartState<
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, _) {
-              final curve = CurvedAnimation(
-                parent: _animationController,
-                curve: Curves.easeOutCubic,
-              );
-              final upperBound =
-                  _previousUpperBound +
-                  (_currentUpperBound - _previousUpperBound) * curve.value;
-
               return CustomPaint(
                 size: const Size(double.infinity, 180),
                 painter: createPainter(
                   shift: _dragShift,
-                  upperBound: upperBound,
+                  upperBound: _curve.value,
                   beginUpperBound: _previousUpperBound,
                   endUpperBound: _currentUpperBound,
                 ),
@@ -369,23 +370,31 @@ abstract class BaseBarChartPainter extends CustomPainter {
 
     // Draw static grid lines (Upper and Middle)
     if (tempUpperBound != endUpperBound) {
-      for (final (Offset start, Offset end, Paint paint) in [
-        if (beginCharRect.top >= chartRect.top)
-          (beginCharRect.topLeft, beginCharRect.topRight, gridPaint2),
-        if (beginCharRect.center.dy >= chartRect.top)
-          (beginCharRect.centerLeft, beginCharRect.centerRight, gridPaint2),
-      ]) {
-        canvas.drawLine(start, end, paint);
+      if (beginCharRect.top >= chartRect.top) {
+        canvas.drawLine(
+          beginCharRect.topLeft,
+          beginCharRect.topRight,
+          gridPaint2,
+        );
+      }
+      if (beginCharRect.center.dy >= chartRect.top) {
+        canvas.drawLine(
+          beginCharRect.centerLeft,
+          beginCharRect.centerRight,
+          gridPaint2,
+        );
       }
     }
 
-    for (final (Offset start, Offset end, Paint paint) in [
-      if (endChartRect.top >= chartRect.top)
-        (endChartRect.topLeft, endChartRect.topRight, gridPaint1),
-      if (endChartRect.center.dy >= chartRect.top)
-        (endChartRect.centerLeft, endChartRect.centerRight, gridPaint1),
-    ]) {
-      canvas.drawLine(start, end, paint);
+    if (endChartRect.top >= chartRect.top) {
+      canvas.drawLine(endChartRect.topLeft, endChartRect.topRight, gridPaint1);
+    }
+    if (endChartRect.center.dy >= chartRect.top) {
+      canvas.drawLine(
+        endChartRect.centerLeft,
+        endChartRect.centerRight,
+        gridPaint1,
+      );
     }
 
     // Draw Bars
@@ -475,6 +484,7 @@ abstract class BaseBarChartPainter extends CustomPainter {
       );
     }
 
+    // Draw static X-axis lines
     canvas.drawLine(
       endChartRect.bottomLeft,
       endChartRect.bottomRight,

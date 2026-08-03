@@ -23,143 +23,96 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-enum StudyLogViewMode { daily, weekly, monthly }
+enum ActivityViewMode { daily, weekly, monthly }
 
 class WordListNotifier extends ChangeNotifier {
   bool _isLoading = false;
 
   // For database operations
   final DatabaseHelper _db = DatabaseHelper.instance;
-  List<Map<String, dynamic>> _studyLog = List.empty(growable: true);
+  List<Map<String, dynamic>> _wordLog = List.empty(growable: true);
   Map<String, int> _wordCounts = {};
-  List<Map<String, dynamic>> _dailyStudyLog = [];
-  Map<String, int> _dailyWordCounts = {};
-  StudyLogViewMode _viewMode = StudyLogViewMode.daily;
-  DateTime? _currentDate;
+  ActivityViewMode _viewMode = ActivityViewMode.daily;
 
   WordListNotifier() {
-    loadLogs();
+    fetchLog();
   }
 
-  // For database operations
   bool get isLoading => _isLoading;
 
-  List<Map<String, dynamic>> get studyLog => _studyLog;
+  ActivityViewMode get viewMode => _viewMode;
+
+  set viewMode(ActivityViewMode mode) {
+    _viewMode = mode;
+    notifyListeners();
+  }
+
+  List<Map<String, dynamic>> get wordLog => _wordLog;
 
   Map<String, int> get wordCounts => _wordCounts;
 
-  List<Map<String, dynamic>> get dailyStudyLog => _dailyStudyLog;
-
-  Map<String, int> get dailyWordCounts => _dailyWordCounts;
-
-  Map<String, int> getDailyWordCounts(DateTime date) {
-    if (_currentDate != null &&
-        _currentDate!.year == date.year &&
-        _currentDate!.month == date.month &&
-        _currentDate!.day == date.day) {
-      return _dailyWordCounts;
-    }
-    // Fallback to filtering in-memory if not loaded (though we should load it)
-    final studyLog = getDailyActivity(date);
-    final result = <String, int>{};
-    for (var log in studyLog) {
-      final word = log['word'] as String;
-      result[word] = (result[word] ?? 0) + 1;
-    }
-    return result;
-  }
-
-  Map<String, int> getWeeklyWordCounts(DateTime date) {
-    final studyLog = getWeeklyActivity(date);
-    final result = <String, int>{};
-    for (var log in studyLog) {
-      final word = log['word'] as String;
-      result[word] = (result[word] ?? 0) + 1;
-    }
-    return result;
-  }
-
-  StudyLogViewMode get viewMode => _viewMode;
-
-  void setViewMode(StudyLogViewMode mode) {
-    _viewMode = mode;
-    if (mode == StudyLogViewMode.weekly) {
-      loadWordCounts();
-    } else {
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadLogs() async {
+  Future<void> fetchLog() async {
     _isLoading = true;
     notifyListeners();
 
-    // Fetch from database
-    final logs = await _db.getAllLogs();
-    _studyLog = List<Map<String, dynamic>>.from(logs);
+    final log = await _db.getAllEntries();
+    _wordLog = List<Map<String, dynamic>>.from(log);
 
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> loadWordCounts() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> addWord(String word) async {
+    final timestamp = DateTime.now().toIso8601String();
+    await _db.addEntry(word);
 
-    final counts = await _db.getWordCounts();
-    _wordCounts = {
-      for (var item in counts) item['word'] as String: item['count'] as int,
-    };
+    _wordLog.insert(0, {'word': word, 'timestamp': timestamp});
+    if (_wordLog.length > 10000) _wordLog.removeLast();
 
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  Future<void> loadDailyData(DateTime date) async {
-    _isLoading = true;
-    notifyListeners();
-
-    final targetDate = DateTime(date.year, date.month, date.day);
-    final logs = await _db.getLogsForDay(targetDate);
-    final counts = await _db.getWordCountsForDay(targetDate);
-
-    _currentDate = targetDate;
-    _dailyStudyLog = List<Map<String, dynamic>>.from(logs);
-    _dailyWordCounts = {
-      for (var item in counts) item['word'] as String: item['count'] as int,
-    };
-
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  int getDayWordCount(DateTime date) {
-    if (_currentDate != null &&
-        _currentDate!.year == date.year &&
-        _currentDate!.month == date.month &&
-        _currentDate!.day == date.day) {
-      return _dailyStudyLog.length;
+    final lowerWord = word.toLowerCase();
+    if (_wordCounts.containsKey(lowerWord)) {
+      _wordCounts[lowerWord] = _wordCounts[lowerWord]! + 1;
+    } else if (_viewMode == ActivityViewMode.weekly) {
+      _wordCounts[lowerWord] = 1;
     }
-    return getDailyActivity(date).length;
+
+    notifyListeners();
   }
 
-  List<Map<String, dynamic>> getDailyActivity(DateTime date) {
-    if (_currentDate != null &&
-        _currentDate!.year == date.year &&
-        _currentDate!.month == date.month &&
-        _currentDate!.day == date.day) {
-      return _dailyStudyLog;
-    }
+  List<Map<String, dynamic>> extractLogForDuration(
+    DateTime date,
+    int duration,
+  ) {
     final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-    return _studyLog.where((log) {
+    final endOfDay = startOfDay.add(Duration(days: duration));
+    return _wordLog.where((log) {
       final logDate = DateTime.parse(log['timestamp'] as String);
       return logDate.isAfter(startOfDay) && logDate.isBefore(endOfDay);
     }).toList();
   }
 
-  List<int> getHalfHourlyCountList(DateTime date) {
-    final studyLog = getDailyActivity(date);
+  List<MapEntry<String, int>> getWordCountsForDuration(
+    DateTime date,
+    int duration,
+  ) {
+    final studyLog = extractLogForDuration(date, duration);
+    final result = <String, int>{};
+    for (var log in studyLog) {
+      final word = log['word'] as String;
+      result[word] = (result[word] ?? 0) + 1;
+    }
+    List<MapEntry<String, int>> temp = result.entries.toList();
+    temp.sort((a, b) => b.value.compareTo(a.value));
+    return temp;
+  }
+
+  int getDailyWordCount(DateTime date) => extractLogForDuration(date, 1).length;
+
+  int getWeeklyWordCount(DateTime date) =>
+      extractLogForDuration(date, 7).length;
+
+  List<int> getHalfHourlyCountsPerDay(DateTime date) {
+    final studyLog = extractLogForDuration(date, 1);
     final result = List<int>.filled(48, 0);
     for (var log in studyLog) {
       final logDate = DateTime.parse(log['timestamp'] as String);
@@ -170,43 +123,8 @@ class WordListNotifier extends ChangeNotifier {
     return result;
   }
 
-  DateTime _getFirstDayOfWeek(DateTime date) {
-    return date.subtract(Duration(days: date.weekday - 1));
-  }
-
-  Future<void> loadWeeklyData(DateTime date) async {
-    _isLoading = true;
-    notifyListeners();
-
-    final targetDate = _getFirstDayOfWeek(date);
-    final logs = await _db.getLogsForWeek(targetDate);
-    final counts = await _db.getWordCountsForDay(targetDate);
-
-    _currentDate = targetDate;
-    _dailyStudyLog = List<Map<String, dynamic>>.from(logs);
-    _dailyWordCounts = {
-      for (var item in counts) item['word'] as String: item['count'] as int,
-    };
-
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  int getWeeklyWordCount(DateTime date) {
-    return getWeeklyActivity(date).length;
-  }
-
-  List<Map<String, dynamic>> getWeeklyActivity(DateTime date) {
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(const Duration(days: 7));
-    return _studyLog.where((log) {
-      final logDate = DateTime.parse(log['timestamp'] as String);
-      return logDate.isAfter(startOfDay) && logDate.isBefore(endOfDay);
-    }).toList();
-  }
-
-  List<int> getDailyCountList(DateTime date) {
-    final studyLog = getWeeklyActivity(date);
+  List<int> getDailyCountsPerList(DateTime date) {
+    final studyLog = extractLogForDuration(date, 7);
     final result = List<int>.filled(7, 0);
     for (var log in studyLog) {
       final logDate = DateTime.parse(log['timestamp'] as String);
@@ -214,35 +132,6 @@ class WordListNotifier extends ChangeNotifier {
       result[weekday] += 1;
     }
     return result;
-  }
-
-  Future<void> addLog(String word) async {
-    final timestamp = DateTime.now().toIso8601String();
-    await _db.addLog(word);
-
-    _studyLog.insert(0, {'word': word, 'timestamp': timestamp});
-    if (_studyLog.length > 10000) _studyLog.removeLast();
-
-    // Update daily data if it's the current date
-    final now = DateTime.now();
-    if (_currentDate != null &&
-        _currentDate!.year == now.year &&
-        _currentDate!.month == now.month &&
-        _currentDate!.day == now.day) {
-      _dailyStudyLog.add({'word': word, 'timestamp': timestamp});
-      final lowerWord = word.toLowerCase();
-      _dailyWordCounts[lowerWord] = (_dailyWordCounts[lowerWord] ?? 0) + 1;
-    }
-
-    // Update wordCounts if it's already loaded or we are in summary mode
-    final lowerWord = word.toLowerCase();
-    if (_wordCounts.containsKey(lowerWord)) {
-      _wordCounts[lowerWord] = _wordCounts[lowerWord]! + 1;
-    } else if (_viewMode == StudyLogViewMode.weekly) {
-      _wordCounts[lowerWord] = 1;
-    }
-
-    notifyListeners();
   }
 }
 
@@ -291,7 +180,7 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> addLog(String word) async {
+  Future<void> addEntry(String word) async {
     final db = await database;
     await db.insert('logs', {
       'word': word,
@@ -304,13 +193,36 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getAllLogs() async {
+  Future<List<Map<String, dynamic>>> getAllEntries() async {
     final db = await database;
     // Fetch newest 100 first
     return await db.query('logs', orderBy: 'id DESC', limit: 10000);
   }
 
-  Future<List<Map<String, dynamic>>> getWordCounts() async {
+  Future<List<Map<String, dynamic>>> getEntries(
+    DateTime date,
+    int duration,
+  ) async {
+    final db = await database;
+    final startOfDay = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).toIso8601String();
+    final endOfDay = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).add(Duration(days: duration)).toIso8601String();
+    return await db.query(
+      'logs',
+      where: 'timestamp >= ? AND timestamp < ?',
+      whereArgs: [startOfDay, endOfDay],
+      orderBy: 'timestamp ASC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getWholeSummaryList() async {
     final db = await database;
     return await db.rawQuery('''
       SELECT LOWER(word) as word, COUNT(*) as count 
@@ -320,66 +232,21 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<List<Map<String, dynamic>>> getLogsForDay(DateTime date) async {
+  Future<List<Map<String, dynamic>>> getSummaryList(
+    DateTime date,
+    int duration,
+  ) async {
     final db = await database;
-    final startOfDay =
-    DateTime(date.year, date.month, date.day).toIso8601String();
-    final endOfDay =
-    DateTime(date.year, date.month, date.day)
-        .add(const Duration(days: 1))
-        .toIso8601String();
-    return await db.query(
-      'logs',
-      where: 'timestamp >= ? AND timestamp < ?',
-      whereArgs: [startOfDay, endOfDay],
-      orderBy: 'timestamp ASC',
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> getLogsForWeek(DateTime date) async {
-    final db = await database;
-    final startOfDay =
-        DateTime(date.year, date.month, date.day).toIso8601String();
-    final endOfDay =
-        DateTime(date.year, date.month, date.day)
-            .add(const Duration(days: 7))
-            .toIso8601String();
-    return await db.query(
-      'logs',
-      where: 'timestamp >= ? AND timestamp < ?',
-      whereArgs: [startOfDay, endOfDay],
-      orderBy: 'timestamp ASC',
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> getWordCountsForDay(DateTime date) async {
-    final db = await database;
-    final startOfDay =
-    DateTime(date.year, date.month, date.day).toIso8601String();
-    final endOfDay =
-    DateTime(date.year, date.month, date.day)
-        .add(const Duration(days: 1))
-        .toIso8601String();
-    return await db.rawQuery(
-      '''
-      SELECT LOWER(word) as word, COUNT(*) as count 
-      FROM logs 
-      WHERE timestamp >= ? AND timestamp < ?
-      GROUP BY LOWER(word) 
-      ORDER BY count DESC
-    ''',
-      [startOfDay, endOfDay],
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> getWordCountsForWeek(DateTime date) async {
-    final db = await database;
-    final startOfDay =
-        DateTime(date.year, date.month, date.day).toIso8601String();
-    final endOfDay =
-        DateTime(date.year, date.month, date.day)
-            .add(const Duration(days: 7))
-            .toIso8601String();
+    final startOfDay = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).toIso8601String();
+    final endOfDay = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).add(Duration(days: duration)).toIso8601String();
     return await db.rawQuery(
       '''
       SELECT LOWER(word) as word, COUNT(*) as count 
