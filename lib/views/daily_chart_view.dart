@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-class BarChartController {
+class DailyChartViewController {
   _BarChart? _state;
 
   void _attach(_BarChart state) {
@@ -22,7 +22,7 @@ class BarChartController {
   }
 }
 
-class BarChart extends StatefulWidget {
+class DailyChartView extends StatefulWidget {
   final List<int> currentData;
   final List<int> previousData;
   final List<int> nextData;
@@ -31,9 +31,9 @@ class BarChart extends StatefulWidget {
   final double fontSize;
   final VoidCallback? onSwipeLeft;
   final VoidCallback? onSwipeRight;
-  final BarChartController? controller;
+  final DailyChartViewController? controller;
 
-  const BarChart({
+  const DailyChartView({
     super.key,
     required this.currentData,
     required this.previousData,
@@ -47,10 +47,11 @@ class BarChart extends StatefulWidget {
   });
 
   @override
-  State<BarChart> createState() => _BarChart();
+  State<DailyChartView> createState() => _BarChart();
 }
 
-class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
+class _BarChart extends State<DailyChartView>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   double _dragShift = 0.0;
   bool _isAnimating = false;
@@ -75,7 +76,7 @@ class _BarChart extends State<BarChart> with SingleTickerProviderStateMixin {
   }
 
   @override
-  void didUpdateWidget(covariant BarChart oldWidget) {
+  void didUpdateWidget(covariant DailyChartView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?._detach();
@@ -464,15 +465,16 @@ class BarChartPainter extends CustomPainter {
     required double upperBound,
   }) {
     final barCount = min(48, data.length);
-    final chartSize = chartRect.size;
+    final chartHeight = chartRect.size.height;
+    final origin = chartRect.bottomLeft + Offset(spacing + shift, 0);
     for (int i = 0; i < barCount; i++) {
-      final count = data[i].toDouble();
-      final normalizedValue = (count / upperBound).clamp(0.0, 1.0);
-      final barHeight = chartSize.height * normalizedValue;
-      if (barHeight <= 0) continue;
+      final count = data[i];
+      if (count <= 0) continue;
 
-      final left = chartRect.left + spacing + i * (barWidth + spacing) + shift;
-      final top = chartRect.top + chartSize.height - barHeight;
+      final normalizedValue = (count.toDouble() / upperBound).clamp(0.0, 1.0);
+      final barHeight = chartHeight * normalizedValue;
+      final left = origin.dx + i * (barWidth + spacing);
+      final top = origin.dy - barHeight;
 
       final rect = RRect.fromRectAndRadius(
         Rect.fromLTWH(left, top, barWidth, barHeight),
@@ -490,9 +492,9 @@ class BarChartPainter extends CustomPainter {
     required double spacing,
     required Paint axisPaint,
   }) {
+    final origin = chartRect.bottomLeft + Offset(spacing + shift, 0);
     for (int i = 0; i <= 48; i += 8) {
-      final x = chartRect.left + spacing + i * (barWidth + spacing) + shift;
-      final top = Offset(x, chartRect.bottom);
+      final top = origin + Offset(i * (barWidth + spacing), 0);
       final end = top + const Offset(0, 6);
       final labelTop = top + const Offset(0, 8);
       final labelText = (i / 2).toStringAsFixed(0);

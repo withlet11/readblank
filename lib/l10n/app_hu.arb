@@ -56,5 +56,55 @@
         "type": "int"
       }
     }
+  },
+  "dateFormatForDailyChart": "{date}",
+  "@dateFormatForDailyChart": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMMEEEEd"
+      }
+    }
+  },
+  "dateFormatForWeeklyChart": "{date1} − {date2}",
+  "@dateFormatForWeeklyChart": {
+    "placeholders": {
+      "date1": {
+        "type": "DateTime",
+        "format": "yMMMMd"
+      },
+      "date2": {
+        "type": "DateTime",
+        "format": "yMMMMd"
+      }
+    }
+  },
+  "dateFormatForWeeklyChartInSameMonth": "{date1}−{date2}",
+  "@dateFormatForWeeklyChartInSameMonth": {
+    "placeholders": {
+      "date1": {
+        "type": "DateTime",
+        "format": "MMMM d",
+        "isCustomDateFormat": "true"
+      },
+      "date2": {
+        "type": "DateTime",
+        "format": "d.",
+        "isCustomDateFormat": "true"
+      }
+    }
+  },
+  "dateFormatForWeeklyChartInSameYear": "{date1} − {date2}",
+  "@dateFormatForWeeklyChartInSameYear": {
+    "placeholders": {
+      "date1": {
+        "type": "DateTime",
+        "format": "MMMMd"
+      },
+      "date2": {
+        "type": "DateTime",
+        "format": "MMMMd"
+      }
+    }
   }
 }

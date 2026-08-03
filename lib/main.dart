@@ -166,6 +166,7 @@ class _MainPageState extends State<MainPage> {
               ? const ActivityPage(key: Key('ActivityPage'), title: 'Activity')
               : const SettingsPage(key: Key('SettingsPage'), title: 'Settings'),
           endDrawer: const ContentSelectorDrawers(),
+          endDrawerEnableOpenDragGesture: false,
           bottomNavigationBar: _buildNavigationBar(),
         );
       },
@@ -223,24 +224,25 @@ class _MainPageState extends State<MainPage> {
       actions: [
         IconButton(
           icon: Icon(
-            wordListNotifier.viewMode == StudyLogViewMode.list
+            wordListNotifier.viewMode == StudyLogViewMode.daily
                 ? Icons.view_list
                 : Icons.view_list_outlined,
           ),
-          onPressed: () => wordListNotifier.setViewMode(StudyLogViewMode.list),
+          onPressed: () => wordListNotifier.setViewMode(StudyLogViewMode.daily),
         ),
         IconButton(
           icon: Icon(
-            wordListNotifier.viewMode == StudyLogViewMode.summary
+            wordListNotifier.viewMode == StudyLogViewMode.weekly
                 ? Icons.view_week
                 : Icons.view_week_outlined,
           ),
           onPressed: () =>
-              wordListNotifier.setViewMode(StudyLogViewMode.summary),
+              wordListNotifier.setViewMode(StudyLogViewMode.weekly),
         ),
         IconButton(
           icon: const Icon(Icons.calendar_view_month_outlined),
-          onPressed: () {},
+          onPressed: () =>
+              wordListNotifier.setViewMode(StudyLogViewMode.weekly),
         ),
       ],
     );
