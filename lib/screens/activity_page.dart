@@ -1,5 +1,5 @@
 /*
- * log_page.dart
+ * activity_page.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -20,7 +20,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/l10n/app_localizations.dart';
 
