@@ -26,6 +26,7 @@ import 'package:readblank/l10n/app_localizations.dart';
 import '../views/daily_chart_view.dart';
 import '../providers/app_preferences_notifier.dart';
 import '../providers/word_list_notifier.dart';
+import '../views/monthly_chart_view.dart';
 import '../views/weekly_chart_view.dart';
 
 class ActivityPage extends StatefulWidget {
@@ -38,11 +39,13 @@ class ActivityPage extends StatefulWidget {
 }
 
 class _ActivityPageState extends State<ActivityPage> {
-  static final DateTime _startDate = DateTime(2026, 7, 1);
+  static final DateTime _startDate = DateTime(2026, 1, 1);
   final DailyChartViewController _dailyChartController =
       DailyChartViewController();
   final WeeklyChartViewController _weeklyChartController =
       WeeklyChartViewController();
+  final MonthlyChartViewController _monthlyChartController =
+      MonthlyChartViewController();
   late DateTime _selectedDate = today;
 
   @override
@@ -55,9 +58,11 @@ class _ActivityPageState extends State<ActivityPage> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final view = notifier.viewMode == ActivityViewMode.weekly
+        final view = notifier.viewMode == ActivityViewMode.daily
+            ? _buildDailyView(notifier)
+            : notifier.viewMode == ActivityViewMode.weekly
             ? _buildWeeklyView(notifier)
-            : _buildDailyView(notifier);
+            : _buildMonthlyView(notifier);
 
         return Stack(
           children: [
@@ -266,13 +271,13 @@ class _ActivityPageState extends State<ActivityPage> {
     final prefs = context.watch<AppPreferencesNotifier>();
     final firstDay = _getFirstDayOfWeek(_selectedDate);
 
-    final currentData = notifier.getDailyCountsPerList(firstDay);
+    final currentData = notifier.getDailyCountsPerWeek(firstDay);
     final previousData = _isInStartWeekOrBefore(firstDay)
         ? <int>[]
-        : notifier.getDailyCountsPerList(_previousWeek(firstDay));
+        : notifier.getDailyCountsPerWeek(_previousWeek(firstDay));
     final nextData = _isInThisWeekOrAfter(firstDay)
         ? <int>[]
-        : notifier.getDailyCountsPerList(_nextWeek(firstDay));
+        : notifier.getDailyCountsPerWeek(_nextWeek(firstDay));
 
     final entries = notifier.getWordCountsForDuration(firstDay, 7);
 
@@ -340,6 +345,152 @@ class _ActivityPageState extends State<ActivityPage> {
                   : () {
                       setState(() {
                         _selectedDate = _previousWeek(firstDay);
+                      });
+                    },
+            ),
+            SizedBox(height: 16),
+            Divider(height: 1),
+            Text(
+              'Read Words',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ],
+        ),
+        Expanded(
+          child: ListView.separated(
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return ListTile(
+                title: Text(
+                  entry.key,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  entry.value.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              );
+            },
+            separatorBuilder: (context, index) {
+              return const Divider(height: 1, thickness: 1);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  DateTime _getFirstDayOfMonth(DateTime date) {
+    return DateTime(date.year, date.month, 1);
+  }
+
+  int _getDurationOfMonth(DateTime date) {
+    return DateTime(date.year, date.month + 1, 0).day;
+  }
+
+  bool _isInStartMonthOrBefore(DateTime date) {
+    return _isInSameMonth(date, _startDate) || date.isBefore(_startDate);
+  }
+
+  bool _isInThisMonthOrAfter(DateTime date) {
+    return _isInSameMonth(date, today) || date.isAfter(today);
+  }
+
+  DateTime _previousMonth(DateTime date) {
+    return DateTime(date.year, date.month - 1, 1);
+  }
+
+  DateTime _nextMonth(DateTime date) {
+    return DateTime(date.year, date.month + 1, 1);
+  }
+
+  Widget _buildMonthlyView(WordListNotifier notifier) {
+    final l10n = AppLocalizations.of(context)!;
+    final prefs = context.watch<AppPreferencesNotifier>();
+
+    final currentData = notifier.getDailyCountsPerMonth(_selectedDate);
+    final previousData = _isInStartMonthOrBefore(_selectedDate)
+        ? <int>[]
+        : notifier.getDailyCountsPerMonth(_previousMonth(_selectedDate));
+    final nextData = _isInThisMonthOrAfter(_selectedDate)
+        ? <int>[]
+        : notifier.getDailyCountsPerMonth(_nextMonth(_selectedDate));
+
+    final entries = notifier.getWordCountsForDuration(
+      _getFirstDayOfMonth(_selectedDate),
+      _getDurationOfMonth(_selectedDate),
+    );
+
+    return Column(
+      children: [
+        Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.keyboard_arrow_left),
+                  onPressed: _isInStartMonthOrBefore(_selectedDate)
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedDate = _previousMonth(_selectedDate);
+                          });
+                        },
+                ),
+                Expanded(
+                  child: Text(
+                    l10n.dateFormatForMonthlyChart(_selectedDate),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.keyboard_arrow_right),
+                  onPressed: _isInThisMonthOrAfter(_selectedDate)
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedDate = _nextMonth(_selectedDate);
+                          });
+                        },
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.abc),
+                Text(
+                  l10n.wordCount(notifier.getMonthlyWordCount(_selectedDate)),
+                ),
+              ],
+            ),
+            MonthlyChartView(
+              controller: _monthlyChartController,
+              currentData: currentData,
+              previousData: previousData,
+              nextData: nextData,
+              startWeekDay:
+                  DateTime(_selectedDate.year, _selectedDate.month, 1).weekday -
+                  1,
+              circleColor: Theme.of(context).colorScheme.tertiary,
+              textColor: Theme.of(context).colorScheme.onSurface,
+              fontSize: 12.0 * prefs.fontSizeFactor,
+              onSwipeLeft: _isInThisMonthOrAfter(_selectedDate)
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedDate = _nextMonth(_selectedDate);
+                      });
+                    },
+              onSwipeRight: _isInStartMonthOrBefore(_selectedDate)
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedDate = _previousMonth(_selectedDate);
                       });
                     },
             ),

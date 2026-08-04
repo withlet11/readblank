@@ -225,24 +225,26 @@ class _MainPageState extends State<MainPage> {
         IconButton(
           icon: Icon(
             wordListNotifier.viewMode == ActivityViewMode.daily
-                ? Icons.view_list
-                : Icons.view_list_outlined,
+                ? Icons.looks_one
+                : Icons.looks_one_outlined,
           ),
           onPressed: () => wordListNotifier.viewMode = ActivityViewMode.daily,
         ),
         IconButton(
           icon: Icon(
             wordListNotifier.viewMode == ActivityViewMode.weekly
-                ? Icons.view_week
-                : Icons.view_week_outlined,
+                ? Icons.calendar_view_week
+                : Icons.calendar_view_week_outlined,
           ),
-          onPressed: () =>
-              wordListNotifier.viewMode = ActivityViewMode.weekly,
+          onPressed: () => wordListNotifier.viewMode = ActivityViewMode.weekly,
         ),
         IconButton(
-          icon: const Icon(Icons.calendar_view_month_outlined),
-          onPressed: () =>
-              wordListNotifier.viewMode = ActivityViewMode.weekly,
+          icon: Icon(
+            wordListNotifier.viewMode == ActivityViewMode.monthly
+                ? Icons.calendar_view_month
+                : Icons.calendar_view_month_outlined,
+          ),
+          onPressed: () => wordListNotifier.viewMode = ActivityViewMode.monthly,
         ),
       ],
     );

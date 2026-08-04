@@ -1,5 +1,5 @@
 /*
- * base_char_view.dart
+ * monthly_chart_view.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -21,11 +21,14 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 
-abstract class BaseChartViewController<S extends BaseBarChartState> {
-  S? _state;
+import '../l10n/app_localizations.dart';
 
-  void _attach(S state) {
+class MonthlyChartViewController {
+  _MonthlyChartState? _state;
+
+  void _attach(_MonthlyChartState state) {
     _state = state;
   }
 
@@ -42,36 +45,37 @@ abstract class BaseChartViewController<S extends BaseBarChartState> {
   }
 }
 
-abstract class BaseChartView extends StatefulWidget {
+class MonthlyChartView extends StatefulWidget {
   final List<int> currentData;
   final List<int> previousData;
   final List<int> nextData;
-  final Color barColor;
+  final int startWeekDay;
+  final Color circleColor;
   final Color textColor;
   final double fontSize;
   final VoidCallback? onSwipeLeft;
   final VoidCallback? onSwipeRight;
-  final BaseChartViewController? controller;
+  final MonthlyChartViewController? controller;
 
-  const BaseChartView({
+  const MonthlyChartView({
     super.key,
     required this.currentData,
     required this.previousData,
     required this.nextData,
-    required this.barColor,
+    required this.startWeekDay,
+    required this.circleColor,
     required this.textColor,
     required this.fontSize,
     this.onSwipeLeft,
     this.onSwipeRight,
     this.controller,
   });
+
+  @override
+  State<MonthlyChartView> createState() => _MonthlyChartState();
 }
 
-abstract class BaseBarChartState<
-  W extends BaseChartView,
-  P extends BaseBarChartPainter
->
-    extends State<W>
+class _MonthlyChartState extends State<MonthlyChartView>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   double _dragShift = 0.0;
@@ -99,7 +103,7 @@ abstract class BaseBarChartState<
   }
 
   @override
-  void didUpdateWidget(covariant W oldWidget) {
+  void didUpdateWidget(covariant MonthlyChartView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.controller != oldWidget.controller) {
@@ -161,23 +165,32 @@ abstract class BaseBarChartState<
     }
   }
 
-  double targetUpperBound(List<int> data);
+  double targetUpperBound(List<int> data) {
+    final maxVal = data
+        .fold(50, (prev, element) => max(prev, element))
+        .toDouble();
+    return (maxVal / 50.0).ceilToDouble() * 50.0;
+  }
 
   void _animateTo(double target, List<int> newData, VoidCallback? onComplete) {
     _isAnimating = true;
 
-    final shiftAnimation = Tween<double>(begin: _dragShift, end: target).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(0.0, 0.5, curve: Curves.easeOutCubic),
-      ),
-    );
+    final shiftAnimation = Tween<double>(begin: _dragShift, end: target)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _previousUpperBound = _currentUpperBound;
     _currentUpperBound = targetUpperBound(newData);
 
-    final upperBoundAnimation = Tween<double>(begin: _previousUpperBound, end: _currentUpperBound)
-        .animate(
+    final upperBoundAnimation =
+        Tween<double>(
+          begin: _previousUpperBound,
+          end: _currentUpperBound,
+        ).animate(
           CurvedAnimation(
             parent: _animationController,
             curve: Interval(0.5, 1.0, curve: Curves.linear),
@@ -202,18 +215,37 @@ abstract class BaseBarChartState<
     });
   }
 
-  P createPainter({
+  MonthlyBarChartPainter createPainter({
     required double shift,
     required double upperBound,
     required double beginUpperBound,
     required double endUpperBound,
-  });
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return MonthlyBarChartPainter(
+      currentData: widget.currentData,
+      previousData: widget.previousData,
+      nextData: widget.nextData,
+      startWeekDay: widget.startWeekDay,
+      weekdayLabel: [
+        for (int i = 0; i < 7; ++i)
+          intl.DateFormat.E(l10n.localeName).format(DateTime(2026, 9, i)),
+      ],
+      shift: shift,
+      circleColor: widget.circleColor,
+      textColor: widget.textColor,
+      fontSize: widget.fontSize,
+      tempUpperBound: upperBound,
+      beginUpperBound: beginUpperBound,
+      endUpperBound: endUpperBound,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final margin = BaseBarChartPainter.margin;
+        final margin = MonthlyBarChartPainter.margin;
         _lastWidth = constraints.maxWidth - margin.left - margin.right;
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -239,26 +271,31 @@ abstract class BaseBarChartState<
   }
 }
 
-abstract class BaseBarChartPainter extends CustomPainter {
+class MonthlyBarChartPainter extends CustomPainter {
   final List<int> currentData;
   final List<int> previousData;
   final List<int> nextData;
+  final int startWeekDay;
+  final List<String> weekdayLabel;
   final double shift;
-  final Color barColor;
+  final Color circleColor;
   final Color textColor;
   final double fontSize;
   final double tempUpperBound;
   final double beginUpperBound;
   final double endUpperBound;
 
-  static const Rect margin = Rect.fromLTRB(50, 20, 50, 20);
+  static const Rect margin = Rect.fromLTRB(5, 5, 5, 5);
+  static const int maxRowCount = 7;
 
-  BaseBarChartPainter({
+  MonthlyBarChartPainter({
     required this.currentData,
     required this.previousData,
     required this.nextData,
+    required this.startWeekDay,
+    required this.weekdayLabel,
     required this.shift,
-    required this.barColor,
+    required this.circleColor,
     required this.textColor,
     required this.fontSize,
     required this.tempUpperBound,
@@ -266,53 +303,63 @@ abstract class BaseBarChartPainter extends CustomPainter {
     required this.endUpperBound,
   });
 
-  int get divisionCount;
-
-  double get totalSpacingFactor;
-
-  void drawBars({
+  void drawBubble({
     required Canvas canvas,
     required List<int> data,
+    required int startOffset,
     required Rect chartRect,
     required double shift,
-    required double barWidth,
-    required double spacing,
-    required Paint barPaint,
+    required Paint bubblePaint,
     required double upperBound,
-  });
+  }) {
+    final dayCount = min(31, data.length);
+    final chartHeight = chartRect.height;
+    final chartWidth = chartRect.width;
+    final origin =
+        chartRect.topLeft +
+        Offset(chartWidth / 7 / 2 + shift, chartHeight / maxRowCount / 2);
+    final maxRadius = chartHeight / maxRowCount * 0.9;
+    for (int i = 0; i < dayCount; ++i) {
+      final count = data[i];
+      final day = i + 1;
+      final position = startOffset + i;
+      final center =
+          origin +
+              Offset(
+                (position % 7) * (chartWidth / 7),
+                (position ~/ 7) * (chartHeight / maxRowCount),
+              );
+      final label = day.toStringAsFixed(0);
+      drawText(canvas, label, center, Alignment.center);
 
-  void drawGridAndLabels({
-    required Canvas canvas,
-    required Rect chartRect,
-    required double shift,
-    required double barWidth,
-    required double spacing,
-    required Paint axisPaint,
-  });
+      if (count <= 0) continue;
+
+      final normalizedValue = sqrt(
+        count.toDouble() / upperBound,
+      ).clamp(0.33, 1.0);
+      final radius = maxRadius * normalizedValue;
+      bubblePaint.color = circleColor.withAlpha(
+        (normalizedValue * 128 + 32).toInt(),
+      );
+      canvas.drawCircle(center, radius, bubblePaint);
+    }
+
+    for (int i = 0; i < 7; ++i) {
+      final center =
+          origin +
+          Offset(
+            (i % 7) * (chartWidth / 7),
+            ((startOffset + dayCount) ~/ 7 + 1) * (chartHeight / maxRowCount),
+          );
+      final label = weekdayLabel[i];
+      drawText(canvas, label, center, Alignment.center);
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final proceed =
-        (((tempUpperBound - beginUpperBound) /
-                        (endUpperBound - beginUpperBound))
-                    .clamp(0.0, 1.0) *
-                255)
-            .toInt();
-
-    final axisPaint = Paint()
-      ..color = Colors.grey
-      ..strokeWidth = 1.5;
-
-    final gridPaint1 = Paint()
-      ..color = Colors.grey.withAlpha(proceed)
-      ..strokeWidth = 1.0;
-
-    final gridPaint2 = Paint()
-      ..color = Colors.grey.withAlpha(255 - proceed)
-      ..strokeWidth = 1.0;
-
-    final barPaint = Paint()
-      ..color = barColor
+    final circlePaint = Paint()
+      ..color = circleColor
       ..style = PaintingStyle.fill;
 
     final Rect chartRect = Rect.fromLTRB(
@@ -322,175 +369,49 @@ abstract class BaseBarChartPainter extends CustomPainter {
       size.height - margin.bottom,
     );
 
-    final Rect beginCharRect = Rect.fromLTRB(
-      chartRect.left,
-      chartRect.top +
-          chartRect.height *
-              (1.0 - beginUpperBound.toDouble() / tempUpperBound.toDouble()),
-      chartRect.right,
-      chartRect.bottom,
-    );
-
-    final Rect endChartRect = Rect.fromLTRB(
-      chartRect.left,
-      chartRect.top +
-          chartRect.height *
-              (1.0 - endUpperBound.toDouble() / tempUpperBound.toDouble()),
-      chartRect.right,
-      chartRect.bottom,
-    );
-
+    final Size chartSize = chartRect.size;
     double mainShift = shift;
     double subShift = 0.0;
-    List<int> subData = [];
+    List<int> targetData = [];
+    int subStartWeekDay = startWeekDay;
 
     if (shift < 0.0) {
       if (nextData.isNotEmpty) {
-        subShift = shift + chartRect.width;
-        subData = nextData;
+        subShift = shift + chartSize.width;
+        targetData = nextData;
+        subStartWeekDay = (startWeekDay + currentData.length) % 7;
       }
     } else if (shift > 0.0) {
       if (previousData.isNotEmpty) {
-        subShift = shift - chartRect.width;
-        subData = previousData;
+        subShift = shift - chartSize.width;
+        targetData = previousData;
+        subStartWeekDay = (startWeekDay - targetData.length) % 7;
       }
     }
 
-    final totalSpacing = chartRect.width * totalSpacingFactor;
-    final barWidth = (chartRect.width - totalSpacing) / divisionCount;
-    final spacing = calculateSpacing(chartRect.width, barWidth);
-
-    final clipPath = Path()
-      ..addRect(Rect.fromLTRB(chartRect.left, 0, chartRect.right, size.height));
-
-    canvas.save();
-    canvas.clipPath(clipPath);
-
-    // Draw static grid lines (Upper and Middle)
-    if (tempUpperBound != endUpperBound) {
-      if (beginCharRect.top >= chartRect.top) {
-        canvas.drawLine(
-          beginCharRect.topLeft,
-          beginCharRect.topRight,
-          gridPaint2,
-        );
-      }
-      if (beginCharRect.center.dy >= chartRect.top) {
-        canvas.drawLine(
-          beginCharRect.centerLeft,
-          beginCharRect.centerRight,
-          gridPaint2,
-        );
-      }
-    }
-
-    if (endChartRect.top >= chartRect.top) {
-      canvas.drawLine(endChartRect.topLeft, endChartRect.topRight, gridPaint1);
-    }
-    if (endChartRect.center.dy >= chartRect.top) {
-      canvas.drawLine(
-        endChartRect.centerLeft,
-        endChartRect.centerRight,
-        gridPaint1,
-      );
-    }
-
-    // Draw Bars
-    if (subData.isNotEmpty) {
-      drawBars(
+    // Draw Circles
+    if (targetData.isNotEmpty) {
+      drawBubble(
         canvas: canvas,
-        data: subData,
+        data: targetData,
+        startOffset: subStartWeekDay,
         chartRect: chartRect,
         shift: subShift,
-        barWidth: barWidth,
-        spacing: spacing,
-        barPaint: barPaint,
+        bubblePaint: circlePaint,
         upperBound: tempUpperBound,
       );
     }
 
-    drawBars(
+    drawBubble(
       canvas: canvas,
       data: currentData,
+      startOffset: startWeekDay,
       chartRect: chartRect,
       shift: mainShift,
-      barWidth: barWidth,
-      spacing: spacing,
-      barPaint: barPaint,
+      bubblePaint: circlePaint,
       upperBound: tempUpperBound,
     );
-
-    // Draw grid and labels
-    if (subData.isNotEmpty) {
-      drawGridAndLabels(
-        canvas: canvas,
-        chartRect: chartRect,
-        shift: subShift,
-        barWidth: barWidth,
-        spacing: spacing,
-        axisPaint: axisPaint,
-      );
-    }
-
-    drawGridAndLabels(
-      canvas: canvas,
-      chartRect: chartRect,
-      shift: mainShift,
-      barWidth: barWidth,
-      spacing: spacing,
-      axisPaint: axisPaint,
-    );
-
-    canvas.restore();
-
-    // Draw static grid labels (Upper and Middle)
-    if (tempUpperBound != endUpperBound) {
-      for (final (Offset gridEnd, double value) in [
-        if (beginCharRect.top >= chartRect.top)
-          (beginCharRect.topRight, beginUpperBound),
-        if (beginCharRect.center.dy >= chartRect.top)
-          (beginCharRect.centerRight, beginUpperBound / 2),
-      ]) {
-        final label = value.toStringAsFixed(0);
-        const gridLabelMargin = Offset(4, 0);
-        const alignment = Alignment.centerLeft;
-        drawText(
-          canvas,
-          label,
-          gridEnd + gridLabelMargin,
-          alignment,
-          proceed: 255 - proceed,
-        );
-      }
-    }
-
-    for (final (Offset gridEnd, double value) in [
-      if (endChartRect.top >= chartRect.top)
-        (endChartRect.topRight, endUpperBound),
-      if (endChartRect.center.dy >= chartRect.top)
-        (endChartRect.centerRight, endUpperBound / 2),
-    ]) {
-      final label = value.toStringAsFixed(0);
-      const gridLabelMargin = Offset(4, 0);
-      const alignment = Alignment.centerLeft;
-      drawText(
-        canvas,
-        label,
-        gridEnd + gridLabelMargin,
-        alignment,
-        proceed: proceed,
-      );
-    }
-
-    // Draw static X-axis lines
-    canvas.drawLine(
-      endChartRect.bottomLeft,
-      endChartRect.bottomRight,
-      axisPaint,
-    );
   }
-
-  double calculateSpacing(double chartWidth, double barWidth);
 
   void drawText(
     Canvas canvas,
@@ -518,12 +439,12 @@ abstract class BaseBarChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant BaseBarChartPainter oldDelegate) {
+  bool shouldRepaint(covariant MonthlyBarChartPainter oldDelegate) {
     return oldDelegate.currentData != currentData ||
         oldDelegate.previousData != previousData ||
         oldDelegate.nextData != nextData ||
         oldDelegate.shift != shift ||
-        oldDelegate.barColor != barColor ||
+        oldDelegate.circleColor != circleColor ||
         oldDelegate.textColor != textColor ||
         oldDelegate.fontSize != fontSize ||
         oldDelegate.tempUpperBound != tempUpperBound ||

@@ -106,5 +106,14 @@
         "format": "MMMMd"
       }
     }
+  },
+  "dateFormatForMonthlyChart": "{date}",
+  "@dateFormatForMonthlyChart": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMM"
+      }
+    }
   }
 }

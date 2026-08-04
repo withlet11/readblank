@@ -112,7 +112,7 @@ class DailyBarChartPainter extends BaseBarChartPainter {
     required double upperBound,
   }) {
     final barCount = min(48, data.length);
-    final chartHeight = chartRect.size.height;
+    final chartHeight = chartRect.height;
     final origin = chartRect.bottomLeft + Offset(spacing + shift, 0);
     for (int i = 0; i < barCount; i++) {
       final count = data[i];

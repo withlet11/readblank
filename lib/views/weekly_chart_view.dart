@@ -125,7 +125,7 @@ class WeeklyBarChartPainter extends BaseBarChartPainter {
     required double upperBound,
   }) {
     final barCount = min(7, data.length);
-    final chartHeight = chartRect.size.height;
+    final chartHeight = chartRect.height;
     final origin =
         chartRect.bottomLeft + Offset(spacing - barWidth / 2 + shift, 0);
     for (int i = 0; i < barCount; ++i) {

@@ -31,7 +31,6 @@ class WordListNotifier extends ChangeNotifier {
   // For database operations
   final DatabaseHelper _db = DatabaseHelper.instance;
   List<Map<String, dynamic>> _wordLog = List.empty(growable: true);
-  // Map<String, int> _wordCounts = {};
   ActivityViewMode _viewMode = ActivityViewMode.daily;
 
   WordListNotifier() {
@@ -48,8 +47,6 @@ class WordListNotifier extends ChangeNotifier {
   }
 
   List<Map<String, dynamic>> get wordLog => _wordLog;
-
-  // Map<String, int> get wordCounts => _wordCounts;
 
   Future<void> fetchLog() async {
     _isLoading = true;
@@ -68,13 +65,6 @@ class WordListNotifier extends ChangeNotifier {
 
     _wordLog.insert(0, {'word': word, 'timestamp': timestamp});
     if (_wordLog.length > 10000) _wordLog.removeLast();
-
-    // final lowerWord = word.toLowerCase();
-    // if (_wordCounts.containsKey(lowerWord)) {
-    //   _wordCounts[lowerWord] = _wordCounts[lowerWord]! + 1;
-    // } else if (_viewMode == ActivityViewMode.weekly) {
-    //   _wordCounts[lowerWord] = 1;
-    // }
 
     notifyListeners();
   }
@@ -111,6 +101,11 @@ class WordListNotifier extends ChangeNotifier {
   int getWeeklyWordCount(DateTime date) =>
       extractLogForDuration(date, 7).length;
 
+  int getMonthlyWordCount(DateTime date) => extractLogForDuration(
+    date,
+    DateTime(date.year, date.month + 1, 0).day,
+  ).length;
+
   List<int> getHalfHourlyCountsPerDay(DateTime date) {
     final studyLog = extractLogForDuration(date, 1);
     final result = List<int>.filled(48, 0);
@@ -123,13 +118,27 @@ class WordListNotifier extends ChangeNotifier {
     return result;
   }
 
-  List<int> getDailyCountsPerList(DateTime date) {
+  List<int> getDailyCountsPerWeek(DateTime date) {
     final studyLog = extractLogForDuration(date, 7);
     final result = List<int>.filled(7, 0);
     for (var log in studyLog) {
       final logDate = DateTime.parse(log['timestamp'] as String);
       final weekday = logDate.weekday - 1;
       result[weekday] += 1;
+    }
+    return result;
+  }
+
+  List<int> getDailyCountsPerMonth(DateTime date) {
+    final firstDay = DateTime(date.year, date.month, 1);
+    final duration = DateTime(date.year, date.month + 1, 0).day;
+
+    final studyLog = extractLogForDuration(firstDay, duration);
+    final result = List<int>.filled(duration, 0);
+    for (var log in studyLog) {
+      final logDate = DateTime.parse(log['timestamp'] as String);
+      final day = logDate.day - 1;
+      result[day] += 1;
     }
     return result;
   }
