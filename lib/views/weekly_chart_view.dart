@@ -31,6 +31,8 @@ class WeeklyChartViewController
     extends BaseChartViewController<_WeeklyBarChartState> {}
 
 class WeeklyChartView extends BaseChartView {
+  final ValueChanged<int>? onDailyViewSelected;
+
   const WeeklyChartView({
     super.key,
     required super.currentData,
@@ -41,6 +43,7 @@ class WeeklyChartView extends BaseChartView {
     required super.fontSize,
     super.onSwipeLeft,
     super.onSwipeRight,
+    this.onDailyViewSelected,
     WeeklyChartViewController? super.controller,
   });
 
@@ -74,6 +77,33 @@ class _WeeklyBarChartState
       beginUpperBound: beginUpperBound,
       endUpperBound: endUpperBound,
     );
+  }
+
+  @override
+  void onTapUp(TapUpDetails d) {
+    if (super.isAnimating) return;
+
+    stopWatch.stop();
+    final holdTime = stopWatch.elapsedMilliseconds;
+
+    if (holdTime < 100) {
+      final object = context.findRenderObject() as RenderBox;
+      final size = object.size;
+      final marginLeft = BaseBarChartPainter.margin.left;
+      final marginTop = BaseBarChartPainter.margin.top;
+      final marginRight = BaseBarChartPainter.margin.right;
+      final marginBottom = BaseBarChartPainter.margin.bottom;
+
+      double width = size.width - marginLeft - marginRight;
+      double height = size.height - marginTop - marginBottom;
+      double x = d.localPosition.dx - marginLeft;
+      double y = d.localPosition.dy - marginTop;
+      int index = ((x / width) * 7).toInt();
+
+      if (index < 0 || index > 7 || y < 0 || y > height) return;
+
+      widget.onDailyViewSelected?.call(index);
+    }
   }
 
   @override

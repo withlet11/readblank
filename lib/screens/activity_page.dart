@@ -85,43 +85,123 @@ class _ActivityPageState extends State<ActivityPage> {
     return DateTime(now.year, now.month, now.day);
   }
 
-  bool _isStartDateOrBefore(DateTime date) {
-    return date.isAtSameMomentAs(_startDate) || date.isBefore(_startDate);
+  DateTime _getStartDayOfWeek(DateTime date) {
+    return date.subtract(Duration(days: date.weekday - 1));
   }
 
-  bool _isToday(DateTime date) {
-    return date.isAtSameMomentAs(today);
+  DateTime _geEndDayOfWeek(DateTime date) {
+    return date.subtract(Duration(days: date.weekday - 7));
   }
 
-  bool _isTodayOrAfter(DateTime date) {
-    return date.isAtSameMomentAs(today) || date.isAfter(today);
+  DateTime _getStartDayOfMonth(DateTime date) {
+    return DateTime(date.year, date.month, 1);
   }
 
-  DateTime _previousDate(DateTime date) {
+  int _getDurationOfMonth(DateTime date) {
+    return DateTime(date.year, date.month + 1, 0).day;
+  }
+
+  DateTime _getOneDayAgo(DateTime date) {
     return _selectedDate.subtract(const Duration(days: 1));
   }
 
-  DateTime _nextDate(DateTime date) {
+  DateTime _getOneDayLater(DateTime date) {
     return _selectedDate.add(const Duration(days: 1));
+  }
+
+  DateTime _getSevenDaysAgo(DateTime date) {
+    return date.subtract(const Duration(days: 7));
+  }
+
+  DateTime _getSevenDaysLater(DateTime date) {
+    return date.add(const Duration(days: 7));
+  }
+
+  DateTime _getOneMonthAgo(DateTime date) {
+    final temp = DateTime(date.year, date.month - 1, date.day);
+    return temp.day == date.day ? temp : DateTime(date.year, date.month, 0);
+  }
+
+  DateTime _getOneMonthLater(DateTime date) {
+    final temp = DateTime(date.year, date.month + 1, date.day);
+    return temp.day == date.day ? temp : DateTime(date.year, date.month + 2, 0);
+  }
+
+  bool _isInSameWeek(DateTime date1, DateTime date2) {
+    return _getStartDayOfWeek(
+      date1,
+    ).isAtSameMomentAs(_getStartDayOfWeek(date2));
+  }
+
+  bool _isInSameMonth(DateTime date1, DateTime date2) {
+    return date1.year == date2.year && date1.month == date2.month;
+  }
+
+  bool _isInSameYear(DateTime date1, DateTime date2) {
+    return date1.year == date2.year;
+  }
+
+  bool _isOnOrBeforeStartDate(DateTime date) {
+    return date.isAtSameMomentAs(_startDate) || _isBeforeStartDate(date);
+  }
+
+  bool _isInOrBeforeStartWeek(DateTime date) {
+    return _isInSameWeek(date, _startDate) || _isBeforeStartDate(date);
+  }
+
+  bool _isInOrBeforeStartMonth(DateTime date) {
+    return _isInSameMonth(date, _startDate) || _isBeforeStartDate(date);
+  }
+
+  bool _isBeforeStartDate(DateTime date) {
+    return date.isBefore(_startDate);
+  }
+
+  bool _isBeforeStartWeek(DateTime date) {
+    return _getStartDayOfWeek(date).isBefore(_getStartDayOfWeek(_startDate));
+  }
+
+  bool _isOnOrAfterToday(DateTime date) {
+    return date.isAtSameMomentAs(today) || _isAfterToday(date);
+  }
+
+  bool _isInOrAfterThisWeek(DateTime date) {
+    return _isInSameWeek(date, today) || _isAfterToday(date);
+  }
+
+  bool _isInOrAfterThisMonth(DateTime date) {
+    return _isInSameMonth(date, today) || _isAfterToday(date);
+  }
+
+  bool _isAfterToday(DateTime date) {
+    return date.isAfter(today);
+  }
+
+  bool _isAfterThisWeek(DateTime date) {
+    return _getStartDayOfWeek(date).isAfter(_getStartDayOfWeek(today));
+  }
+
+  bool _isNotInRange(DateTime date) {
+    return _isBeforeStartDate(date) || _isAfterToday(date);
   }
 
   Widget _buildDailyView(WordListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
 
-    if (_selectedDate.isBefore(_startDate)) {
+    if (_isBeforeStartDate(_selectedDate)) {
       _selectedDate = _startDate;
-    } else if (_selectedDate.isAfter(today)) {
+    } else if (_isAfterToday(_selectedDate)) {
       _selectedDate = today;
     }
 
     final currentData = notifier.getHalfHourlyCountsPerDay(_selectedDate);
-    final previousData = _isStartDateOrBefore(_selectedDate)
+    final previousData = _isOnOrBeforeStartDate(_selectedDate)
         ? <int>[]
-        : notifier.getHalfHourlyCountsPerDay(_previousDate(_selectedDate));
-    final nextData = _isTodayOrAfter(_selectedDate)
+        : notifier.getHalfHourlyCountsPerDay(_getOneDayAgo(_selectedDate));
+    final nextData = _isOnOrAfterToday(_selectedDate)
         ? <int>[]
-        : notifier.getHalfHourlyCountsPerDay(_nextDate(_selectedDate));
+        : notifier.getHalfHourlyCountsPerDay(_getOneDayLater(_selectedDate));
 
     final entries = notifier.getWordCountsForDuration(_selectedDate, 1);
 
@@ -134,11 +214,11 @@ class _ActivityPageState extends State<ActivityPage> {
               children: [
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_left),
-                  onPressed: _isStartDateOrBefore(_selectedDate)
+                  onPressed: _isOnOrBeforeStartDate(_selectedDate)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _previousDate(_selectedDate);
+                            _selectedDate = _getOneDayAgo(_selectedDate);
                           });
                         },
                 ),
@@ -148,11 +228,11 @@ class _ActivityPageState extends State<ActivityPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_right),
-                  onPressed: _isTodayOrAfter(_selectedDate)
+                  onPressed: _isOnOrAfterToday(_selectedDate)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _nextDate(_selectedDate);
+                            _selectedDate = _getOneDayLater(_selectedDate);
                           });
                         },
                 ),
@@ -173,18 +253,18 @@ class _ActivityPageState extends State<ActivityPage> {
               barColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
               fontSize: 12.0 * prefs.fontSizeFactor,
-              onSwipeLeft: _isToday(_selectedDate)
+              onSwipeLeft: _isOnOrAfterToday(_selectedDate)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _nextDate(_selectedDate);
+                        _selectedDate = _getOneDayLater(_selectedDate);
                       });
                     },
-              onSwipeRight: _isStartDateOrBefore(_selectedDate)
+              onSwipeRight: _isOnOrBeforeStartDate(_selectedDate)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _previousDate(_selectedDate);
+                        _selectedDate = _getOneDayAgo(_selectedDate);
                       });
                     },
             ),
@@ -222,77 +302,35 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-  DateTime _getFirstDayOfWeek(DateTime date) {
-    return date.subtract(Duration(days: date.weekday - 1));
-  }
-
-  DateTime _getLastDayOfWeek(DateTime date) {
-    return date.subtract(Duration(days: date.weekday - 7));
-  }
-
-  bool _isInStartWeek(DateTime date) {
-    return _getFirstDayOfWeek(
-      date,
-    ).isAtSameMomentAs(_getFirstDayOfWeek(_startDate));
-  }
-
-  bool _isInStartWeekOrBefore(DateTime date) {
-    return _isInStartWeek(date) || date.isBefore(_startDate);
-  }
-
-  bool _isInThisWeek(DateTime date) {
-    return _getFirstDayOfWeek(date).isAtSameMomentAs(_getFirstDayOfWeek(today));
-  }
-
-  bool _isInThisWeekOrAfter(DateTime date) {
-    return _isInThisWeek(date) || date.isAfter(today);
-  }
-
-  DateTime _previousWeek(DateTime date) {
-    return date.subtract(const Duration(days: 7));
-  }
-
-  DateTime _nextWeek(DateTime date) {
-    return date.add(const Duration(days: 7));
-  }
-
-  bool _isInSameMonth(DateTime date1, DateTime date2) {
-    return date1.year == date2.year && date1.month == date2.month;
-  }
-
-  bool _isInSameYear(DateTime date1, DateTime date2) {
-    return date1.year == date2.year;
-  }
-
   String _dateLabelForWeeklyChart() {
     final l10n = AppLocalizations.of(context)!;
-    final firstDay = _getFirstDayOfWeek(_selectedDate);
-    final lastDay = _getLastDayOfWeek(_selectedDate);
-    return (_isInSameMonth(firstDay, lastDay)
+    final startDay = _getStartDayOfWeek(_selectedDate);
+    final endDay = _geEndDayOfWeek(_selectedDate);
+    return (_isInSameMonth(startDay, endDay)
         ? l10n.dateFormatForWeeklyChartInSameMonth
-        : _isInSameYear(firstDay, lastDay)
+        : _isInSameYear(startDay, endDay)
         ? l10n.dateFormatForWeeklyChartInSameYear
-        : l10n.dateFormatForWeeklyChart)(firstDay, lastDay);
+        : l10n.dateFormatForWeeklyChart)(startDay, endDay);
   }
 
   Widget _buildWeeklyView(WordListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
 
-    if (_selectedDate.isBefore(_startDate) && !_isInStartWeek(_selectedDate)) {
+    if (_isBeforeStartWeek(_selectedDate)) {
       _selectedDate = _startDate;
-    } else if (_selectedDate.isAfter(today) && !_isInThisWeek(_selectedDate)) {
+    } else if (_isAfterThisWeek(_selectedDate)) {
       _selectedDate = today;
     }
 
-    final firstDay = _getFirstDayOfWeek(_selectedDate);
+    final firstDay = _getStartDayOfWeek(_selectedDate);
     final currentData = notifier.getDailyCountsPerWeek(firstDay);
-    final previousData = _isInStartWeekOrBefore(firstDay)
+    final previousData = _isInOrBeforeStartWeek(_selectedDate)
         ? <int>[]
-        : notifier.getDailyCountsPerWeek(_previousWeek(firstDay));
-    final nextData = _isInThisWeekOrAfter(firstDay)
+        : notifier.getDailyCountsPerWeek(_getSevenDaysAgo(firstDay));
+    final nextData = _isInOrAfterThisWeek(_selectedDate)
         ? <int>[]
-        : notifier.getDailyCountsPerWeek(_nextWeek(firstDay));
+        : notifier.getDailyCountsPerWeek(_getSevenDaysLater(firstDay));
 
     final entries = notifier.getWordCountsForDuration(firstDay, 7);
 
@@ -305,11 +343,11 @@ class _ActivityPageState extends State<ActivityPage> {
               children: [
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_left),
-                  onPressed: _isStartDateOrBefore(_selectedDate)
+                  onPressed: _isInOrBeforeStartWeek(_selectedDate)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _previousWeek(_selectedDate);
+                            _selectedDate = _getSevenDaysAgo(_selectedDate);
                           });
                         },
                 ),
@@ -323,11 +361,11 @@ class _ActivityPageState extends State<ActivityPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_right),
-                  onPressed: _isInThisWeekOrAfter(_selectedDate)
+                  onPressed: _isInOrAfterThisWeek(_selectedDate)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _nextWeek(_selectedDate);
+                            _selectedDate = _getSevenDaysLater(_selectedDate);
                           });
                         },
                 ),
@@ -348,20 +386,30 @@ class _ActivityPageState extends State<ActivityPage> {
               barColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
               fontSize: 12.0 * prefs.fontSizeFactor,
-              onSwipeLeft: _isInThisWeekOrAfter(_selectedDate)
+              onSwipeLeft: _isInOrAfterThisWeek(_selectedDate)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _nextWeek(_selectedDate);
+                        _selectedDate = _getSevenDaysLater(_selectedDate);
                       });
                     },
-              onSwipeRight: _isInStartWeekOrBefore(_selectedDate)
+              onSwipeRight: _isInOrBeforeStartWeek(_selectedDate)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _previousWeek(_selectedDate);
+                        _selectedDate = _getSevenDaysAgo(_selectedDate);
                       });
                     },
+              onDailyViewSelected: (int index) {
+                final tappedDate = _getStartDayOfWeek(
+                  _selectedDate,
+                ).add(Duration(days: index));
+
+                if (_isNotInRange(tappedDate)) return;
+
+                _selectedDate = tappedDate;
+                notifier.viewMode = ActivityViewMode.daily;
+              },
             ),
             SizedBox(height: 16),
             Divider(height: 1),
@@ -397,46 +445,20 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-  DateTime _getFirstDayOfMonth(DateTime date) {
-    return DateTime(date.year, date.month, 1);
-  }
-
-  int _getDurationOfMonth(DateTime date) {
-    return DateTime(date.year, date.month + 1, 0).day;
-  }
-
-  bool _isInStartMonthOrBefore(DateTime date) {
-    return _isInSameMonth(date, _startDate) || date.isBefore(_startDate);
-  }
-
-  bool _isInThisMonthOrAfter(DateTime date) {
-    return _isInSameMonth(date, today) || date.isAfter(today);
-  }
-
-  DateTime _previousMonth(DateTime date) {
-    final temp = DateTime(date.year, date.month - 1, date.day);
-    return temp.day == date.day ? temp : DateTime(date.year, date.month, 0);
-  }
-
-  DateTime _nextMonth(DateTime date) {
-    final temp = DateTime(date.year, date.month + 1, date.day);
-    return temp.day == date.day ? temp : DateTime(date.year, date.month + 2, 0);
-  }
-
   Widget _buildMonthlyView(WordListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
 
     final currentData = notifier.getDailyCountsPerMonth(_selectedDate);
-    final previousData = _isInStartMonthOrBefore(_selectedDate)
+    final previousData = _isInOrBeforeStartMonth(_selectedDate)
         ? <int>[]
-        : notifier.getDailyCountsPerMonth(_previousMonth(_selectedDate));
-    final nextData = _isInThisMonthOrAfter(_selectedDate)
+        : notifier.getDailyCountsPerMonth(_getOneMonthAgo(_selectedDate));
+    final nextData = _isInOrAfterThisMonth(_selectedDate)
         ? <int>[]
-        : notifier.getDailyCountsPerMonth(_nextMonth(_selectedDate));
+        : notifier.getDailyCountsPerMonth(_getOneMonthLater(_selectedDate));
 
     final entries = notifier.getWordCountsForDuration(
-      _getFirstDayOfMonth(_selectedDate),
+      _getStartDayOfMonth(_selectedDate),
       _getDurationOfMonth(_selectedDate),
     );
 
@@ -449,11 +471,11 @@ class _ActivityPageState extends State<ActivityPage> {
               children: [
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_left),
-                  onPressed: _isInStartMonthOrBefore(_selectedDate)
+                  onPressed: _isInOrBeforeStartMonth(_selectedDate)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _previousMonth(_selectedDate);
+                            _selectedDate = _getOneMonthAgo(_selectedDate);
                           });
                         },
                 ),
@@ -466,11 +488,11 @@ class _ActivityPageState extends State<ActivityPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_right),
-                  onPressed: _isInThisMonthOrAfter(_selectedDate)
+                  onPressed: _isInOrAfterThisMonth(_selectedDate)
                       ? null
                       : () {
                           setState(() {
-                            _selectedDate = _nextMonth(_selectedDate);
+                            _selectedDate = _getOneMonthLater(_selectedDate);
                           });
                         },
                 ),
@@ -490,26 +512,41 @@ class _ActivityPageState extends State<ActivityPage> {
               currentData: currentData,
               previousData: previousData,
               nextData: nextData,
-              startWeekDay:
-                  DateTime(_selectedDate.year, _selectedDate.month, 1).weekday -
-                  1,
+              startWeekDay: _getStartDayOfMonth(_selectedDate).weekday - 1,
               circleColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
               fontSize: 12.0 * prefs.fontSizeFactor,
-              onSwipeLeft: _isInThisMonthOrAfter(_selectedDate)
+              onSwipeLeft: _isInOrAfterThisMonth(_selectedDate)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _nextMonth(_selectedDate);
+                        _selectedDate = _getOneMonthLater(_selectedDate);
                       });
                     },
-              onSwipeRight: _isInStartMonthOrBefore(_selectedDate)
+              onSwipeRight: _isInOrBeforeStartMonth(_selectedDate)
                   ? null
                   : () {
                       setState(() {
-                        _selectedDate = _previousMonth(_selectedDate);
+                        _selectedDate = _getOneMonthAgo(_selectedDate);
                       });
                     },
+              onDailyViewSelected: (int index) {
+                final startOffset =
+                    _getStartDayOfMonth(_selectedDate).weekday - 1;
+                final tappedDate = DateTime(
+                  _selectedDate.year,
+                  _selectedDate.month,
+                  index - startOffset + 1,
+                );
+
+                if (!_isInSameMonth(tappedDate, _selectedDate) ||
+                    _isNotInRange(tappedDate)) {
+                  return;
+                }
+
+                _selectedDate = tappedDate;
+                notifier.viewMode = ActivityViewMode.daily;
+              },
             ),
             SizedBox(height: 16),
             Divider(height: 1),

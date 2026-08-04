@@ -80,6 +80,9 @@ abstract class BaseBarChartState<
   double _tempUpperBound = 50.0;
   double _currentUpperBound = 50.0;
   double _previousUpperBound = 50.0;
+  final Stopwatch stopWatch = Stopwatch();
+
+  bool get isAnimating => _isAnimating;
 
   @override
   void initState() {
@@ -161,23 +164,40 @@ abstract class BaseBarChartState<
     }
   }
 
+  void _onTapDown(TapDownDetails d) {
+    if (_isAnimating) return;
+    stopWatch.reset();
+    stopWatch.start();
+  }
+
+  void onTapUp(TapUpDetails d);
+
+  void _onTapCancel() {
+    if (_isAnimating) return;
+    stopWatch.stop();
+  }
+
   double targetUpperBound(List<int> data);
 
   void _animateTo(double target, List<int> newData, VoidCallback? onComplete) {
     _isAnimating = true;
 
-    final shiftAnimation = Tween<double>(begin: _dragShift, end: target).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(0.0, 0.5, curve: Curves.easeOutCubic),
-      ),
-    );
+    final shiftAnimation = Tween<double>(begin: _dragShift, end: target)
+        .animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _previousUpperBound = _currentUpperBound;
     _currentUpperBound = targetUpperBound(newData);
 
-    final upperBoundAnimation = Tween<double>(begin: _previousUpperBound, end: _currentUpperBound)
-        .animate(
+    final upperBoundAnimation =
+        Tween<double>(
+          begin: _previousUpperBound,
+          end: _currentUpperBound,
+        ).animate(
           CurvedAnimation(
             parent: _animationController,
             curve: Interval(0.5, 1.0, curve: Curves.linear),
@@ -219,6 +239,9 @@ abstract class BaseBarChartState<
           behavior: HitTestBehavior.opaque,
           onHorizontalDragUpdate: _onDragUpdate,
           onHorizontalDragEnd: _onDragEnd,
+          onTapDown: _onTapDown,
+          onTapUp: onTapUp,
+          onTapCancel: _onTapCancel,
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, _) {

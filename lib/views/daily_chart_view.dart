@@ -67,6 +67,13 @@ class _DailyBarChartState extends BaseBarChartState<DailyChartView, DailyBarChar
   }
 
   @override
+  void onTapUp(TapUpDetails d) {
+    if (super.isAnimating) return;
+
+    stopWatch.stop();
+  }
+
+  @override
   double targetUpperBound(List<int> data) {
     final maxVal = data
         .fold(50, (prev, element) => max(prev, element))

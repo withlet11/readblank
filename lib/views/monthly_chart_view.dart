@@ -22,8 +22,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/word_list_notifier.dart';
 
 class MonthlyChartViewController {
   _MonthlyChartState? _state;
@@ -55,6 +57,7 @@ class MonthlyChartView extends StatefulWidget {
   final double fontSize;
   final VoidCallback? onSwipeLeft;
   final VoidCallback? onSwipeRight;
+  final ValueChanged<int>? onDailyViewSelected;
   final MonthlyChartViewController? controller;
 
   const MonthlyChartView({
@@ -68,6 +71,7 @@ class MonthlyChartView extends StatefulWidget {
     required this.fontSize,
     this.onSwipeLeft,
     this.onSwipeRight,
+    this.onDailyViewSelected,
     this.controller,
   });
 
@@ -84,6 +88,7 @@ class _MonthlyChartState extends State<MonthlyChartView>
   double _tempUpperBound = 50.0;
   double _currentUpperBound = 50.0;
   double _previousUpperBound = 50.0;
+  final Stopwatch _stopWatch = Stopwatch();
 
   @override
   void initState() {
@@ -163,6 +168,42 @@ class _MonthlyChartState extends State<MonthlyChartView>
     } else {
       _animateTo(0.0, widget.currentData, null);
     }
+  }
+
+  void _onTapDown(TapDownDetails d) {
+    if (_isAnimating) return;
+    _stopWatch.reset();
+    _stopWatch.start();
+  }
+
+  void _onTapUp(TapUpDetails d) {
+    if (_isAnimating) return;
+
+    _stopWatch.stop();
+    final holdTime = _stopWatch.elapsedMilliseconds;
+
+    if (holdTime < 100) {
+      final object = context.findRenderObject() as RenderBox;
+      final size = object.size;
+      final marginLeft = MonthlyBarChartPainter.margin.left;
+      final marginTop = MonthlyBarChartPainter.margin.top;
+      final marginRight = MonthlyBarChartPainter.margin.right;
+      final marginBottom = MonthlyBarChartPainter.margin.bottom;
+
+      double width = size.width - marginLeft - marginRight;
+      double height = size.height - marginTop - marginBottom;
+      double x = d.localPosition.dx - marginLeft;
+      double y = d.localPosition.dy - marginTop;
+
+      int index = ((x / width) * 7).toInt() + ((y / height) * 7).toInt() * 7;
+
+      widget.onDailyViewSelected?.call(index);
+    }
+  }
+
+  void _onTapCancel() {
+    if (_isAnimating) return;
+    _stopWatch.stop();
   }
 
   double targetUpperBound(List<int> data) {
@@ -251,6 +292,9 @@ class _MonthlyChartState extends State<MonthlyChartView>
           behavior: HitTestBehavior.opaque,
           onHorizontalDragUpdate: _onDragUpdate,
           onHorizontalDragEnd: _onDragEnd,
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, _) {
@@ -325,10 +369,10 @@ class MonthlyBarChartPainter extends CustomPainter {
       final position = startOffset + i;
       final center =
           origin +
-              Offset(
-                (position % 7) * (chartWidth / 7),
-                (position ~/ 7) * (chartHeight / maxRowCount),
-              );
+          Offset(
+            (position % 7) * (chartWidth / 7),
+            (position ~/ 7) * (chartHeight / maxRowCount),
+          );
       final label = day.toStringAsFixed(0);
       drawText(canvas, label, center, Alignment.center);
 
