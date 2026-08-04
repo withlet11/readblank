@@ -31,7 +31,7 @@ class WordListNotifier extends ChangeNotifier {
   // For database operations
   final DatabaseHelper _db = DatabaseHelper.instance;
   List<Map<String, dynamic>> _wordLog = List.empty(growable: true);
-  Map<String, int> _wordCounts = {};
+  // Map<String, int> _wordCounts = {};
   ActivityViewMode _viewMode = ActivityViewMode.daily;
 
   WordListNotifier() {
@@ -49,7 +49,7 @@ class WordListNotifier extends ChangeNotifier {
 
   List<Map<String, dynamic>> get wordLog => _wordLog;
 
-  Map<String, int> get wordCounts => _wordCounts;
+  // Map<String, int> get wordCounts => _wordCounts;
 
   Future<void> fetchLog() async {
     _isLoading = true;
@@ -69,12 +69,12 @@ class WordListNotifier extends ChangeNotifier {
     _wordLog.insert(0, {'word': word, 'timestamp': timestamp});
     if (_wordLog.length > 10000) _wordLog.removeLast();
 
-    final lowerWord = word.toLowerCase();
-    if (_wordCounts.containsKey(lowerWord)) {
-      _wordCounts[lowerWord] = _wordCounts[lowerWord]! + 1;
-    } else if (_viewMode == ActivityViewMode.weekly) {
-      _wordCounts[lowerWord] = 1;
-    }
+    // final lowerWord = word.toLowerCase();
+    // if (_wordCounts.containsKey(lowerWord)) {
+    //   _wordCounts[lowerWord] = _wordCounts[lowerWord]! + 1;
+    // } else if (_viewMode == ActivityViewMode.weekly) {
+    //   _wordCounts[lowerWord] = 1;
+    // }
 
     notifyListeners();
   }

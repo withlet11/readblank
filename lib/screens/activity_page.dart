@@ -46,29 +46,16 @@ class _ActivityPageState extends State<ActivityPage> {
   late DateTime _selectedDate = today;
 
   @override
-  void initState() {
-    super.initState();
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   // if (mounted) {
-    //   //   context.read<wordlistnotifier>().loaddailydata(_selecteddate, 1);
-    //   // }
-    // });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Consumer<WordListNotifier>(
       builder: (context, notifier, child) {
-        final isSummary = notifier.viewMode == ActivityViewMode.weekly;
-        final hasData = isSummary
-            ? notifier.wordCounts.isNotEmpty
-            : notifier.wordLog.isNotEmpty;
+        final hasData = notifier.wordLog.isNotEmpty;
 
         if (notifier.isLoading && !hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final view = isSummary
+        final view = notifier.viewMode == ActivityViewMode.weekly
             ? _buildWeeklyView(notifier)
             : _buildDailyView(notifier);
 

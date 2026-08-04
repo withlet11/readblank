@@ -77,9 +77,10 @@ abstract class BaseBarChartState<
   double _dragShift = 0.0;
   bool _isAnimating = false;
   double _lastWidth = 0.0;
+  double _tempUpperBound = 50.0;
   double _currentUpperBound = 50.0;
   double _previousUpperBound = 50.0;
-  late Animation<double> _curve;
+  // late Animation<double> _curve;
 
   @override
   void initState() {
@@ -95,7 +96,8 @@ abstract class BaseBarChartState<
         .toDouble();
     _currentUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
     _previousUpperBound = _currentUpperBound;
-    _curve = AlwaysStoppedAnimation<double>(_currentUpperBound);
+    _tempUpperBound = _currentUpperBound;
+    // _curve = AlwaysStoppedAnimation<double>(_currentUpperBound);
   }
 
   @override
@@ -165,30 +167,18 @@ abstract class BaseBarChartState<
 
   void _animateTo(double target, List<int> newData, VoidCallback? onComplete) {
     _isAnimating = true;
-    final animation = Tween<double>(begin: _dragShift, end: target).animate(
+
+    final shiftAnimation = Tween<double>(begin: _dragShift, end: target).animate(
       CurvedAnimation(
         parent: _animationController,
         curve: Interval(0.0, 0.5, curve: Curves.easeOutCubic),
       ),
     );
 
-    void listener() {
-      setState(() {
-        _dragShift = animation.value;
-      });
-    }
-
-    animation.addListener(listener);
-
-    // final maxVal = newData
-    //     .fold(50, (prev, element) => max(prev, element))
-    //     .toDouble();
-    // final targetUpperBound = (maxVal / 50.0).ceilToDouble() * 50.0;
-
     _previousUpperBound = _currentUpperBound;
     _currentUpperBound = targetUpperBound(newData);
 
-    _curve = Tween<double>(begin: _previousUpperBound, end: _currentUpperBound)
+    final upperBoundAnimation = Tween<double>(begin: _previousUpperBound, end: _currentUpperBound)
         .animate(
           CurvedAnimation(
             parent: _animationController,
@@ -196,8 +186,19 @@ abstract class BaseBarChartState<
           ),
         );
 
+    void listener() {
+      setState(() {
+        _dragShift = shiftAnimation.value;
+        _tempUpperBound = upperBoundAnimation.value;
+      });
+    }
+
+    shiftAnimation.addListener(listener);
+    upperBoundAnimation.addListener(listener);
+
     _animationController.forward(from: 0.0).then((_) {
-      animation.removeListener(listener);
+      shiftAnimation.removeListener(listener);
+      upperBoundAnimation.removeListener(listener);
       _isAnimating = false;
       onComplete?.call();
     });
@@ -227,7 +228,7 @@ abstract class BaseBarChartState<
                 size: const Size(double.infinity, 180),
                 painter: createPainter(
                   shift: _dragShift,
-                  upperBound: _curve.value,
+                  upperBound: _tempUpperBound,
                   beginUpperBound: _previousUpperBound,
                   endUpperBound: _currentUpperBound,
                 ),
