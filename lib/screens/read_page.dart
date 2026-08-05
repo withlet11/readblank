@@ -102,7 +102,9 @@ class _ReadPageState extends State<ReadPage> {
                     ),
                     onChanged: (int? value) {
                       if (value != null) {
-                        setState(() => notifier.currentParagraphIndex = value);
+                        setState(
+                          () => notifier.setCurrentParagraphIndex(value),
+                        );
                       }
                     },
                   ),

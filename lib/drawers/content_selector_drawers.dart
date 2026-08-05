@@ -91,7 +91,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                         text: l10n.historyLabel,
                       ),
                       Tab(
-                        icon: const Icon(Icons.bookmark_outline),
+                        icon: const Icon(Icons.star_outlined),
                         text: l10n.bookmarksLabel,
                       ),
                     ],
@@ -179,7 +179,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               leading: IconButton(
                 icon: bookmarkListNotifier.contains(entry[_keyUrl])
                     ? const Icon(Icons.star_outlined)
-                    : const Icon(Icons.star_border_outlined),
+                    : const Icon(Icons.star_outline_outlined),
                 onPressed: bookmarkListNotifier.contains(entry[_keyUrl])
                     ? null
                     : () {
@@ -187,6 +187,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                           bookmarkListNotifier.add(entry[_keyUrl], l10n);
                         });
                       },
+                disabledColor: Theme.of(context).colorScheme.onSurface,
               ),
               title: Text(
                 historyNotifier.title(entry[_keyUrl]),
@@ -224,7 +225,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 style: IconButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(Icons.delete_outlined),
                 onPressed: historyNotifier.historyList.length > 1
                     ? () {
                         setState(() {
@@ -306,7 +307,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 style: IconButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(Icons.delete_outlined),
                 onPressed: bookmarkListNotifier.bookmarkList.length > 1
                     ? () {
                         setState(() {

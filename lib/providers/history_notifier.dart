@@ -27,6 +27,12 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HistoryNotifier extends ChangeNotifier {
+  static const String _keyHistory = 'history';
+  static const String _keyUrl = 'url';
+  static const String _keyTimestamp = 'timestamp';
+  static const String _keyLastViewedParagraphIndex =
+      'last_viewed_paragraph_index';
+
   // For fetching data from the web
   bool _isLoading = false;
   String? _data;
@@ -40,7 +46,7 @@ class HistoryNotifier extends ChangeNotifier {
 
   HistoryNotifier(this.prefs) {
     try {
-      final historyJson = prefs.getString('history');
+      final historyJson = prefs.getString(_keyHistory);
       if (historyJson != null) {
         final decoded = jsonDecode(historyJson);
         if (decoded is List) {
@@ -66,7 +72,7 @@ class HistoryNotifier extends ChangeNotifier {
 
     try {
       for (final entry in _historyList) {
-        final url = entry['url'] as String;
+        final url = entry[_keyUrl] as String;
         _cachedContents[url] = await _fetchData(url);
       }
     } catch (e) {
@@ -119,12 +125,12 @@ class HistoryNotifier extends ChangeNotifier {
   List<Map<String, dynamic>> get historyList => _historyList;
 
   String get currentUrl =>
-      _historyList.isEmpty ? '' : _historyList.first['url'] as String;
+      _historyList.isEmpty ? '' : _historyList.first[_keyUrl] as String;
 
   String get currentTimestamp => _historyList.isEmpty
       ? ''
       : DateFormat.yMd().add_jm().format(
-          DateTime.parse(_historyList.first['timestamp']),
+          DateTime.parse(_historyList.first[_keyTimestamp]),
         );
 
   String get currentDomainName =>
@@ -133,59 +139,68 @@ class HistoryNotifier extends ChangeNotifier {
   String get currentTitle => _cachedContents[currentUrl]?.$1 ?? currentUrl;
 
   String exportHistory() =>
-      _historyList.map((e) => e['url'] as String).join('\n');
+      _historyList.map((e) => e[_keyUrl] as String).join('\n');
 
   bool isSelected(String url) =>
-      _historyList.isNotEmpty && _historyList.first['url'] == url;
+      _historyList.isNotEmpty && _historyList.first[_keyUrl] == url;
 
-  bool contains(String entry) => _historyList.any((e) => e['url'] == entry);
+  bool contains(String entry) => _historyList.any((e) => e[_keyUrl] == entry);
 
-  void select(String url) {
-    final index = _historyList.indexWhere((e) => e['url'] == url);
+  Future<void> select(String url) async {
+    final index = _historyList.indexWhere((e) => e[_keyUrl] == url);
     if (index > 0) {
-      final item = _historyList[index];
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
+      final entry = _historyList[index];
       _historyList.removeAt(index);
-      item['timestamp'] = DateTime.now().toIso8601String();
-      _historyList.insert(0, item);
-      _currentParagraphIndex = 0; // _currentIndex = 0;
-      prefs.setString('history', jsonEncode(_historyList));
+      entry[_keyTimestamp] = DateTime.now().toIso8601String();
+      _historyList.insert(0, entry);
+      _currentParagraphIndex = entry[_keyLastViewedParagraphIndex] ?? 0;
       notifyListeners();
+      await prefs.setString(_keyHistory, jsonEncode(_historyList));
     } else if (index != 0) {
       add(url);
     }
   }
 
-  void add(String url) async {
-    _historyList.insert(0, {
-      'url': url,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+  Future<void> add(String url) async {
     _currentParagraphIndex = 0;
-    prefs.setString('history', jsonEncode(_historyList));
+    _historyList.insert(0, {
+      _keyUrl: url,
+      _keyTimestamp: DateTime.now().toIso8601String(),
+      _keyLastViewedParagraphIndex: _currentParagraphIndex,
+    });
     _cachedContents[url] = await _fetchData(url);
     notifyListeners();
+    await prefs.setString(_keyHistory, jsonEncode(_historyList));
   }
 
-  void removeAt(int index) async {
+  Future<void> removeAt(int index) async {
     if (_historyList.length > 1) {
       if (index >= 0 && index < _historyList.length) {
         _historyList.removeAt(index);
-        if (index == 0) _currentParagraphIndex = 0;
-        prefs.setString('history', jsonEncode(_historyList));
+        if (index == 0) {
+          if (_historyList.isEmpty) {
+            _currentParagraphIndex = 0;
+          } else {
+            final entry = _historyList.first;
+            _currentParagraphIndex = entry[_keyLastViewedParagraphIndex] ?? 0;
+          }
+        }
         notifyListeners();
+        await prefs.setString(_keyHistory, jsonEncode(_historyList));
       }
     }
   }
 
-  void remove(String url) async {
-    final index = _historyList.indexWhere((e) => e['url'] == url);
+  Future<void> remove(String url) async {
+    final index = _historyList.indexWhere((e) => e[_keyUrl] == url);
     removeAt(index);
   }
 
-  void clearAll() async {
+  Future<void> clearAll() async {
     _historyList = [];
-    prefs.setString('history', jsonEncode(_historyList));
     notifyListeners();
+    await prefs.setString(_keyHistory, jsonEncode(_historyList));
   }
 
   String title(String url) => _cachedContents[url]?.$1 ?? 'no title';
@@ -194,10 +209,12 @@ class HistoryNotifier extends ChangeNotifier {
 
   int get currentParagraphIndex => _currentParagraphIndex;
 
-  set currentParagraphIndex(int index) {
+  Future<void> setCurrentParagraphIndex(int index) async {
     if (_currentParagraphIndex != index) {
       _currentParagraphIndex = index;
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
+      await prefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
@@ -210,31 +227,39 @@ class HistoryNotifier extends ChangeNotifier {
       currentParagraphList != null &&
       _currentParagraphIndex != currentParagraphList!.length - 1;
 
-  void movePreviousParagraph() {
+  Future<void> movePreviousParagraph() async {
     if (isNotFirstParagraph) {
       _currentParagraphIndex--;
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
+      prefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
-  void moveNextParagraph() {
+  Future<void> moveNextParagraph() async {
     if (isNotLastParagraph) {
       _currentParagraphIndex++;
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
+      prefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
-  void moveToFirstParagraph() {
+  Future<void> moveToFirstParagraph() async {
     if (isNotFirstParagraph) {
       _currentParagraphIndex = 0;
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
+      await prefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
-  void moveToLastParagraph() {
+  Future<void> moveToLastParagraph() async {
     if (isNotLastParagraph) {
       _currentParagraphIndex = currentParagraphList!.length - 1;
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
+      await prefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 }

@@ -22,10 +22,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../providers/word_list_notifier.dart';
 
 class MonthlyChartViewController {
   _MonthlyChartState? _state;
