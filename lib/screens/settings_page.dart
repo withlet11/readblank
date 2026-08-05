@@ -27,7 +27,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/bookmark_list_notifier.dart';
+import '../providers/favorite_list_notifier.dart';
 import '../providers/history_notifier.dart';
 import '../providers/word_list_notifier.dart';
 
@@ -52,14 +52,14 @@ enum ImportProcessResult {
 class _SettingsPageState extends State<SettingsPage> {
   bool _isImportingHistory = false;
   bool _isExportingHistory = false;
-  bool _isImportingBookmark = false;
-  bool _isExportingBookmark = false;
+  bool _isImportingFavorites = false;
+  bool _isExportingFavorites = false;
 
   bool get _isImportingOrExporting =>
       _isImportingHistory ||
       _isExportingHistory ||
-      _isImportingBookmark ||
-      _isExportingBookmark;
+      _isImportingFavorites ||
+      _isExportingFavorites;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +99,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       ListTile(
-        leading: const Icon(Icons.font_download_outlined),
+        leading: const Icon(Icons.format_size_outlined),
         title: Text(l10n.fontSizeLabel),
         trailing: DropdownButton(
           items: pref.fontSizeFactorList.indexed.map((entry) {
@@ -138,7 +138,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : const Icon(Icons.paste_rounded),
+              : const Icon(Icons.paste_outlined),
           onPressed: _isImportingOrExporting ? null : _importHistory,
         ),
       ),
@@ -158,48 +158,48 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       ListTile(
-        leading: const Icon(Icons.bookmarks_outlined),
-        title: Text(l10n.bookmarkImportLabel),
+        leading: const Icon(Icons.star_outlined),
+        title: Text(l10n.favoritesImportLabel),
         trailing: TextButton.icon(
           label: Text(l10n.pasteButton),
-          icon: _isImportingBookmark
+          icon: _isImportingFavorites
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : const Icon(Icons.paste_rounded),
-          onPressed: _isImportingOrExporting ? null : _importBookmark,
+              : const Icon(Icons.paste_outlined),
+          onPressed: _isImportingOrExporting ? null : _importFavorites,
         ),
       ),
       ListTile(
-        leading: const Icon(Icons.bookmarks_outlined),
-        title: Text(l10n.bookmarkExportLabel),
+        leading: const Icon(Icons.star_outlined),
+        title: Text(l10n.favoritesExportLabel),
         trailing: TextButton.icon(
           label: Text(l10n.copyAllButton),
-          icon: _isExportingBookmark
+          icon: _isExportingFavorites
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
               : const Icon(Icons.copy_all_outlined),
-          onPressed: _isImportingOrExporting ? null : _exportBookmark,
+          onPressed: _isImportingOrExporting ? null : _exportFavorites,
         ),
       ),
     ];
 
-    return Consumer3<HistoryNotifier, BookmarkListNotifier, WordListNotifier>(
+    return Consumer3<HistoryNotifier, FavoriteListNotifier, WordListNotifier>(
       builder:
           (
             context,
             historyNotifier,
-            bookmarkListNotifier,
+            favoriteListNotifier,
             wordListNotifier,
             child,
           ) {
             if (historyNotifier.isLoading ||
-                bookmarkListNotifier.isLoading ||
+                favoriteListNotifier.isLoading ||
                 wordListNotifier.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -377,21 +377,21 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _exportBookmark() async {
+  Future<void> _exportFavorites() async {
     final l10n = AppLocalizations.of(context)!;
 
     setState(() {
-      _isExportingBookmark = true;
+      _isExportingFavorites = true;
     });
 
     try {
-      final bookmarkListNotifier = context.read<BookmarkListNotifier>();
-      final String exportedData = bookmarkListNotifier.exportBookmark();
+      final favoriteListNotifier = context.read<FavoriteListNotifier>();
+      final String exportedData = favoriteListNotifier.exportFavorites();
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.bookmarksCopySuccessMessage),
+            content: Text(l10n.favoritesCopySuccessMessage),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -400,7 +400,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.bookmarkExportErrorMessage(e.toString())),
+            content: Text(l10n.favoritesExportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -408,17 +408,17 @@ class _SettingsPageState extends State<SettingsPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _isExportingBookmark = false;
+          _isExportingFavorites = false;
         });
       }
     }
   }
 
-  Future<void> _importBookmark() async {
+  Future<void> _importFavorites() async {
     final l10n = AppLocalizations.of(context)!;
 
     setState(() {
-      _isImportingBookmark = true;
+      _isImportingFavorites = true;
     });
     try {
       final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
@@ -437,7 +437,7 @@ class _SettingsPageState extends State<SettingsPage> {
         int invalidUrlCount = 0;
         int errorCount = 0;
 
-        final results = await Future.wait(lines.map(_addBookmark));
+        final results = await Future.wait(lines.map(_addFavorite));
 
         for (final result in results) {
           switch (result) {
@@ -494,7 +494,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.bookmarkImportErrorMessage(e.toString())),
+            content: Text(l10n.favoritesImportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -502,16 +502,16 @@ class _SettingsPageState extends State<SettingsPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _isImportingBookmark = false;
+          _isImportingFavorites = false;
         });
       }
     }
   }
 
-  Future<ImportProcessResult> _addBookmark(String url) async {
+  Future<ImportProcessResult> _addFavorite(String url) async {
     final l10n = AppLocalizations.of(context)!;
 
-    final bookmarkListNotifier = context.read<BookmarkListNotifier>();
+    final favoriteListNotifier = context.read<FavoriteListNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -519,10 +519,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (bookmarkListNotifier.contains(url)) {
+            if (favoriteListNotifier.contains(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              bookmarkListNotifier.add(url, l10n);
+              favoriteListNotifier.add(url, l10n);
               return ImportProcessResult.success;
             }
           } else {

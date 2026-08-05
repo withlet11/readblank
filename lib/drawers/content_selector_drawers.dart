@@ -24,7 +24,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../providers/bookmark_list_notifier.dart';
+import '../providers/favorite_list_notifier.dart';
 import '../providers/history_notifier.dart';
 
 class ContentSelectorDrawers extends StatefulWidget {
@@ -69,9 +69,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Consumer2<HistoryNotifier, BookmarkListNotifier>(
-      builder: (context, historyNotifier, bookmarkListNotifier, child) {
-        if (historyNotifier.isLoading || bookmarkListNotifier.isLoading) {
+    return Consumer2<HistoryNotifier, FavoriteListNotifier>(
+      builder: (context, historyNotifier, favoriteListNotifier, child) {
+        if (historyNotifier.isLoading || favoriteListNotifier.isLoading) {
           return Center(child: CircularProgressIndicator());
         }
 
@@ -92,7 +92,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                       ),
                       Tab(
                         icon: const Icon(Icons.star_outlined),
-                        text: l10n.bookmarksLabel,
+                        text: l10n.favoritesLabel,
                       ),
                     ],
                   ),
@@ -101,8 +101,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _historyListView(historyNotifier, bookmarkListNotifier),
-                      _bookmarkListView(historyNotifier, bookmarkListNotifier),
+                      _historyListView(historyNotifier, favoriteListNotifier),
+                      _favoriteListView(historyNotifier, favoriteListNotifier),
                     ],
                   ),
                 ),
@@ -118,12 +118,12 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                         ),
                         onPressed: _activeIndex == 0
                             ? _clearAllHistory
-                            : _deleteAllBookmarks,
+                            : _deleteAllFavorites,
                         icon: const Icon(Icons.delete_sweep_outlined),
                         label: Text(
                           _activeIndex == 0
                               ? l10n.allHistoryClearButton
-                              : l10n.allBookmarksDeleteButton,
+                              : l10n.allFavoritesDeleteButton,
                         ),
                       ),
                     ],
@@ -139,7 +139,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
 
   Widget _historyListView(
     HistoryNotifier historyNotifier,
-    BookmarkListNotifier bookmarkListNotifier,
+    FavoriteListNotifier favoriteListNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -177,20 +177,20 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               minLeadingWidth: 0,
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               leading: IconButton(
-                icon: bookmarkListNotifier.contains(entry[_keyUrl])
+                icon: favoriteListNotifier.contains(entry[_keyUrl])
                     ? const Icon(Icons.star_outlined)
                     : const Icon(Icons.star_outline_outlined),
-                onPressed: bookmarkListNotifier.contains(entry[_keyUrl])
+                onPressed: favoriteListNotifier.contains(entry[_keyUrl])
                     ? null
                     : () {
                         setState(() {
-                          bookmarkListNotifier.add(entry[_keyUrl], l10n);
+                          favoriteListNotifier.add(entry[_keyUrl], l10n);
                         });
                       },
                 disabledColor: Theme.of(context).colorScheme.onSurface,
               ),
               title: Text(
-                historyNotifier.title(entry[_keyUrl]),
+                historyNotifier.title(entry[_keyUrl]) ?? l10n.noTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -240,9 +240,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     );
   }
 
-  Widget _bookmarkListView(
+  Widget _favoriteListView(
     HistoryNotifier historyNotifier,
-    BookmarkListNotifier bookmarkListNotifier,
+    FavoriteListNotifier favoriteListNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -271,7 +271,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
           ),
         ),
         children: [
-          for (final entry in bookmarkListNotifier.bookmarkList)
+          for (final entry in favoriteListNotifier.favoriteList)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
@@ -284,7 +284,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 onPressed: () {},
               ),
               title: Text(
-                bookmarkListNotifier.title(entry[_keyUrl], l10n),
+                favoriteListNotifier.title(entry[_keyUrl], l10n),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -308,10 +308,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 icon: const Icon(Icons.delete_outlined),
-                onPressed: bookmarkListNotifier.bookmarkList.length > 1
+                onPressed: favoriteListNotifier.favoriteList.length > 1
                     ? () {
                         setState(() {
-                          bookmarkListNotifier.remove(entry[_keyUrl]);
+                          favoriteListNotifier.remove(entry[_keyUrl]);
                         });
                       }
                     : null,
@@ -348,14 +348,14 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     }
   }
 
-  void _deleteAllBookmarks() async {
+  void _deleteAllFavorites() async {
     final l10n = AppLocalizations.of(context)!;
-    final settings = context.read<BookmarkListNotifier>();
+    final settings = context.read<FavoriteListNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.allBookmarksDeleteButton),
-        content: Text(l10n.allBookmarksDeleteConfirmation),
+        title: Text(l10n.allFavoritesDeleteButton),
+        content: Text(l10n.allFavoritesDeleteConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

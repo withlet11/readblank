@@ -38,6 +38,8 @@ class HistoryNotifier extends ChangeNotifier {
   String? _data;
   String? _error;
 
+  String? get error => _error;
+
   // For storing and retrieving data from SharedPreferences
   final SharedPreferences prefs;
   List<Map<String, dynamic>> _historyList = [];
@@ -65,16 +67,34 @@ class HistoryNotifier extends ChangeNotifier {
 
   String? get data => _data;
 
-  Future<void> fetchAllUrls() async {
+  Future<void> fetchAllLinkedContents() async {
     _isLoading = true;
     _error = null;
-    notifyListeners(); // Notify UI to show spinner
+    notifyListeners();
 
     try {
       for (final entry in _historyList) {
         final url = entry[_keyUrl] as String;
-        _cachedContents[url] = await _fetchData(url);
+        _cachedContents[url] = await _fetchLinkedContent(url);
       }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchCurrentLinkedContent() async {
+    if (currentParagraphList != null) return;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final contents = await _fetchLinkedContent(currentUrl);
+      _cachedContents[currentUrl] = contents;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -83,25 +103,7 @@ class HistoryNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchCurrentUrl() async {
-    if (currentParagraphList != null) return;
-
-    _isLoading = true;
-    _error = null;
-    notifyListeners(); // Notify UI to show spinner
-
-    try {
-      final contents = await _fetchData(currentUrl);
-      _cachedContents[currentUrl] = contents;
-    } catch (e) {
-      print('fetchCurrentUrl() error: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners(); // Notify UI to stop spinner
-    }
-  }
-
-  Future<(String?, List<String>)> _fetchData(String url) async {
+  Future<(String?, List<String>)> _fetchLinkedContent(String url) async {
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
@@ -116,7 +118,7 @@ class HistoryNotifier extends ChangeNotifier {
             .toList(),
       );
     } else {
-      throw Exception('Failed to load page');
+      throw Exception('Failed to fetch a page');
     }
   }
 
@@ -169,7 +171,7 @@ class HistoryNotifier extends ChangeNotifier {
       _keyTimestamp: DateTime.now().toIso8601String(),
       _keyLastViewedParagraphIndex: _currentParagraphIndex,
     });
-    _cachedContents[url] = await _fetchData(url);
+    _cachedContents[url] = await _fetchLinkedContent(url);
     notifyListeners();
     await prefs.setString(_keyHistory, jsonEncode(_historyList));
   }
@@ -203,7 +205,7 @@ class HistoryNotifier extends ChangeNotifier {
     await prefs.setString(_keyHistory, jsonEncode(_historyList));
   }
 
-  String title(String url) => _cachedContents[url]?.$1 ?? 'no title';
+  String? title(String url) => _cachedContents[url]?.$1;
 
   List<String>? get currentParagraphList => _cachedContents[currentUrl]?.$2;
 

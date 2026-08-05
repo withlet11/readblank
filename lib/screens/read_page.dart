@@ -40,7 +40,7 @@ class _ReadPageState extends State<ReadPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HistoryNotifier>(context, listen: false).fetchCurrentUrl();
+      Provider.of<HistoryNotifier>(context, listen: false).fetchCurrentLinkedContent();
     });
   }
 

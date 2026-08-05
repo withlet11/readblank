@@ -24,7 +24,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'base_chart_view.dart';
 
-class DailyChartViewController extends BaseChartViewController<_DailyBarChartState> {}
+class DailyChartViewController
+    extends BaseChartViewController<_DailyBarChartState> {}
 
 class DailyChartView extends BaseChartView {
   const DailyChartView({
@@ -44,7 +45,8 @@ class DailyChartView extends BaseChartView {
   State<DailyChartView> createState() => _DailyBarChartState();
 }
 
-class _DailyBarChartState extends BaseBarChartState<DailyChartView, DailyBarChartPainter> {
+class _DailyBarChartState
+    extends BaseBarChartState<DailyChartView, DailyBarChartPainter> {
   @override
   DailyBarChartPainter createPainter({
     required double shift,

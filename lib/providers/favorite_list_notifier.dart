@@ -1,5 +1,5 @@
 /*
- * bookmark_list_notifier.dart
+ * favorite_list_notifier.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -29,15 +29,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import 'history_notifier.dart';
 
-const kDefaultBookmarkedUrls = [
-  'https://www.google.com',
-  'https://www.wikipedia.org',
-  'https://www.debian.org',
-  'https://hu.wikipedia.org/wiki/Wikip%C3%A9dia',
-];
-
-class BookmarkListNotifier extends ChangeNotifier {
-  static const String _keyBookmarks = 'bookmarks';
+class FavoriteListNotifier extends ChangeNotifier {
+  static const String _keyFavorites = 'bookmarks';
   static const String _keyTitle = 'title';
   static const String _keyUrl = 'url';
 
@@ -48,22 +41,22 @@ class BookmarkListNotifier extends ChangeNotifier {
 
   // For storing and retrieving data from SharedPreferences
   final SharedPreferences prefs;
-  List<Map<String, dynamic>> _bookmarkList = [];
+  List<Map<String, dynamic>> _favoriteList = [];
   Map<String, (String?, List<String>)> cachedContents = {};
 
-  BookmarkListNotifier(this.prefs) {
+  FavoriteListNotifier(this.prefs) {
     try {
-      final bookmarksJson = prefs.getString(_keyBookmarks);
-      if (bookmarksJson != null) {
-        final decoded = jsonDecode(bookmarksJson);
+      final favoritesJson = prefs.getString(_keyFavorites);
+      if (favoritesJson != null) {
+        final decoded = jsonDecode(favoritesJson);
         if (decoded is List) {
-          _bookmarkList = List<Map<String, dynamic>>.from(decoded);
+          _favoriteList = List<Map<String, dynamic>>.from(decoded);
         }
       } else {
-        _bookmarkList = [];
+        _favoriteList = [];
       }
     } catch (e) {
-      _bookmarkList = [];
+      _favoriteList = [];
     }
   }
 
@@ -78,7 +71,7 @@ class BookmarkListNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
-      for (final entry in _bookmarkList) {
+      for (final entry in _favoriteList) {
         String url = entry[_keyUrl];
         cachedContents[url] = await _fetchData(url, l10n);
       }
@@ -117,38 +110,38 @@ class BookmarkListNotifier extends ChangeNotifier {
     }
   }
 
-  List<Map<String, dynamic>> get bookmarkList => _bookmarkList;
+  List<Map<String, dynamic>> get favoriteList => _favoriteList;
 
-  bool contains(String url) => _bookmarkList.any((e) => e[_keyUrl] == url);
+  bool contains(String url) => _favoriteList.any((e) => e[_keyUrl] == url);
 
-  String exportBookmark() =>
-      _bookmarkList.map((e) => e[_keyUrl] as String).join('\n');
+  String exportFavorites() =>
+      _favoriteList.map((e) => e[_keyUrl] as String).join('\n');
 
   void add(String url, AppLocalizations l10n) async {
-    _bookmarkList.add({_keyUrl: url});
-    prefs.setString(_keyBookmarks, jsonEncode(_bookmarkList));
+    _favoriteList.add({_keyUrl: url});
+    prefs.setString(_keyFavorites, jsonEncode(_favoriteList));
     cachedContents[url] = await _fetchData(url, l10n);
     notifyListeners();
   }
 
   void removeAt(int index) async {
-    if (_bookmarkList.length > 1) {
-      if (index >= 0 && index < _bookmarkList.length) {
-        _bookmarkList.removeAt(index);
-        prefs.setString(_keyBookmarks, jsonEncode(_bookmarkList));
+    if (_favoriteList.length > 1) {
+      if (index >= 0 && index < _favoriteList.length) {
+        _favoriteList.removeAt(index);
+        prefs.setString(_keyFavorites, jsonEncode(_favoriteList));
         notifyListeners();
       }
     }
   }
 
   void remove(String url) async {
-    final index = _bookmarkList.indexWhere((e) => e[_keyUrl] == url);
+    final index = _favoriteList.indexWhere((e) => e[_keyUrl] == url);
     removeAt(index);
   }
 
   void clearAll() async {
-    _bookmarkList = [];
-    prefs.setString(_keyBookmarks, jsonEncode(_bookmarkList));
+    _favoriteList = [];
+    prefs.setString(_keyFavorites, jsonEncode(_favoriteList));
     notifyListeners();
   }
 

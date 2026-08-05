@@ -32,7 +32,7 @@ import 'package:readblank/screens/activity_page.dart';
 import 'drawers/content_selector_drawers.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_preferences_notifier.dart';
-import 'providers/bookmark_list_notifier.dart';
+import 'providers/favorite_list_notifier.dart';
 import 'providers/history_notifier.dart';
 import 'providers/word_list_notifier.dart';
 import 'screens/read_page.dart';
@@ -47,10 +47,10 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppPreferencesNotifier()),
         ChangeNotifierProvider(create: (_) => HistoryNotifier(prefs)),
-        ChangeNotifierProxyProvider<HistoryNotifier, BookmarkListNotifier>(
-          create: (_) => BookmarkListNotifier(prefs),
-          update: (_, historyNotifier, bookmarkListNotifier) {
-            return (bookmarkListNotifier!..update(historyNotifier));
+        ChangeNotifierProxyProvider<HistoryNotifier, FavoriteListNotifier>(
+          create: (_) => FavoriteListNotifier(prefs),
+          update: (_, historyNotifier, favoriteListNotifier) {
+            return (favoriteListNotifier!..update(historyNotifier));
           },
         ),
         ChangeNotifierProvider(create: (_) => WordListNotifier()),
@@ -140,7 +140,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HistoryNotifier>().fetchAllUrls();
+      context.read<HistoryNotifier>().fetchAllLinkedContents();
     });
   }
 

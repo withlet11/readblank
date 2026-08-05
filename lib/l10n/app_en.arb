@@ -1,13 +1,13 @@
 {
   "@@locale": "en",
   "activityNavButton": "Activity",
-  "allBookmarksDeleteButton": "Delete all bookmarks",
-  "@allBookmarksDeleteButton": {
-    "description": "A label of delete all bookmarks."
+  "allFavoritesDeleteButton": "Delete all favorites",
+  "@allFavoritesDeleteButton": {
+    "description": "A label of delete all favorites."
   },
-  "allBookmarksDeleteConfirmation": "Are you sure you want to delete all bookmarks?",
-  "@allBookmarksDeleteConfirmation": {
-    "description": "A message of confirm delete all bookmarks."
+  "allFavoritesDeleteConfirmation": "Are you sure you want to delete all favorites?",
+  "@allFavoritesDeleteConfirmation": {
+    "description": "A message of confirm delete all favorites."
   },
   "allHistoryClearButton": "Clear all history",
   "@allHistoryClearButton": {
@@ -18,28 +18,15 @@
     "description": "A message of confirm clear all history."
   },
   "alreadyExistsMessage": "Already exists",
-  "bookmarkExportErrorMessage": "Failed to export bookmarks: {error}",
-  "@bookmarkExportErrorMessage": {
-    "description": "A message of failed to export bookmarks.",
+  "favoritesExportErrorMessage": "Failed to export favorites: {error}",
+  "@favoritesExportErrorMessage": {
+    "description": "A message of failed to export favorites.",
     "placeholders": {
       "error": {
         "type": "String"
       }
     }
   },
-  "bookmarkExportLabel": "Export Bookmarks",
-  "bookmarkImportErrorMessage": "Failed to import bookmarks: {error}",
-  "@bookmarkImportErrorMessage": {
-    "description": "A message of failed to import bookmarks.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "bookmarkImportLabel": "Import Bookmarks",
-  "bookmarksCopySuccessMessage": "Bookmarks copied to clipboard",
-  "bookmarksLabel": "Bookmarks",
   "clipboardEmptyMessage": "Clipboard empty. Please copy URL List",
   "@clipboardEmptyMessage": {
     "description": "A message of empty clipboard."
@@ -61,6 +48,19 @@
   "darkModeLabel": "Dark Mode",
   "errorLabel": "Error",
   "existingLinkOpenConfirmation": "This link already exists. Do you want to select the link?",
+  "favoritesCopySuccessMessage": "Favorites copied to clipboard",
+  "favoritesExportLabel": "Export Favorites",
+  "favoritesImportErrorMessage": "Failed to import favorites: {error}",
+  "@favoritesImportErrorMessage": {
+    "description": "A message of failed to import favorites.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "favoritesImportLabel": "Import Favorites",
+  "favoritesLabel": "Favorites",
   "fontSizeLabel": "Font Size",
   "fontSizeLarge": "Large",
   "fontSizeMedium": "Medium",

@@ -102,7 +102,7 @@ class WordListNotifier extends ChangeNotifier {
       extractLogForDuration(date, 7).length;
 
   int getMonthlyWordCount(DateTime date) => extractLogForDuration(
-    date,
+    DateTime(date.year, date.month, 1),
     DateTime(date.year, date.month + 1, 0).day,
   ).length;
 
