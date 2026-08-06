@@ -31,7 +31,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
 import '../providers/favorite_list_notifier.dart';
 import '../providers/history_notifier.dart';
-import '../providers/word_list_notifier.dart';
+import '../providers/activity_notifier.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key, required this.title});
@@ -225,18 +225,18 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     ];
 
-    return Consumer3<HistoryNotifier, FavoriteListNotifier, WordListNotifier>(
+    return Consumer3<HistoryNotifier, FavoriteListNotifier, ActivityNotifier>(
       builder:
           (
             context,
             historyNotifier,
             favoriteListNotifier,
-            wordListNotifier,
+            activityNotifier,
             child,
           ) {
             if (historyNotifier.isLoading ||
                 favoriteListNotifier.isLoading ||
-                wordListNotifier.isLoading) {
+                activityNotifier.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -582,8 +582,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final wordListNotifier = context.read<WordListNotifier>();
-      final String path = await wordListNotifier.exportWordList();
+      final activityNotifier = context.read<ActivityNotifier>();
+      final String path = await activityNotifier.exportActivity();
 
       await SharePlus.instance.share(
         ShareParams(
@@ -633,8 +633,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (result != null && result.files.single.path != null) {
         if (!mounted) return;
-        final wordListNotifier = context.read<WordListNotifier>();
-        await wordListNotifier.importWordList(result.files.single.path!);
+        final activityNotifier = context.read<ActivityNotifier>();
+        await activityNotifier.importActivity(result.files.single.path!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

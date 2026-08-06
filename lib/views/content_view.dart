@@ -24,7 +24,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
-import '../providers/word_list_notifier.dart';
+import '../providers/activity_notifier.dart';
 import '../style.dart';
 
 class ContentView extends StatefulWidget {
@@ -275,7 +275,7 @@ class _ContentViewState extends State<ContentView> {
   }
 
   Widget _buildWordSelectionView(double height, ContentViewPalette palette) {
-    final notifier = context.read<WordListNotifier>();
+    final notifier = context.read<ActivityNotifier>();
 
     return Scrollbar(
       controller: _scrollController2,

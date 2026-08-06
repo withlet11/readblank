@@ -25,7 +25,7 @@ import 'package:readblank/l10n/app_localizations.dart';
 
 import '../views/daily_chart_view.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/word_list_notifier.dart';
+import '../providers/activity_notifier.dart';
 import '../views/monthly_chart_view.dart';
 import '../views/weekly_chart_view.dart';
 
@@ -50,7 +50,7 @@ class _ActivityPageState extends State<ActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WordListNotifier>(
+    return Consumer<ActivityNotifier>(
       builder: (context, notifier, child) {
         final hasData = notifier.wordLog.isNotEmpty;
 
@@ -185,7 +185,7 @@ class _ActivityPageState extends State<ActivityPage> {
     return _isBeforeStartDate(date) || _isAfterToday(date);
   }
 
-  Widget _buildDailyView(WordListNotifier notifier) {
+  Widget _buildDailyView(ActivityNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
 
@@ -313,7 +313,7 @@ class _ActivityPageState extends State<ActivityPage> {
         : l10n.dateFormatForWeeklyChart)(startDay, endDay);
   }
 
-  Widget _buildWeeklyView(WordListNotifier notifier) {
+  Widget _buildWeeklyView(ActivityNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
 
@@ -445,7 +445,7 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-  Widget _buildMonthlyView(WordListNotifier notifier) {
+  Widget _buildMonthlyView(ActivityNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
     final prefs = context.watch<AppPreferencesNotifier>();
 

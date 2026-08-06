@@ -34,7 +34,7 @@ import 'l10n/app_localizations.dart';
 import 'providers/app_preferences_notifier.dart';
 import 'providers/favorite_list_notifier.dart';
 import 'providers/history_notifier.dart';
-import 'providers/word_list_notifier.dart';
+import 'providers/activity_notifier.dart';
 import 'screens/read_page.dart';
 
 void main() async {
@@ -53,7 +53,7 @@ void main() async {
             return (favoriteListNotifier!..update(historyNotifier));
           },
         ),
-        ChangeNotifierProvider(create: (_) => WordListNotifier()),
+        ChangeNotifierProvider(create: (_) => ActivityNotifier()),
       ],
       child: ReadBlank(),
     ),
@@ -146,8 +146,8 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<HistoryNotifier, WordListNotifier>(
-      builder: (context, historyNotifier, wordListNotifier, child) {
+    return Consumer2<HistoryNotifier, ActivityNotifier>(
+      builder: (context, historyNotifier, activityNotifier, child) {
         if (historyNotifier.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator(strokeWidth: 5)),
@@ -158,7 +158,7 @@ class _MainPageState extends State<MainPage> {
           appBar: _selectedIndex == 0
               ? _buildAppBarForRead(historyNotifier)
               : _selectedIndex == 1
-              ? _buildAppBarForLog(wordListNotifier)
+              ? _buildAppBarForLog(activityNotifier)
               : _buildAppBarForSettings(),
           body: _selectedIndex == 0
               ? const ReadPage(key: Key('ReadPage'), title: 'Read')
@@ -212,7 +212,7 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForLog(WordListNotifier wordListNotifier) {
+  AppBar _buildAppBarForLog(ActivityNotifier activityNotifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return AppBar(
@@ -224,21 +224,21 @@ class _MainPageState extends State<MainPage> {
       actions: [
         IconButton(
           icon: Icon(Icons.looks_one_outlined),
-          onPressed: wordListNotifier.viewMode == ActivityViewMode.daily
+          onPressed: activityNotifier.viewMode == ActivityViewMode.daily
               ? null
-              : () => wordListNotifier.viewMode = ActivityViewMode.daily,
+              : () => activityNotifier.viewMode = ActivityViewMode.daily,
         ),
         IconButton(
           icon: Icon(Icons.calendar_view_week_outlined),
-          onPressed: wordListNotifier.viewMode == ActivityViewMode.weekly
+          onPressed: activityNotifier.viewMode == ActivityViewMode.weekly
               ? null
-              : () => wordListNotifier.viewMode = ActivityViewMode.weekly,
+              : () => activityNotifier.viewMode = ActivityViewMode.weekly,
         ),
         IconButton(
           icon: Icon(Icons.calendar_view_month_outlined),
-          onPressed: wordListNotifier.viewMode == ActivityViewMode.monthly
+          onPressed: activityNotifier.viewMode == ActivityViewMode.monthly
               ? null
-              : () => wordListNotifier.viewMode = ActivityViewMode.monthly,
+              : () => activityNotifier.viewMode = ActivityViewMode.monthly,
         ),
       ],
     );
