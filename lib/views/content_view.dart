@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../l10n/app_localizations.dart';
 import '../providers/word_list_notifier.dart';
 import '../style.dart';
 
@@ -112,7 +113,7 @@ class _ContentViewState extends State<ContentView> {
     final palette = ContentViewPalette.of(context);
 
     return Container(
-      padding: EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: palette.background,
         border: Border(
@@ -144,7 +145,12 @@ class _ContentViewState extends State<ContentView> {
   Widget _buildTextView(double height, ContentViewPalette palette) {
     final (selectedStart, selectedEnd, _) = _wordList.isNotEmpty
         ? _wordList[_currentIndex]
-        : (0, 0, true);
+        : const (0, 0, true);
+    final textScaler = MediaQuery.textScalerOf(context);
+    final textStyle = Theme.of(context).textTheme.bodyLarge!;
+    final scaledTextStyle = textStyle.copyWith(
+      fontSize: textScaler.scale(textStyle.fontSize ?? 16.0),
+    );
 
     return Scrollbar(
       controller: _scrollController1,
@@ -153,59 +159,63 @@ class _ContentViewState extends State<ContentView> {
       child: Container(
         height: height,
         width: double.infinity,
-        padding: const EdgeInsets.all(2),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
         decoration: BoxDecoration(color: palette.textField),
         child: SingleChildScrollView(
           controller: _scrollController1,
-          child: Text.rich(
-            TextSpan(
-              style: Theme.of(context).textTheme.bodyLarge,
-              children: [
-                ...() {
-                  int index = 0;
-                  List<InlineSpan> spans = [];
-                  for (final (start, end, isActive) in _wordList) {
-                    String visibleText = _paragraph.substring(index, start);
-                    String invisibleText = _paragraph.substring(start, end);
-                    if (visibleText.isNotEmpty) {
-                      spans.add(TextSpan(text: visibleText));
-                    }
-                    if (invisibleText.isNotEmpty) {
-                      spans.add(
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectWordWithStart(start);
-                              });
-                            },
-                            child: SizedBox(
-                              key: start == selectedStart ? _targetKey : null,
-                              child: Text(
-                                invisibleText,
-                                style: Theme.of(context).textTheme.bodyLarge!
-                                    .copyWith(
-                                      color: isActive
-                                          ? Colors.transparent
-                                          : palette.text,
-                                      backgroundColor: start == selectedStart
-                                          ? palette.accent
-                                          : palette.muted,
-                                    ),
+          // Auto-scaling doesn't work well with text.
+          child: MediaQuery.withNoTextScaling(
+            child: Text.rich(
+              TextSpan(
+                style: scaledTextStyle,
+                children: [
+                  ...() {
+                    int index = 0;
+                    List<InlineSpan> spans = [];
+                    for (final (start, end, isActive) in _wordList) {
+                      String visibleText = _paragraph.substring(index, start);
+                      String invisibleText = _paragraph.substring(start, end);
+                      if (visibleText.isNotEmpty) {
+                        spans.add(TextSpan(text: visibleText));
+                      }
+                      if (invisibleText.isNotEmpty) {
+                        spans.add(
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.baseline,
+                            baseline: TextBaseline.alphabetic,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectWordWithStart(start);
+                                });
+                              },
+                              child: SizedBox(
+                                key: start == selectedStart ? _targetKey : null,
+                                child: Text(
+                                  invisibleText,
+                                  style: scaledTextStyle.copyWith(
+                                    color: isActive
+                                        ? Colors.transparent
+                                        : palette.text,
+                                    backgroundColor: start == selectedStart
+                                        ? palette.accent
+                                        : palette.muted,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
+                        );
+                      }
+                      index = end;
                     }
-                    index = end;
-                  }
-                  if (index < _paragraph.length) {
-                    spans.add(TextSpan(text: _paragraph.substring(index)));
-                  }
-                  return spans;
-                }(),
-              ],
+                    if (index < _paragraph.length) {
+                      spans.add(TextSpan(text: _paragraph.substring(index)));
+                    }
+                    return spans;
+                  }(),
+                ],
+              ),
             ),
           ),
         ),
@@ -264,11 +274,7 @@ class _ContentViewState extends State<ContentView> {
     );
   }
 
-  Widget _buildWordSelectionView(
-    double height,
-    ContentViewPalette palette,
-    // WordListNotifier notifier,
-  ) {
+  Widget _buildWordSelectionView(double height, ContentViewPalette palette) {
     final notifier = context.read<WordListNotifier>();
 
     return Scrollbar(
@@ -281,74 +287,89 @@ class _ContentViewState extends State<ContentView> {
         child: SingleChildScrollView(
           scrollDirection: Axis.vertical,
           controller: _scrollController2,
-          child: Wrap(
-            spacing: 4,
-            runSpacing: 0,
-            children: [
-              for (final index in _sortedIndexList)
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    textStyle: Theme.of(context).textTheme.bodyMedium,
-                    backgroundColor: palette.textField,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 0,
+              children: [
+                for (final index in _sortedIndexList)
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      textStyle: Theme.of(context).textTheme.bodyMedium,
+                      backgroundColor: palette.textField,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
                     ),
-                    minimumSize: Size.zero,
-                  ),
-                  onPressed: _wordList[index].$3
-                      ? () {
-                          if (index == _currentIndex) {
-                            setState(() {
-                              _wordList[index] = (
-                                _wordList[index].$1,
-                                _wordList[index].$2,
-                                false,
-                              );
-                              notifier.addWord(
-                                _paragraph.substring(
+                    onPressed: _wordList[index].$3
+                        ? () {
+                            if (!_wordList[_currentIndex].$3) {
+                              if (mounted) {
+                                final l10n = AppLocalizations.of(context)!;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      l10n.fieldAlreadyFilledMessage,
+                                    ),
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            } else if (index == _currentIndex) {
+                              setState(() {
+                                _wordList[index] = (
                                   _wordList[index].$1,
                                   _wordList[index].$2,
-                                ),
-                              );
-                              _moveNextWord();
-                            });
-                          } else if (_paragraph
-                                  .substring(
+                                  false,
+                                );
+                                notifier.addWord(
+                                  _paragraph.substring(
                                     _wordList[index].$1,
                                     _wordList[index].$2,
-                                  )
-                                  .toLowerCase() ==
-                              _paragraph
-                                  .substring(
-                                    _wordList[_currentIndex].$1,
-                                    _wordList[_currentIndex].$2,
-                                  )
-                                  .toLowerCase()) {
-                            setState(() {
-                              int index1 = _sortedIndexList.indexOf(index);
-                              int index2 = _sortedIndexList.indexOf(
-                                _currentIndex,
-                              );
-                              _sortedIndexList[index1] = _currentIndex;
-                              _sortedIndexList[index2] = index;
-                              _wordList[_currentIndex] = (
-                                _wordList[_currentIndex].$1,
-                                _wordList[_currentIndex].$2,
-                                false,
-                              );
-                              _moveNextWord();
-                            });
+                                  ),
+                                );
+                                _moveNextWord();
+                              });
+                            } else if (_paragraph
+                                    .substring(
+                                      _wordList[index].$1,
+                                      _wordList[index].$2,
+                                    )
+                                    .toLowerCase() ==
+                                _paragraph
+                                    .substring(
+                                      _wordList[_currentIndex].$1,
+                                      _wordList[_currentIndex].$2,
+                                    )
+                                    .toLowerCase()) {
+                              setState(() {
+                                int index1 = _sortedIndexList.indexOf(index);
+                                int index2 = _sortedIndexList.indexOf(
+                                  _currentIndex,
+                                );
+                                _sortedIndexList[index1] = _currentIndex;
+                                _sortedIndexList[index2] = index;
+                                _wordList[_currentIndex] = (
+                                  _wordList[_currentIndex].$1,
+                                  _wordList[_currentIndex].$2,
+                                  false,
+                                );
+                                _moveNextWord();
+                              });
+                            }
                           }
-                        }
-                      : null,
-                  child: Text(
-                    _paragraph
-                        .substring(_wordList[index].$1, _wordList[index].$2)
-                        .toLowerCase(),
+                        : null,
+                    child: Text(
+                      _paragraph
+                          .substring(_wordList[index].$1, _wordList[index].$2)
+                          .toLowerCase(),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

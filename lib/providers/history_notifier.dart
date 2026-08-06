@@ -53,6 +53,10 @@ class HistoryNotifier extends ChangeNotifier {
         final decoded = jsonDecode(historyJson);
         if (decoded is List) {
           _historyList = List<Map<String, dynamic>>.from(decoded);
+          if (_historyList.isNotEmpty) {
+            _currentParagraphIndex =
+              _historyList.first[_keyLastViewedParagraphIndex] ?? 0;
+          }
         }
       } else {
         _historyList = [];

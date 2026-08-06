@@ -19,8 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import 'dart:io';
+
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 enum ActivityViewMode { daily, weekly, monthly }
@@ -142,6 +146,52 @@ class WordListNotifier extends ChangeNotifier {
     }
     return result;
   }
+
+  Future<String> exportWordList() async {
+    final log = await _db.getAllEntries();
+    List<List<dynamic>> rows = [];
+    rows.add(['word', 'timestamp']);
+    for (var entry in log) {
+      rows.add([entry['word'], entry['timestamp']]);
+    }
+    String csvData = Csv().encode(rows);
+
+    Directory? directory;
+    if (Platform.isAndroid) {
+      directory = await getExternalStorageDirectory();
+    }
+    directory ??= await getApplicationDocumentsDirectory();
+
+    final file = File('${directory.path}/word_list_backup.csv');
+    await file.writeAsString(csvData);
+    return file.path;
+  }
+
+  Future<void> importWordList(String path) async {
+    final file = File(path);
+    if (await file.exists()) {
+      String csvData = await file.readAsString();
+      List<List<dynamic>> rows = Csv().decode(csvData);
+
+      List<Map<String, dynamic>> entries = [];
+      // skip header
+      for (int i = 1; i < rows.length; i++) {
+        if (rows[i].length >= 2) {
+          entries.add({
+            'word': rows[i][0].toString(),
+            'timestamp': rows[i][1].toString(),
+          });
+        }
+      }
+      if (entries.isNotEmpty) {
+        await _db.clearAllEntries();
+        await _db.batchInsert(entries);
+        await fetchLog();
+      }
+    } else {
+      throw Exception("File not found: $path");
+    }
+  }
 }
 
 class DatabaseHelper {
@@ -189,17 +239,36 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> addEntry(String word) async {
+  Future<void> addEntry(String word, {String? timestamp}) async {
     final db = await database;
     await db.insert('logs', {
       'word': word,
-      'timestamp': DateTime.now().toIso8601String(),
+      'timestamp': timestamp ?? DateTime.now().toIso8601String(),
     });
 
     // Optional: Auto-trim database size
     await db.execute(
       'DELETE FROM logs WHERE id <= (SELECT id FROM logs ORDER BY id DESC LIMIT 1 OFFSET 10000)',
     );
+  }
+
+  Future<void> batchInsert(List<Map<String, dynamic>> entries) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      for (var entry in entries) {
+        await txn.insert('logs', entry);
+      }
+    });
+
+    // Trim once at the end
+    await db.execute(
+      'DELETE FROM logs WHERE id <= (SELECT id FROM logs ORDER BY id DESC LIMIT 1 OFFSET 10000)',
+    );
+  }
+
+  Future<void> clearAllEntries() async {
+    final db = await database;
+    await db.delete('logs');
   }
 
   Future<List<Map<String, dynamic>>> getAllEntries() async {

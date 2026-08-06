@@ -19,11 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
@@ -54,12 +56,16 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isExportingHistory = false;
   bool _isImportingFavorites = false;
   bool _isExportingFavorites = false;
+  bool _isLoadingActivity = false;
+  bool _isSavingActivity = false;
 
   bool get _isImportingOrExporting =>
       _isImportingHistory ||
       _isExportingHistory ||
       _isImportingFavorites ||
-      _isExportingFavorites;
+      _isExportingFavorites ||
+      _isLoadingActivity ||
+      _isSavingActivity;
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +191,36 @@ class _SettingsPageState extends State<SettingsPage> {
                 )
               : const Icon(Icons.copy_all_outlined),
           onPressed: _isImportingOrExporting ? null : _exportFavorites,
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.bar_chart_outlined),
+        title: Text(l10n.activityRestoreLabel),
+        trailing: TextButton.icon(
+          label: Text(l10n.restoreButton),
+          icon: _isLoadingActivity
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                )
+              : const Icon(Icons.settings_backup_restore_outlined),
+          onPressed: _isImportingOrExporting ? null : _loadActivity,
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.bar_chart_outlined),
+        title: Text(l10n.activityBackupLabel),
+        trailing: TextButton.icon(
+          label: Text(l10n.backupButton),
+          icon: _isSavingActivity
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                )
+              : const Icon(Icons.save_outlined),
+          onPressed: _isImportingOrExporting ? null : _saveActivity,
         ),
       ),
     ];
@@ -536,6 +572,93 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } else {
       return ImportProcessResult.noUrl;
+    }
+  }
+
+  Future<void> _saveActivity() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isSavingActivity = true;
+    });
+
+    try {
+      final wordListNotifier = context.read<WordListNotifier>();
+      final String path = await wordListNotifier.exportWordList();
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(path)],
+          text: 'Activity Backup',
+        ),
+      );
+
+      if (!mounted) return;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.activityBackupSuccess(path)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingActivity = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadActivity() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isLoadingActivity = true;
+    });
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        if (!mounted) return;
+        final wordListNotifier = context.read<WordListNotifier>();
+        await wordListNotifier.importWordList(result.files.single.path!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.activityRestoreSuccess),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingActivity = false;
+        });
+      }
     }
   }
 }
