@@ -19,12 +19,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 enum ActivityViewMode { daily, weekly, monthly }
@@ -147,46 +147,46 @@ class ActivityNotifier extends ChangeNotifier {
     return result;
   }
 
-  Future<String> exportActivity() async {
+  Future<String?> exportActivity() async {
     final log = await _db.getAllEntries();
-    List<List<dynamic>> rows = [];
-    rows.add(['word', 'timestamp']);
-    for (var entry in log) {
-      rows.add([entry['word'], entry['timestamp']]);
-    }
-    String csvData = Csv().encode(rows);
+    final backupData = log.map((row) {
+      final copy = Map<String, Object?>.from(row);
+      copy.remove('id');
+      return copy;
+    }).toList();
+    final jsonData = jsonEncode(backupData);
 
-    Directory? directory;
-    if (Platform.isAndroid) {
-      directory = await getExternalStorageDirectory();
-    }
-    directory ??= await getApplicationDocumentsDirectory();
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: 'Export data',
+      fileName:
+          'ReadBlank-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: utf8.encode(jsonData),
+    );
 
-    final file = File('${directory.path}/word_list_backup.csv');
-    await file.writeAsString(csvData);
-    return file.path;
+    return path;
   }
 
   Future<void> importActivity(String path) async {
     final file = File(path);
     if (await file.exists()) {
-      String csvData = await file.readAsString();
-      List<List<dynamic>> rows = Csv().decode(csvData);
+      String jsonData = await file.readAsString();
+      List<Object?> entries = jsonDecode(jsonData);
 
-      List<Map<String, dynamic>> entries = [];
-      // skip header
-      for (int i = 1; i < rows.length; i++) {
-        if (rows[i].length >= 2) {
-          entries.add({
-            'word': rows[i][0].toString(),
-            'timestamp': rows[i][1].toString(),
-          });
-        }
-      }
       if (entries.isNotEmpty) {
-        await _db.clearAllEntries();
-        await _db.batchInsert(entries);
-        await fetchLog();
+        int count = 0;
+        final list = await _db.getAllEntries();
+        final listWords = list.map((e) => e['word']).toList();
+        for (var entry in entries) {
+          final elem = entry as Map<String, dynamic>;
+          if (elem.containsKey('word') &&
+              elem.containsKey('timestamp') &&
+              listWords.contains(elem['word'])) {
+            ++count;
+          }
+        }
+        print('count: $count, entries.length: ${entries.length}');
       }
     } else {
       throw Exception("File not found: $path");

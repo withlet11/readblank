@@ -125,8 +125,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(
         leading: const Icon(Icons.history_outlined),
         title: Text(l10n.historyImportLabel),
-        trailing: TextButton.icon(
-          label: Text(l10n.pasteButton),
+        trailing: IconButton(
+          // label: Text(l10n.pasteButton),
           icon: _isImportingHistory
               ? const SizedBox(
                   width: 24,
@@ -140,8 +140,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(
         leading: const Icon(Icons.history_outlined),
         title: Text(l10n.historyExportLabel),
-        trailing: TextButton.icon(
-          label: Text(l10n.copyAllButton),
+        trailing: IconButton(
+          // label: Text(l10n.copyAllButton),
           icon: _isExportingHistory
               ? const SizedBox(
                   width: 24,
@@ -155,8 +155,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(
         leading: const Icon(Icons.star_outlined),
         title: Text(l10n.favoritesImportLabel),
-        trailing: TextButton.icon(
-          label: Text(l10n.pasteButton),
+        trailing: IconButton(
+          // label: Text(l10n.pasteButton),
           icon: _isImportingFavorites
               ? const SizedBox(
                   width: 24,
@@ -170,8 +170,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(
         leading: const Icon(Icons.star_outlined),
         title: Text(l10n.favoritesExportLabel),
-        trailing: TextButton.icon(
-          label: Text(l10n.copyAllButton),
+        trailing: IconButton(
+          // label: Text(l10n.copyAllButton),
           icon: _isExportingFavorites
               ? const SizedBox(
                   width: 24,
@@ -185,8 +185,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(
         leading: const Icon(Icons.bar_chart_outlined),
         title: Text(l10n.activityRestoreLabel),
-        trailing: TextButton.icon(
-          label: Text(l10n.restoreButton),
+        trailing: IconButton(
+          // label: Text(l10n.restoreButton),
           icon: _isLoadingActivity
               ? const SizedBox(
                   width: 24,
@@ -200,8 +200,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(
         leading: const Icon(Icons.bar_chart_outlined),
         title: Text(l10n.activityBackupLabel),
-        trailing: TextButton.icon(
-          label: Text(l10n.backupButton),
+        trailing: IconButton(
+          // label: Text(l10n.backupButton),
           icon: _isSavingActivity
               ? const SizedBox(
                   width: 24,
@@ -561,17 +561,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final activityNotifier = context.read<ActivityNotifier>();
-      final String path = await activityNotifier.exportActivity();
+      final String? path = await activityNotifier.exportActivity();
 
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(path)], text: 'Activity Backup'),
-      );
-
-      if (!mounted) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.activityBackupSuccess(path)),
+            content: Text(
+              path == null ? 'Export Cancel' : l10n.activityBackupSuccess(path),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -603,7 +600,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['csv'],
+        allowedExtensions: ['json'],
       );
 
       if (result != null && result.files.single.path != null) {
