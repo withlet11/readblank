@@ -184,9 +184,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     webContentsNotifier.containsInFavorites(entry[_keyUrl])
                     ? null
                     : () {
-                        setState(() {
-                          webContentsNotifier.addFavorite(entry[_keyUrl]);
-                        });
+                        webContentsNotifier.addFavorite(entry[_keyUrl]);
                       },
                 disabledColor: Theme.of(context).colorScheme.onSurface,
               ),
@@ -253,9 +251,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               ),
               selected: webContentsNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
-                setState(() {
-                  webContentsNotifier.select(entry[_keyUrl]);
-                });
+                webContentsNotifier.select(entry[_keyUrl]);
                 Navigator.pop(context);
               },
               trailing: IconButton(
@@ -265,9 +261,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 icon: const Icon(Icons.delete_outlined),
                 onPressed: webContentsNotifier.historyList.length > 1
                     ? () {
-                        setState(() {
-                          webContentsNotifier.removeHistory(entry[_keyUrl]);
-                        });
+                        webContentsNotifier.removeHistory(entry[_keyUrl]);
                       }
                     : null,
               ),
@@ -332,9 +326,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               ),
               selected: webContentsNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
-                setState(() {
-                  webContentsNotifier.select(entry[_keyUrl]);
-                });
+                webContentsNotifier.select(entry[_keyUrl]);
                 Navigator.pop(context);
               },
               trailing: IconButton(
@@ -344,9 +336,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 icon: const Icon(Icons.delete_outlined),
                 onPressed: webContentsNotifier.favoriteList.length > 1
                     ? () {
-                        setState(() {
-                          webContentsNotifier.removeFavorite(entry[_keyUrl]);
-                        });
+                        webContentsNotifier.removeFavorite(entry[_keyUrl]);
                       }
                     : null,
               ),

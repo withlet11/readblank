@@ -102,7 +102,9 @@ class WebContentsNotifier extends ChangeNotifier {
       _keyTimestamp: DateTime.now().toIso8601String(),
       _keyLastViewedParagraphIndex: _currentParagraphIndex,
     });
-    _cachedContents[url] = await _fetchLinkedContent(url);
+    if (!_cachedContents.containsKey(url)) {
+      _cachedContents[url] = await _fetchLinkedContent(url);
+    }
     notifyListeners();
     await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
   }
@@ -150,7 +152,9 @@ class WebContentsNotifier extends ChangeNotifier {
   void addFavorite(String url) async {
     _favoriteList.add({_keyUrl: url});
     sharedPrefs.setString(_keyFavorites, jsonEncode(_favoriteList));
-    cachedContents[url] = await _fetchLinkedContent(url);
+    if (!cachedContents.containsKey(url)) {
+      cachedContents[url] = await _fetchLinkedContent(url);
+    }
     notifyListeners();
   }
 
@@ -190,12 +194,16 @@ class WebContentsNotifier extends ChangeNotifier {
     try {
       for (final entry in _historyList) {
         final url = entry[_keyUrl] as String;
-        _cachedContents[url] = await _fetchLinkedContent(url);
+        if (!_cachedContents.containsKey(url)) {
+          _cachedContents[url] = await _fetchLinkedContent(url);
+        }
       }
 
       for (final entry in _favoriteList) {
         String url = entry[_keyUrl];
-        _cachedContents[url] = await _fetchLinkedContent(url);
+        if (!_cachedContents.containsKey(url)) {
+          _cachedContents[url] = await _fetchLinkedContent(url);
+        }
       }
     } catch (e) {
       _error = e.toString();

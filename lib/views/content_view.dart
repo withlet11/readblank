@@ -275,8 +275,6 @@ class _ContentViewState extends State<ContentView> {
   }
 
   Widget _buildWordSelectionView(double height, ContentViewPalette palette) {
-    final notifier = context.read<ActivityNotifier>();
-
     return Scrollbar(
       controller: _scrollController2,
       thumbVisibility: true,
@@ -319,20 +317,21 @@ class _ContentViewState extends State<ContentView> {
                                 );
                               }
                             } else if (index == _currentIndex) {
+                              final notifier = context.read<ActivityNotifier>();
+                              _wordList[index] = (
+                              _wordList[index].$1,
+                              _wordList[index].$2,
+                              false,
+                              );
                               setState(() {
-                                _wordList[index] = (
-                                  _wordList[index].$1,
-                                  _wordList[index].$2,
-                                  false,
-                                );
-                                notifier.addWord(
-                                  _paragraph.substring(
-                                    _wordList[index].$1,
-                                    _wordList[index].$2,
-                                  ),
-                                );
                                 _moveNextWord();
                               });
+                              notifier.addWord(
+                                _paragraph.substring(
+                                  _wordList[index].$1,
+                                  _wordList[index].$2,
+                                ),
+                              );
                             } else if (_paragraph
                                     .substring(
                                       _wordList[index].$1,

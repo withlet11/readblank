@@ -78,11 +78,7 @@ class _SettingsPageState extends State<SettingsPage> {
         trailing: DropdownButton<Locale>(
           value: pref.locale,
           onChanged: (Locale? locale) {
-            if (locale != null) {
-              setState(() {
-                pref.setLocale(locale);
-              });
-            }
+            if (locale != null) pref.setLocale(locale);
           },
           items: const [
             DropdownMenuItem(value: Locale('en'), child: Text('English')),
@@ -97,9 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
         trailing: Switch(
           value: pref.isDarkMode,
           onChanged: (bool value) {
-            setState(() {
-              pref.setDarkMode(value);
-            });
+            pref.setDarkMode(value);
           },
         ),
       ),
@@ -124,11 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
           }).toList(),
           value: pref.fontSizeIndex,
           onChanged: (int? index) {
-            if (index != null) {
-              setState(() {
-                pref.setFontSizeIndex(index);
-              });
-            }
+            if (index != null) pref.setFontSizeIndex(index);
           },
         ),
       ),

@@ -84,13 +84,13 @@ class _ReadPageState extends State<ReadPage> {
                 children: [
                   IconButton(
                     onPressed: notifier.isNotFirstParagraph
-                        ? () => setState(() => notifier.moveToFirstParagraph())
+                        ? () => notifier.moveToFirstParagraph()
                         : null,
                     icon: const Icon(Icons.first_page),
                   ),
                   IconButton(
                     onPressed: notifier.isNotFirstParagraph
-                        ? () => setState(() => notifier.movePreviousParagraph())
+                        ? () => notifier.movePreviousParagraph()
                         : null,
                     icon: const Icon(Icons.keyboard_arrow_left),
                   ),
@@ -105,21 +105,19 @@ class _ReadPageState extends State<ReadPage> {
                     ),
                     onChanged: (int? value) {
                       if (value != null) {
-                        setState(
-                          () => notifier.setCurrentParagraphIndex(value),
-                        );
+                        notifier.setCurrentParagraphIndex(value);
                       }
                     },
                   ),
                   IconButton(
                     onPressed: notifier.isNotLastParagraph
-                        ? () => setState(() => notifier.moveNextParagraph())
+                        ? () => notifier.moveNextParagraph()
                         : null,
                     icon: const Icon(Icons.keyboard_arrow_right),
                   ),
                   IconButton(
                     onPressed: notifier.isNotLastParagraph
-                        ? () => setState(() => notifier.moveToLastParagraph())
+                        ? () => notifier.moveToLastParagraph()
                         : null,
                     icon: const Icon(Icons.last_page),
                   ),
