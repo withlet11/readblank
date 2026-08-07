@@ -25,8 +25,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/favorite_list_notifier.dart';
-import '../providers/history_notifier.dart';
+import '../providers/web_contents_notifier.dart';
 
 class ContentSelectorDrawers extends StatefulWidget {
   const ContentSelectorDrawers({super.key});
@@ -70,9 +69,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Consumer2<HistoryNotifier, FavoriteListNotifier>(
-      builder: (context, historyNotifier, favoriteListNotifier, child) {
-        if (historyNotifier.isLoading || favoriteListNotifier.isLoading) {
+    return Consumer<WebContentsNotifier>(
+      builder: (context, webContentsNotifier, child) {
+        if (webContentsNotifier.isLoading) {
           return Center(child: CircularProgressIndicator());
         }
 
@@ -102,8 +101,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _historyListView(historyNotifier, favoriteListNotifier),
-                      _favoriteListView(historyNotifier, favoriteListNotifier),
+                      _historyListView(webContentsNotifier),
+                      _favoriteListView(webContentsNotifier),
                     ],
                   ),
                 ),
@@ -138,12 +137,11 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     );
   }
 
-  Widget _historyListView(
-    HistoryNotifier historyNotifier,
-    FavoriteListNotifier favoriteListNotifier,
-  ) {
+  Widget _historyListView(WebContentsNotifier webContentsNotifier) {
     final l10n = AppLocalizations.of(context)!;
-    final appPreferencesNotifier = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = context
+        .watch<AppPreferencesNotifier>()
+        .fontSizeFactor;
 
     return MediaQuery.removePadding(
       context: context,
@@ -170,7 +168,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
           ),
         ),
         children: [
-          for (final entry in historyNotifier.historyList)
+          for (final entry in webContentsNotifier.historyList)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
@@ -179,20 +177,21 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               minLeadingWidth: 0,
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               leading: IconButton(
-                icon: favoriteListNotifier.contains(entry[_keyUrl])
+                icon: webContentsNotifier.containsInFavorites(entry[_keyUrl])
                     ? const Icon(Icons.star_outlined)
                     : const Icon(Icons.star_outline_outlined),
-                onPressed: favoriteListNotifier.contains(entry[_keyUrl])
+                onPressed:
+                    webContentsNotifier.containsInFavorites(entry[_keyUrl])
                     ? null
                     : () {
                         setState(() {
-                          favoriteListNotifier.add(entry[_keyUrl], l10n);
+                          webContentsNotifier.addFavorite(entry[_keyUrl]);
                         });
                       },
                 disabledColor: Theme.of(context).colorScheme.onSurface,
               ),
               title: Text(
-                historyNotifier.title(entry[_keyUrl]) ?? l10n.noTitle,
+                webContentsNotifier.getTitle(entry[_keyUrl]) ?? l10n.noTitle,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -201,10 +200,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.dns,
-                        size: 12 * appPreferencesNotifier.fontSizeFactor,
-                      ),
+                      Icon(Icons.dns, size: 12 * fontSizeFactor),
                       Text(
                         Uri.parse(entry[_keyUrl]).host,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -219,7 +215,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     children: [
                       Icon(
                         Icons.calendar_month_outlined,
-                        size: 12 * appPreferencesNotifier.fontSizeFactor,
+                        size: 12 * fontSizeFactor,
                       ),
                       Text(
                         DateFormat.yMMMd(
@@ -232,12 +228,11 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   ),
                   Row(
                     children: [
-                      Icon(
-                        Icons.language_outlined,
-                        size: 12 * appPreferencesNotifier.fontSizeFactor,
-                      ),
+                      Icon(Icons.language_outlined, size: 12 * fontSizeFactor),
                       Text(
-                        historyNotifier.getContentLanguage(entry[_keyUrl]) ??
+                        webContentsNotifier.getContentLanguage(
+                              entry[_keyUrl],
+                            ) ??
                             '',
                         style: Theme.of(context).textTheme.bodySmall,
                         overflow: TextOverflow.ellipsis,
@@ -245,10 +240,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                       SizedBox(width: 12),
                       Icon(
                         Icons.data_usage_outlined,
-                        size: 12 * appPreferencesNotifier.fontSizeFactor,
+                        size: 12 * fontSizeFactor,
                       ),
                       Text(
-                        historyNotifier.getContentSize(entry[_keyUrl]),
+                        webContentsNotifier.getContentSize(entry[_keyUrl]),
                         style: Theme.of(context).textTheme.bodySmall,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -256,10 +251,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   ),
                 ],
               ),
-              selected: historyNotifier.isSelected(entry[_keyUrl]),
+              selected: webContentsNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
                 setState(() {
-                  historyNotifier.select(entry[_keyUrl]);
+                  webContentsNotifier.select(entry[_keyUrl]);
                 });
                 Navigator.pop(context);
               },
@@ -268,10 +263,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 icon: const Icon(Icons.delete_outlined),
-                onPressed: historyNotifier.historyList.length > 1
+                onPressed: webContentsNotifier.historyList.length > 1
                     ? () {
                         setState(() {
-                          historyNotifier.remove(entry[_keyUrl]);
+                          webContentsNotifier.removeHistory(entry[_keyUrl]);
                         });
                       }
                     : null,
@@ -282,10 +277,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     );
   }
 
-  Widget _favoriteListView(
-    HistoryNotifier historyNotifier,
-    FavoriteListNotifier favoriteListNotifier,
-  ) {
+  Widget _favoriteListView(WebContentsNotifier webContentsNotifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return MediaQuery.removePadding(
@@ -313,7 +305,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
           ),
         ),
         children: [
-          for (final entry in favoriteListNotifier.favoriteList)
+          for (final entry in webContentsNotifier.favoriteList)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
@@ -326,7 +318,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 onPressed: () {},
               ),
               title: Text(
-                favoriteListNotifier.title(entry[_keyUrl], l10n),
+                webContentsNotifier.getTitle(entry[_keyUrl]) ?? l10n.noTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -338,10 +330,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              selected: historyNotifier.isSelected(entry[_keyUrl]),
+              selected: webContentsNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
                 setState(() {
-                  historyNotifier.select(entry[_keyUrl]);
+                  webContentsNotifier.select(entry[_keyUrl]);
                 });
                 Navigator.pop(context);
               },
@@ -350,10 +342,10 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 icon: const Icon(Icons.delete_outlined),
-                onPressed: favoriteListNotifier.favoriteList.length > 1
+                onPressed: webContentsNotifier.favoriteList.length > 1
                     ? () {
                         setState(() {
-                          favoriteListNotifier.remove(entry[_keyUrl]);
+                          webContentsNotifier.removeFavorite(entry[_keyUrl]);
                         });
                       }
                     : null,
@@ -366,7 +358,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
 
   void _clearAllHistory() async {
     final l10n = AppLocalizations.of(context)!;
-    final settings = context.read<HistoryNotifier>();
+    final settings = context.read<WebContentsNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -386,13 +378,13 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     );
 
     if (confirm == true) {
-      settings.clearAll();
+      settings.clearAllHistory();
     }
   }
 
   void _deleteAllFavorites() async {
     final l10n = AppLocalizations.of(context)!;
-    final settings = context.read<FavoriteListNotifier>();
+    final settings = context.read<WebContentsNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -412,7 +404,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     );
 
     if (confirm == true) {
-      settings.clearAll();
+      settings.clearAllFavorite();
     }
   }
 }

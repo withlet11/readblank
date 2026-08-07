@@ -33,19 +33,19 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: any # ^1.0.8
+  cupertino_icons: any
   file_picker: ^10.3.10
-  html: any # ^0.15.6
-  http: any # ^1.6.0
-  intl: any # ^0.20.3
-  path: any # ^1.1.0
-  provider: any # ^6.1.5+1
-  shared_preferences: any # ^2.5.5
-  share_plus: any # ^12.0.2
-  sqflite: any # ^2.2.0
+  html: any
+  http: any
+  intl: any
+  path: any
+  provider: any
+  shared_preferences: any
+  share_plus: any
+  sqflite: any
   path_provider: any
   csv: any
-  webview_flutter: any # ^4.14.1
+  webview_flutter: any
   flutter_localizations:
     sdk: flutter
 
@@ -60,8 +60,8 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: any # ^6.0.0
-  flutter_native_splash: any # ^2.4.8
+  flutter_lints: any
+  flutter_native_splash: any
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

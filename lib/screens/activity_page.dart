@@ -23,9 +23,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/l10n/app_localizations.dart';
 
-import '../views/daily_chart_view.dart';
-import '../providers/app_preferences_notifier.dart';
 import '../providers/activity_notifier.dart';
+import '../providers/app_preferences_notifier.dart';
+import '../views/daily_chart_view.dart';
 import '../views/monthly_chart_view.dart';
 import '../views/weekly_chart_view.dart';
 
@@ -187,7 +187,9 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildDailyView(ActivityNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
-    final prefs = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = context
+        .watch<AppPreferencesNotifier>()
+        .fontSizeFactor;
 
     if (_isBeforeStartDate(_selectedDate)) {
       _selectedDate = _startDate;
@@ -252,7 +254,7 @@ class _ActivityPageState extends State<ActivityPage> {
               nextData: nextData,
               barColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
-              fontSize: 12.0 * prefs.fontSizeFactor,
+              fontSize: 12.0 * fontSizeFactor,
               onSwipeLeft: _isOnOrAfterToday(_selectedDate)
                   ? null
                   : () {
@@ -315,7 +317,9 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildWeeklyView(ActivityNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
-    final prefs = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = context
+        .watch<AppPreferencesNotifier>()
+        .fontSizeFactor;
 
     if (_isBeforeStartWeek(_selectedDate)) {
       _selectedDate = _startDate;
@@ -385,7 +389,7 @@ class _ActivityPageState extends State<ActivityPage> {
               nextData: nextData,
               barColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
-              fontSize: 12.0 * prefs.fontSizeFactor,
+              fontSize: 12.0 * fontSizeFactor,
               onSwipeLeft: _isInOrAfterThisWeek(_selectedDate)
                   ? null
                   : () {
@@ -447,7 +451,9 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildMonthlyView(ActivityNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
-    final prefs = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = context
+        .watch<AppPreferencesNotifier>()
+        .fontSizeFactor;
 
     final currentData = notifier.getDailyCountsPerMonth(_selectedDate);
     final previousData = _isInOrBeforeStartMonth(_selectedDate)
@@ -515,7 +521,7 @@ class _ActivityPageState extends State<ActivityPage> {
               startWeekDay: _getStartDayOfMonth(_selectedDate).weekday - 1,
               circleColor: Theme.of(context).colorScheme.tertiary,
               textColor: Theme.of(context).colorScheme.onSurface,
-              fontSize: 12.0 * prefs.fontSizeFactor,
+              fontSize: 12.0 * fontSizeFactor,
               onSwipeLeft: _isInOrAfterThisMonth(_selectedDate)
                   ? null
                   : () {

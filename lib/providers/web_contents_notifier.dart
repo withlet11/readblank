@@ -1,5 +1,5 @@
 /*
- * history_notifier.dart
+ * web_contents_notifier.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -26,29 +26,32 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class HistoryNotifier extends ChangeNotifier {
+class WebContentsNotifier extends ChangeNotifier {
   static const String _keyHistory = 'history';
+  static const String _keyFavorites = 'bookmarks';
   static const String _keyUrl = 'url';
   static const String _keyTimestamp = 'timestamp';
   static const String _keyLastViewedParagraphIndex =
       'last_viewed_paragraph_index';
+
+  // For storing and retrieving data from SharedPreferences
+  final SharedPreferences sharedPrefs;
 
   // For fetching data from the web
   bool _isLoading = false;
   String? _data;
   String? _error;
 
-  String? get error => _error;
-
-  // For storing and retrieving data from SharedPreferences
-  final SharedPreferences prefs;
+  // For storing data
   List<Map<String, dynamic>> _historyList = [];
+  List<Map<String, dynamic>> _favoriteList = [];
   final Map<String, (String?, List<String>, String?, int)> _cachedContents = {};
   int _currentParagraphIndex = 0;
 
-  HistoryNotifier(this.prefs) {
+  WebContentsNotifier(this.sharedPrefs) {
+    // Retrieve history data from SharedPreferences
     try {
-      final historyJson = prefs.getString(_keyHistory);
+      final historyJson = sharedPrefs.getString(_keyHistory);
       if (historyJson != null) {
         final decoded = jsonDecode(historyJson);
         if (decoded is List) {
@@ -64,12 +67,120 @@ class HistoryNotifier extends ChangeNotifier {
     } catch (e) {
       _historyList = [];
     }
+
+    // Retrieve favorite data from SharedPreferences
+    try {
+      final favoritesJson = sharedPrefs.getString(_keyFavorites);
+      if (favoritesJson != null) {
+        final decoded = jsonDecode(favoritesJson);
+        if (decoded is List) {
+          _favoriteList = List<Map<String, dynamic>>.from(decoded);
+        }
+      } else {
+        _favoriteList = [];
+      }
+    } catch (e) {
+      _favoriteList = [];
+    }
   }
 
-  // For fetching data from the web
+  // Getters of history
+  List<Map<String, dynamic>> get historyList => _historyList;
+
+  String get historyTextData =>
+      _historyList.map((e) => e[_keyUrl] as String).join('\n');
+
+  bool containsInHistory(String entry) {
+    return _historyList.any((e) => e[_keyUrl] == entry);
+  }
+
+  // Modify history
+  Future<void> addHistory(String url) async {
+    _currentParagraphIndex = 0;
+    _historyList.insert(0, {
+      _keyUrl: url,
+      _keyTimestamp: DateTime.now().toIso8601String(),
+      _keyLastViewedParagraphIndex: _currentParagraphIndex,
+    });
+    _cachedContents[url] = await _fetchLinkedContent(url);
+    notifyListeners();
+    await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
+  }
+
+  Future<void> removeHistoryAt(int index) async {
+    if (_historyList.length > 1) {
+      if (index >= 0 && index < _historyList.length) {
+        _historyList.removeAt(index);
+        if (index == 0) {
+          if (_historyList.isEmpty) {
+            _currentParagraphIndex = 0;
+          } else {
+            final entry = _historyList.first;
+            _currentParagraphIndex = entry[_keyLastViewedParagraphIndex] ?? 0;
+          }
+        }
+        notifyListeners();
+        await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
+      }
+    }
+  }
+
+  Future<void> removeHistory(String url) async {
+    final index = _historyList.indexWhere((e) => e[_keyUrl] == url);
+    removeHistoryAt(index);
+  }
+
+  Future<void> clearAllHistory() async {
+    _historyList = [];
+    notifyListeners();
+    await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
+  }
+
+  // Getters of favorites
+  List<Map<String, dynamic>> get favoriteList => _favoriteList;
+
+  String get favoritesTextData =>
+      _favoriteList.map((e) => e[_keyUrl] as String).join('\n');
+
+  bool containsInFavorites(String url) {
+    return _favoriteList.any((e) => e[_keyUrl] == url);
+  }
+
+  // Modify favorites
+  void addFavorite(String url) async {
+    _favoriteList.add({_keyUrl: url});
+    sharedPrefs.setString(_keyFavorites, jsonEncode(_favoriteList));
+    cachedContents[url] = await _fetchLinkedContent(url);
+    notifyListeners();
+  }
+
+  Future<void> removeFavoriteAt(int index) async {
+    if (_favoriteList.length > 1) {
+      if (index >= 0 && index < _favoriteList.length) {
+        _favoriteList.removeAt(index);
+        notifyListeners();
+        await sharedPrefs.setString(_keyFavorites, jsonEncode(_favoriteList));
+      }
+    }
+  }
+
+  Future<void> removeFavorite(String url) async {
+    final index = _favoriteList.indexWhere((e) => e[_keyUrl] == url);
+    removeFavoriteAt(index);
+  }
+
+  void clearAllFavorite() async {
+    _favoriteList = [];
+    sharedPrefs.setString(_keyFavorites, jsonEncode(_favoriteList));
+    notifyListeners();
+  }
+
+  // Fetch and cache data from the web
   bool get isLoading => _isLoading;
 
   String? get data => _data;
+
+  String? get error => _error;
 
   Future<void> fetchAllLinkedContents() async {
     _isLoading = true;
@@ -79,6 +190,11 @@ class HistoryNotifier extends ChangeNotifier {
     try {
       for (final entry in _historyList) {
         final url = entry[_keyUrl] as String;
+        _cachedContents[url] = await _fetchLinkedContent(url);
+      }
+
+      for (final entry in _favoriteList) {
+        String url = entry[_keyUrl];
         _cachedContents[url] = await _fetchLinkedContent(url);
       }
     } catch (e) {
@@ -103,7 +219,7 @@ class HistoryNotifier extends ChangeNotifier {
       _error = e.toString();
     } finally {
       _isLoading = false;
-      notifyListeners(); // Notify UI to stop spinner
+      notifyListeners();
     }
   }
 
@@ -136,8 +252,7 @@ class HistoryNotifier extends ChangeNotifier {
   Map<String, (String?, List<String>, String?, int)> get cachedContents =>
       _cachedContents;
 
-  List<Map<String, dynamic>> get historyList => _historyList;
-
+  // Getters of current page properties
   String get currentUrl =>
       _historyList.isEmpty ? '' : _historyList.first[_keyUrl] as String;
 
@@ -152,88 +267,10 @@ class HistoryNotifier extends ChangeNotifier {
 
   String get currentTitle => _cachedContents[currentUrl]?.$1 ?? currentUrl;
 
-  String exportHistory() =>
-      _historyList.map((e) => e[_keyUrl] as String).join('\n');
-
-  bool isSelected(String url) =>
-      _historyList.isNotEmpty && _historyList.first[_keyUrl] == url;
-
-  bool contains(String entry) => _historyList.any((e) => e[_keyUrl] == entry);
-
-  Future<void> select(String url) async {
-    final index = _historyList.indexWhere((e) => e[_keyUrl] == url);
-    if (index > 0) {
-      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
-      final entry = _historyList[index];
-      _historyList.removeAt(index);
-      entry[_keyTimestamp] = DateTime.now().toIso8601String();
-      _historyList.insert(0, entry);
-      _currentParagraphIndex = entry[_keyLastViewedParagraphIndex] ?? 0;
-      notifyListeners();
-      await prefs.setString(_keyHistory, jsonEncode(_historyList));
-    } else if (index != 0) {
-      add(url);
-    }
+  // Getters of page properties
+  String? getTitle(String url) {
+    return _cachedContents[url]?.$1;
   }
-
-  Future<void> add(String url) async {
-    _currentParagraphIndex = 0;
-    _historyList.insert(0, {
-      _keyUrl: url,
-      _keyTimestamp: DateTime.now().toIso8601String(),
-      _keyLastViewedParagraphIndex: _currentParagraphIndex,
-    });
-    _cachedContents[url] = await _fetchLinkedContent(url);
-    notifyListeners();
-    await prefs.setString(_keyHistory, jsonEncode(_historyList));
-  }
-
-  Future<void> removeAt(int index) async {
-    if (_historyList.length > 1) {
-      if (index >= 0 && index < _historyList.length) {
-        _historyList.removeAt(index);
-        if (index == 0) {
-          if (_historyList.isEmpty) {
-            _currentParagraphIndex = 0;
-          } else {
-            final entry = _historyList.first;
-            _currentParagraphIndex = entry[_keyLastViewedParagraphIndex] ?? 0;
-          }
-        }
-        notifyListeners();
-        await prefs.setString(_keyHistory, jsonEncode(_historyList));
-      }
-    }
-  }
-
-  Future<void> remove(String url) async {
-    final index = _historyList.indexWhere((e) => e[_keyUrl] == url);
-    removeAt(index);
-  }
-
-  Future<void> clearAll() async {
-    _historyList = [];
-    notifyListeners();
-    await prefs.setString(_keyHistory, jsonEncode(_historyList));
-  }
-
-  String? title(String url) => _cachedContents[url]?.$1;
-
-  List<String>? get currentParagraphList => _cachedContents[currentUrl]?.$2;
-
-  int get currentParagraphIndex => _currentParagraphIndex;
-
-  Future<void> setCurrentParagraphIndex(int index) async {
-    if (_currentParagraphIndex != index) {
-      _currentParagraphIndex = index;
-      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
-      notifyListeners();
-      await prefs.setString(_keyHistory, jsonEncode(_historyList));
-    }
-  }
-
-  String get currentParagraph =>
-      currentParagraphList?[_currentParagraphIndex] ?? '';
 
   String getContentSize(String url) {
     final size = _cachedContents[url]?.$4;
@@ -248,6 +285,43 @@ class HistoryNotifier extends ChangeNotifier {
     return _cachedContents[url]?.$3;
   }
 
+  // Select page from history
+  bool isSelected(String url) =>
+      _historyList.isNotEmpty && _historyList.first[_keyUrl] == url;
+
+  Future<void> select(String url) async {
+    final index = _historyList.indexWhere((e) => e[_keyUrl] == url);
+    if (index > 0) {
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
+      final entry = _historyList[index];
+      _historyList.removeAt(index);
+      entry[_keyTimestamp] = DateTime.now().toIso8601String();
+      _historyList.insert(0, entry);
+      _currentParagraphIndex = entry[_keyLastViewedParagraphIndex] ?? 0;
+      notifyListeners();
+      await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
+    } else if (index != 0) {
+      addHistory(url);
+    }
+  }
+
+  // Select paragraph from current page
+  List<String>? get currentParagraphList => _cachedContents[currentUrl]?.$2;
+
+  String get currentParagraph =>
+      currentParagraphList?[_currentParagraphIndex] ?? '';
+
+  int get currentParagraphIndex => _currentParagraphIndex;
+
+  Future<void> setCurrentParagraphIndex(int index) async {
+    if (_currentParagraphIndex != index) {
+      _currentParagraphIndex = index;
+      _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
+      notifyListeners();
+      await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
+    }
+  }
+
   bool get isNotFirstParagraph => _currentParagraphIndex > 0;
 
   bool get isNotLastParagraph =>
@@ -259,7 +333,7 @@ class HistoryNotifier extends ChangeNotifier {
       _currentParagraphIndex--;
       _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
-      prefs.setString(_keyHistory, jsonEncode(_historyList));
+      sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
@@ -268,7 +342,7 @@ class HistoryNotifier extends ChangeNotifier {
       _currentParagraphIndex++;
       _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
-      prefs.setString(_keyHistory, jsonEncode(_historyList));
+      sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
@@ -277,7 +351,7 @@ class HistoryNotifier extends ChangeNotifier {
       _currentParagraphIndex = 0;
       _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
-      await prefs.setString(_keyHistory, jsonEncode(_historyList));
+      await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 
@@ -286,7 +360,7 @@ class HistoryNotifier extends ChangeNotifier {
       _currentParagraphIndex = currentParagraphList!.length - 1;
       _historyList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       notifyListeners();
-      await prefs.setString(_keyHistory, jsonEncode(_historyList));
+      await sharedPrefs.setString(_keyHistory, jsonEncode(_historyList));
     }
   }
 }

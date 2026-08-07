@@ -31,28 +31,21 @@ import 'package:readblank/screens/activity_page.dart';
 
 import 'drawers/content_selector_drawers.dart';
 import 'l10n/app_localizations.dart';
-import 'providers/app_preferences_notifier.dart';
-import 'providers/favorite_list_notifier.dart';
-import 'providers/history_notifier.dart';
 import 'providers/activity_notifier.dart';
+import 'providers/app_preferences_notifier.dart';
+import 'providers/web_contents_notifier.dart';
 import 'screens/read_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
+  final sharedPrefs = await SharedPreferences.getInstance();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppPreferencesNotifier()),
-        ChangeNotifierProvider(create: (_) => HistoryNotifier(prefs)),
-        ChangeNotifierProxyProvider<HistoryNotifier, FavoriteListNotifier>(
-          create: (_) => FavoriteListNotifier(prefs),
-          update: (_, historyNotifier, favoriteListNotifier) {
-            return (favoriteListNotifier!..update(historyNotifier));
-          },
-        ),
+        ChangeNotifierProvider(create: (_) => WebContentsNotifier(sharedPrefs)),
         ChangeNotifierProvider(create: (_) => ActivityNotifier()),
       ],
       child: ReadBlank(),
@@ -65,7 +58,7 @@ class ReadBlank extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appPreferencesNotifier = context.watch<AppPreferencesNotifier>();
+    final prefs = context.watch<AppPreferencesNotifier>();
 
     final lightColorScheme = ColorScheme.fromSeed(
       seedColor: Colors.lightGreen,
@@ -103,18 +96,16 @@ class ReadBlank extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      locale: appPreferencesNotifier.locale,
+      locale: prefs.locale,
       supportedLocales: [Locale('en'), Locale('hu'), Locale('ja')],
       theme: lightTheme,
       darkTheme: darkTheme,
-      themeMode: appPreferencesNotifier.themeMode,
+      themeMode: prefs.themeMode,
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(
-              appPreferencesNotifier.fontSizeFactor,
-            ),
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(prefs.fontSizeFactor)),
           child: child!,
         );
       },
@@ -140,15 +131,15 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HistoryNotifier>().fetchAllLinkedContents();
+      context.read<WebContentsNotifier>().fetchAllLinkedContents();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<HistoryNotifier, ActivityNotifier>(
-      builder: (context, historyNotifier, activityNotifier, child) {
-        if (historyNotifier.isLoading) {
+    return Consumer2<WebContentsNotifier, ActivityNotifier>(
+      builder: (context, webContentsNotifier, activityNotifier, child) {
+        if (webContentsNotifier.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator(strokeWidth: 5)),
           );
@@ -156,7 +147,7 @@ class _MainPageState extends State<MainPage> {
 
         return Scaffold(
           appBar: _selectedIndex == 0
-              ? _buildAppBarForRead(historyNotifier)
+              ? _buildAppBarForRead(webContentsNotifier)
               : _selectedIndex == 1
               ? _buildAppBarForLog(activityNotifier)
               : _buildAppBarForSettings(),
@@ -173,19 +164,19 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForRead(HistoryNotifier historyNotifier) {
+  AppBar _buildAppBarForRead(WebContentsNotifier webContentsNotifier) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            historyNotifier.currentTitle,
+            webContentsNotifier.currentTitle,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            historyNotifier.currentDomainName,
+            webContentsNotifier.currentDomainName,
             style: Theme.of(context).textTheme.bodySmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -286,7 +277,7 @@ class _MainPageState extends State<MainPage> {
 
   void _addLink() async {
     final l10n = AppLocalizations.of(context)!;
-    final historyNotifier = context.read<HistoryNotifier>();
+    final webContentsNotifier = context.read<WebContentsNotifier>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {
@@ -296,7 +287,7 @@ class _MainPageState extends State<MainPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (historyNotifier.contains(copiedText)) {
+            if (webContentsNotifier.containsInHistory(copiedText)) {
               if (mounted) {
                 showDialog(
                   context: context,
@@ -311,7 +302,7 @@ class _MainPageState extends State<MainPage> {
                       FilledButton(
                         onPressed: () async {
                           Navigator.of(context).pop();
-                          historyNotifier.select(copiedText);
+                          webContentsNotifier.select(copiedText);
                         },
                         child: Text(l10n.commonOpen),
                       ),
@@ -320,7 +311,7 @@ class _MainPageState extends State<MainPage> {
                 );
               }
             } else {
-              historyNotifier.add(copiedText);
+              webContentsNotifier.addHistory(copiedText);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

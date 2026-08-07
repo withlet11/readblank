@@ -1,5 +1,5 @@
 /*
- * word_list_notifier.dart
+ * activity_notifier.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *

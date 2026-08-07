@@ -1,5 +1,5 @@
 /*
- * content_pane.dart
+ * content_view.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *

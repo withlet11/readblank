@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:readblank/providers/favorite_list_notifier.dart';
-import 'package:readblank/providers/history_notifier.dart';
+import 'package:readblank/providers/web_contents_notifier.dart';
 import 'package:readblank/providers/activity_notifier.dart';
 import 'package:readblank/screens/read_page.dart';
 
@@ -15,18 +14,16 @@ void main() {
         'bookmarks': [],
         'history': '[{"url": "https://example.com"}]',
       });
-      final prefs = await SharedPreferences.getInstance();
+      final sharedPrefs = await SharedPreferences.getInstance();
 
-      final historyNotifier = HistoryNotifier(prefs);
+      final webContentsNotifier = WebContentsNotifier(sharedPrefs);
       final activityNotifier = ActivityNotifier();
-      final favoriteListNotifier = FavoriteListNotifier(prefs);
 
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider.value(value: historyNotifier),
+            ChangeNotifierProvider.value(value: webContentsNotifier),
             ChangeNotifierProvider.value(value: activityNotifier),
-            ChangeNotifierProvider.value(value: favoriteListNotifier),
           ],
           child: MaterialApp(
             home: Scaffold(body: ReadPage(title: 'Test Page')),

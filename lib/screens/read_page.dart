@@ -24,7 +24,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../views/content_view.dart';
-import '../providers/history_notifier.dart';
+import '../providers/web_contents_notifier.dart';
 
 class ReadPage extends StatefulWidget {
   final String title;
@@ -40,13 +40,16 @@ class _ReadPageState extends State<ReadPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HistoryNotifier>(context, listen: false).fetchCurrentLinkedContent();
+      Provider.of<WebContentsNotifier>(
+        context,
+        listen: false,
+      ).fetchCurrentLinkedContent();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<HistoryNotifier>(
+    return Consumer<WebContentsNotifier>(
       builder: (context, notifier, child) {
         if (notifier.isLoading) {
           return const Center(child: CircularProgressIndicator(strokeWidth: 5));
@@ -57,7 +60,7 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
-  Widget _buildContent(HistoryNotifier notifier) {
+  Widget _buildContent(WebContentsNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return LayoutBuilder(

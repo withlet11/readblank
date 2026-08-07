@@ -29,8 +29,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/favorite_list_notifier.dart';
-import '../providers/history_notifier.dart';
+import '../providers/web_contents_notifier.dart';
 import '../providers/activity_notifier.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -225,31 +224,22 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     ];
 
-    return Consumer3<HistoryNotifier, FavoriteListNotifier, ActivityNotifier>(
-      builder:
-          (
-            context,
-            historyNotifier,
-            favoriteListNotifier,
-            activityNotifier,
-            child,
-          ) {
-            if (historyNotifier.isLoading ||
-                favoriteListNotifier.isLoading ||
-                activityNotifier.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return Consumer2<WebContentsNotifier, ActivityNotifier>(
+      builder: (context, webContentsNotifier, activityNotifier, child) {
+        if (webContentsNotifier.isLoading || activityNotifier.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-            return ListView.separated(
-              itemCount: settingsList.length,
-              separatorBuilder: (context, index) {
-                return const Divider(height: 1, thickness: 1);
-              },
-              itemBuilder: (context, index) {
-                return settingsList[index];
-              },
-            );
+        return ListView.separated(
+          itemCount: settingsList.length,
+          separatorBuilder: (context, index) {
+            return const Divider(height: 1, thickness: 1);
           },
+          itemBuilder: (context, index) {
+            return settingsList[index];
+          },
+        );
+      },
     );
   }
 
@@ -261,8 +251,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final historyNotifier = context.read<HistoryNotifier>();
-      final String exportedData = historyNotifier.exportHistory();
+      final webContentsNotifier = context.read<WebContentsNotifier>();
+      final String exportedData = webContentsNotifier.historyTextData;
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -385,7 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<ImportProcessResult> _addLink(String url) async {
-    final historyNotifier = context.read<HistoryNotifier>();
+    final webContentsNotifier = context.read<WebContentsNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -393,10 +383,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (historyNotifier.contains(url)) {
+            if (webContentsNotifier.containsInHistory(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              historyNotifier.add(url);
+              webContentsNotifier.addHistory(url);
               return ImportProcessResult.success;
             }
           } else {
@@ -421,8 +411,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final favoriteListNotifier = context.read<FavoriteListNotifier>();
-      final String exportedData = favoriteListNotifier.exportFavorites();
+      final webContentsNotifier = context.read<WebContentsNotifier>();
+      final String exportedData = webContentsNotifier.favoritesTextData;
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -545,9 +535,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<ImportProcessResult> _addFavorite(String url) async {
-    final l10n = AppLocalizations.of(context)!;
-
-    final favoriteListNotifier = context.read<FavoriteListNotifier>();
+    final webContentsNotifier = context.read<WebContentsNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -555,10 +543,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (favoriteListNotifier.contains(url)) {
+            if (webContentsNotifier.containsInFavorites(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              favoriteListNotifier.add(url, l10n);
+              webContentsNotifier.addHistory(url);
               return ImportProcessResult.success;
             }
           } else {
@@ -586,10 +574,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final String path = await activityNotifier.exportActivity();
 
       await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(path)],
-          text: 'Activity Backup',
-        ),
+        ShareParams(files: [XFile(path)], text: 'Activity Backup'),
       );
 
       if (!mounted) return;
