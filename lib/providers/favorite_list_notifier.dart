@@ -42,7 +42,7 @@ class FavoriteListNotifier extends ChangeNotifier {
   // For storing and retrieving data from SharedPreferences
   final SharedPreferences prefs;
   List<Map<String, dynamic>> _favoriteList = [];
-  Map<String, (String?, List<String>)> cachedContents = {};
+  Map<String, (String?, List<String>, String?, int)> cachedContents = {};
 
   FavoriteListNotifier(this.prefs) {
     try {
@@ -88,7 +88,7 @@ class FavoriteListNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<(String?, List<String>)> _fetchData(
+  Future<(String?, List<String>, String?, int)> _fetchData(
     String url,
     AppLocalizations l10n,
   ) async {
@@ -96,6 +96,7 @@ class FavoriteListNotifier extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       final document = parser.parse(response.body);
+      final lang = document.documentElement?.attributes['lang'];
       final title = document.querySelector(_keyTitle)?.text;
       final pElements = document.getElementsByTagName('p');
       return (
@@ -104,6 +105,10 @@ class FavoriteListNotifier extends ChangeNotifier {
             .map((element) => element.text.trim())
             .where((text) => text.isNotEmpty)
             .toList(),
+        lang,
+        pElements
+            .map((element) => element.text.codeUnits.length)
+            .reduce((a, b) => a + b),
       );
     } else {
       throw Exception(l10n.pageLoadFailMessage);
@@ -148,7 +153,7 @@ class FavoriteListNotifier extends ChangeNotifier {
   String title(String url, AppLocalizations l10n) =>
       cachedContents[url]?.$1 ?? l10n.noTitle;
 
-  void cacheParagraphList(String url, (String?, List<String>) contents) {
+  void cacheParagraphList(String url, (String?, List<String>, String, int) contents) {
     cachedContents[url] = contents;
   }
 }

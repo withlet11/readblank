@@ -24,6 +24,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/app_preferences_notifier.dart';
 import '../providers/favorite_list_notifier.dart';
 import '../providers/history_notifier.dart';
 
@@ -142,6 +143,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     FavoriteListNotifier favoriteListNotifier,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    final appPreferencesNotifier = context.watch<AppPreferencesNotifier>();
 
     return MediaQuery.removePadding(
       context: context,
@@ -191,26 +193,66 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               ),
               title: Text(
                 historyNotifier.title(entry[_keyUrl]) ?? l10n.noTitle,
-                maxLines: 1,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    entry[_keyUrl],
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.dns,
+                        size: 12 * appPreferencesNotifier.fontSizeFactor,
+                      ),
+                      Text(
+                        Uri.parse(entry[_keyUrl]).host,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  Text(
-                    DateFormat.yMd().add_jm().format(
-                      DateTime.parse(entry[_keyTimestamp]),
-                    ),
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_month_outlined,
+                        size: 12 * appPreferencesNotifier.fontSizeFactor,
+                      ),
+                      Text(
+                        DateFormat.yMMMd(
+                          l10n.localeName,
+                        ).add_jm().format(DateTime.parse(entry[_keyTimestamp])),
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.language_outlined,
+                        size: 12 * appPreferencesNotifier.fontSizeFactor,
+                      ),
+                      Text(
+                        historyNotifier.getContentLanguage(entry[_keyUrl]) ??
+                            '',
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(width: 12),
+                      Icon(
+                        Icons.data_usage_outlined,
+                        size: 12 * appPreferencesNotifier.fontSizeFactor,
+                      ),
+                      Text(
+                        historyNotifier.getContentSize(entry[_keyUrl]),
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ],
               ),

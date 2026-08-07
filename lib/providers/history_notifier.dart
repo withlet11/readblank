@@ -43,7 +43,7 @@ class HistoryNotifier extends ChangeNotifier {
   // For storing and retrieving data from SharedPreferences
   final SharedPreferences prefs;
   List<Map<String, dynamic>> _historyList = [];
-  final Map<String, (String?, List<String>)> _cachedContents = {};
+  final Map<String, (String?, List<String>, String?, int)> _cachedContents = {};
   int _currentParagraphIndex = 0;
 
   HistoryNotifier(this.prefs) {
@@ -55,7 +55,7 @@ class HistoryNotifier extends ChangeNotifier {
           _historyList = List<Map<String, dynamic>>.from(decoded);
           if (_historyList.isNotEmpty) {
             _currentParagraphIndex =
-              _historyList.first[_keyLastViewedParagraphIndex] ?? 0;
+                _historyList.first[_keyLastViewedParagraphIndex] ?? 0;
           }
         }
       } else {
@@ -107,11 +107,14 @@ class HistoryNotifier extends ChangeNotifier {
     }
   }
 
-  Future<(String?, List<String>)> _fetchLinkedContent(String url) async {
+  Future<(String?, List<String>, String?, int)> _fetchLinkedContent(
+    String url,
+  ) async {
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final document = parser.parse(response.body);
+      final lang = document.documentElement?.attributes['lang'];
       final title = document.querySelector('title')?.text;
       final pElements = document.getElementsByTagName('p');
       return (
@@ -120,13 +123,18 @@ class HistoryNotifier extends ChangeNotifier {
             .map((element) => element.text.trim())
             .where((text) => text.isNotEmpty)
             .toList(),
+        lang,
+        pElements
+            .map((element) => element.text.codeUnits.length)
+            .reduce((a, b) => a + b),
       );
     } else {
       throw Exception('Failed to fetch a page');
     }
   }
 
-  Map<String, (String?, List<String>)> get cachedContents => _cachedContents;
+  Map<String, (String?, List<String>, String?, int)> get cachedContents =>
+      _cachedContents;
 
   List<Map<String, dynamic>> get historyList => _historyList;
 
@@ -226,6 +234,19 @@ class HistoryNotifier extends ChangeNotifier {
 
   String get currentParagraph =>
       currentParagraphList?[_currentParagraphIndex] ?? '';
+
+  String getContentSize(String url) {
+    final size = _cachedContents[url]?.$4;
+    return size == null
+        ? '? B'
+        : size < 1000
+        ? '$size B'
+        : '${(size / 1024).round().toString()} KB';
+  }
+
+  String? getContentLanguage(String url) {
+    return _cachedContents[url]?.$3;
+  }
 
   bool get isNotFirstParagraph => _currentParagraphIndex > 0;
 
