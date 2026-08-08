@@ -36,8 +36,9 @@ class ContentSelectorDrawers extends StatefulWidget {
 
 class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     with SingleTickerProviderStateMixin {
-  static const String _keyTimestamp = 'timestamp';
   static const String _keyUrl = 'url';
+  static const String _keyTitle = 'title';
+  static const String _keyTimestamp = 'timestamp';
 
   late TabController _tabController;
   int _activeIndex = 0;
@@ -184,12 +185,15 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     webContentsNotifier.containsInFavorites(entry[_keyUrl])
                     ? null
                     : () {
-                        webContentsNotifier.addFavorite(entry[_keyUrl]);
+                        webContentsNotifier.addFavorite(
+                          entry[_keyUrl],
+                          entry[_keyTitle],
+                        );
                       },
                 disabledColor: Theme.of(context).colorScheme.onSurface,
               ),
               title: Text(
-                webContentsNotifier.getTitle(entry[_keyUrl]) ?? l10n.noTitle,
+                entry[_keyTitle] ?? l10n.noTitle,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -228,7 +232,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     children: [
                       Icon(Icons.language_outlined, size: 12 * fontSizeFactor),
                       Text(
-                        webContentsNotifier.getContentLanguage(
+                        webContentsNotifier.getCachedContentLanguage(
                               entry[_keyUrl],
                             ) ??
                             '',
@@ -241,7 +245,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                         size: 12 * fontSizeFactor,
                       ),
                       Text(
-                        webContentsNotifier.getContentSize(entry[_keyUrl]),
+                        webContentsNotifier.getCachedContentSize(entry[_keyUrl]),
                         style: Theme.of(context).textTheme.bodySmall,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -273,6 +277,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
 
   Widget _favoriteListView(WebContentsNotifier webContentsNotifier) {
     final l10n = AppLocalizations.of(context)!;
+    final fontSizeFactor = context
+        .watch<AppPreferencesNotifier>()
+        .fontSizeFactor;
 
     return MediaQuery.removePadding(
       context: context,
@@ -312,17 +319,50 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                 onPressed: () {},
               ),
               title: Text(
-                webContentsNotifier.getTitle(entry[_keyUrl]) ?? l10n.noTitle,
-                maxLines: 1,
+                entry[_keyTitle] ?? l10n.noTitle,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              subtitle: Text(
-                entry[_keyUrl],
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.dns, size: 12 * fontSizeFactor),
+                      Text(
+                        Uri.parse(entry[_keyUrl]).host,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.language_outlined, size: 12 * fontSizeFactor),
+                      Text(
+                        webContentsNotifier.getCachedContentLanguage(
+                              entry[_keyUrl],
+                            ) ??
+                            '',
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(width: 12),
+                      Icon(
+                        Icons.data_usage_outlined,
+                        size: 12 * fontSizeFactor,
+                      ),
+                      Text(
+                        webContentsNotifier.getCachedContentSize(entry[_keyUrl]),
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ],
               ),
               selected: webContentsNotifier.isSelected(entry[_keyUrl]),
               onTap: () {

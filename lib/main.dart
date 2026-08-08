@@ -170,7 +170,7 @@ class _MainPageState extends State<MainPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            webContentsNotifier.currentTitle,
+            webContentsNotifier.currentTitle ?? webContentsNotifier.currentUrl,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

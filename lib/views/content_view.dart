@@ -302,65 +302,7 @@ class _ContentViewState extends State<ContentView> {
                       ),
                       minimumSize: Size.zero,
                     ),
-                    onPressed: _wordList[index].$3
-                        ? () {
-                            if (!_wordList[_currentIndex].$3) {
-                              if (mounted) {
-                                final l10n = AppLocalizations.of(context)!;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      l10n.fieldAlreadyFilledMessage,
-                                    ),
-                                    duration: const Duration(seconds: 1),
-                                  ),
-                                );
-                              }
-                            } else if (index == _currentIndex) {
-                              final notifier = context.read<ActivityNotifier>();
-                              _wordList[index] = (
-                              _wordList[index].$1,
-                              _wordList[index].$2,
-                              false,
-                              );
-                              setState(() {
-                                _moveNextWord();
-                              });
-                              notifier.addWord(
-                                _paragraph.substring(
-                                  _wordList[index].$1,
-                                  _wordList[index].$2,
-                                ),
-                              );
-                            } else if (_paragraph
-                                    .substring(
-                                      _wordList[index].$1,
-                                      _wordList[index].$2,
-                                    )
-                                    .toLowerCase() ==
-                                _paragraph
-                                    .substring(
-                                      _wordList[_currentIndex].$1,
-                                      _wordList[_currentIndex].$2,
-                                    )
-                                    .toLowerCase()) {
-                              setState(() {
-                                int index1 = _sortedIndexList.indexOf(index);
-                                int index2 = _sortedIndexList.indexOf(
-                                  _currentIndex,
-                                );
-                                _sortedIndexList[index1] = _currentIndex;
-                                _sortedIndexList[index2] = index;
-                                _wordList[_currentIndex] = (
-                                  _wordList[_currentIndex].$1,
-                                  _wordList[_currentIndex].$2,
-                                  false,
-                                );
-                                _moveNextWord();
-                              });
-                            }
-                          }
-                        : null,
+                    onPressed: _wordList[index].$3 ? _checkAnswer(index) : null,
                     child: Text(
                       _paragraph
                           .substring(_wordList[index].$1, _wordList[index].$2)
@@ -373,5 +315,56 @@ class _ContentViewState extends State<ContentView> {
         ),
       ),
     );
+  }
+
+  void Function() _checkAnswer(int index) {
+    return () {
+      if (!_wordList[_currentIndex].$3) {
+        // Selected field is already filled.
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.fieldAlreadyFilledMessage),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      } else if (index == _currentIndex) {
+        // Selected field index is correct.
+        _wordList[index] = (_wordList[index].$1, _wordList[index].$2, false);
+        setState(() {
+          _moveNextWord();
+        });
+        context.read<ActivityNotifier>().addWord(
+          _paragraph.substring(_wordList[index].$1, _wordList[index].$2),
+        );
+      } else if (_paragraph
+              .substring(_wordList[index].$1, _wordList[index].$2)
+              .toLowerCase() ==
+          _paragraph
+              .substring(
+                _wordList[_currentIndex].$1,
+                _wordList[_currentIndex].$2,
+              )
+              .toLowerCase()) {
+        // Selected field word is correct.
+        setState(() {
+          int index1 = _sortedIndexList.indexOf(index);
+          int index2 = _sortedIndexList.indexOf(_currentIndex);
+          _sortedIndexList[index1] = _currentIndex;
+          _sortedIndexList[index2] = index;
+          _wordList[_currentIndex] = (
+            _wordList[_currentIndex].$1,
+            _wordList[_currentIndex].$2,
+            false,
+          );
+          _moveNextWord();
+        });
+        context.read<ActivityNotifier>().addWord(
+          _paragraph.substring(_wordList[index].$1, _wordList[index].$2),
+        );
+      }
+    };
   }
 }

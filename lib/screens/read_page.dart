@@ -73,9 +73,7 @@ class _ReadPageState extends State<ReadPage> {
                 key: ValueKey(
                   '${notifier.currentParagraphIndex}_${notifier.currentParagraph}',
                 ),
-                paragraph: notifier.currentParagraph.isEmpty
-                    ? l10n.urlRequestMessage
-                    : notifier.currentParagraph,
+                paragraph: notifier.currentParagraph ?? l10n.urlRequestMessage,
               ),
             ),
             Expanded(

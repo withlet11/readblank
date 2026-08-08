@@ -25,7 +25,6 @@ import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
@@ -242,7 +241,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final webContentsNotifier = context.read<WebContentsNotifier>();
-      final String exportedData = webContentsNotifier.historyTextData;
+      final String exportedData = webContentsNotifier.historyJsonData;
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -402,7 +401,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final webContentsNotifier = context.read<WebContentsNotifier>();
-      final String exportedData = webContentsNotifier.favoritesTextData;
+      final String exportedData = webContentsNotifier.favoritesJsonData;
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

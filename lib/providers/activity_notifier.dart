@@ -30,6 +30,10 @@ import 'package:sqflite/sqflite.dart';
 enum ActivityViewMode { daily, weekly, monthly }
 
 class ActivityNotifier extends ChangeNotifier {
+  static const String _keyId = 'id';
+  static const String _keyWord = 'word';
+  static const String _keyTimestamp = 'timestamp';
+
   bool _isLoading = false;
 
   // For database operations
@@ -67,7 +71,7 @@ class ActivityNotifier extends ChangeNotifier {
     final timestamp = DateTime.now().toIso8601String();
     await _db.addEntry(word);
 
-    _wordLog.insert(0, {'word': word, 'timestamp': timestamp});
+    _wordLog.insert(0, {_keyWord: word, _keyTimestamp: timestamp});
     if (_wordLog.length > 10000) _wordLog.removeLast();
 
     notifyListeners();
@@ -80,7 +84,7 @@ class ActivityNotifier extends ChangeNotifier {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(Duration(days: duration));
     return _wordLog.where((log) {
-      final logDate = DateTime.parse(log['timestamp'] as String);
+      final logDate = DateTime.parse(log[_keyTimestamp] as String);
       return logDate.isAfter(startOfDay) && logDate.isBefore(endOfDay);
     }).toList();
   }
@@ -92,7 +96,7 @@ class ActivityNotifier extends ChangeNotifier {
     final studyLog = extractLogForDuration(date, duration);
     final result = <String, int>{};
     for (var log in studyLog) {
-      final word = log['word'] as String;
+      final word = log[_keyWord] as String;
       result[word] = (result[word] ?? 0) + 1;
     }
     List<MapEntry<String, int>> temp = result.entries.toList();
@@ -114,7 +118,7 @@ class ActivityNotifier extends ChangeNotifier {
     final studyLog = extractLogForDuration(date, 1);
     final result = List<int>.filled(48, 0);
     for (var log in studyLog) {
-      final logDate = DateTime.parse(log['timestamp'] as String);
+      final logDate = DateTime.parse(log[_keyTimestamp] as String);
       final hour = logDate.hour;
       final minute = logDate.minute;
       result[hour * 2 + (minute >= 30 ? 1 : 0)] += 1;
@@ -126,7 +130,7 @@ class ActivityNotifier extends ChangeNotifier {
     final studyLog = extractLogForDuration(date, 7);
     final result = List<int>.filled(7, 0);
     for (var log in studyLog) {
-      final logDate = DateTime.parse(log['timestamp'] as String);
+      final logDate = DateTime.parse(log[_keyTimestamp] as String);
       final weekday = logDate.weekday - 1;
       result[weekday] += 1;
     }
@@ -140,7 +144,7 @@ class ActivityNotifier extends ChangeNotifier {
     final studyLog = extractLogForDuration(firstDay, duration);
     final result = List<int>.filled(duration, 0);
     for (var log in studyLog) {
-      final logDate = DateTime.parse(log['timestamp'] as String);
+      final logDate = DateTime.parse(log[_keyTimestamp] as String);
       final day = logDate.day - 1;
       result[day] += 1;
     }
@@ -150,9 +154,9 @@ class ActivityNotifier extends ChangeNotifier {
   Future<String?> exportActivity() async {
     final log = await _db.getAllEntries();
     final backupData = log.map((row) {
-      final copy = Map<String, Object?>.from(row);
-      copy.remove('id');
-      return copy;
+      final entry = Map<String, Object?>.from(row);
+      entry.remove(_keyId); // unnecessary field
+      return entry;
     }).toList();
     final jsonData = jsonEncode(backupData);
 
@@ -177,12 +181,12 @@ class ActivityNotifier extends ChangeNotifier {
       if (entries.isNotEmpty) {
         int count = 0;
         final list = await _db.getAllEntries();
-        final listWords = list.map((e) => e['word']).toList();
+        final listWords = list.map((e) => e[_keyWord]).toList();
         for (var entry in entries) {
           final elem = entry as Map<String, dynamic>;
-          if (elem.containsKey('word') &&
-              elem.containsKey('timestamp') &&
-              listWords.contains(elem['word'])) {
+          if (elem.containsKey(_keyWord) &&
+              elem.containsKey(_keyTimestamp) &&
+              listWords.contains(elem[_keyWord])) {
             ++count;
           }
         }
@@ -195,6 +199,11 @@ class ActivityNotifier extends ChangeNotifier {
 }
 
 class DatabaseHelper {
+  static const String _dbName = 'fillblank.db';
+  static const String _tableName = 'logs';
+  static const String _keyWord = 'word';
+  static const String _keyTimestamp = 'timestamp';
+
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
@@ -202,7 +211,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('fillblank.db');
+    _database = await _initDB(_dbName);
     return _database!;
   }
 
@@ -241,9 +250,9 @@ class DatabaseHelper {
 
   Future<void> addEntry(String word, {String? timestamp}) async {
     final db = await database;
-    await db.insert('logs', {
-      'word': word,
-      'timestamp': timestamp ?? DateTime.now().toIso8601String(),
+    await db.insert(_tableName, {
+      _keyWord: word,
+      _keyTimestamp: timestamp ?? DateTime.now().toIso8601String(),
     });
 
     // Optional: Auto-trim database size
@@ -256,7 +265,7 @@ class DatabaseHelper {
     final db = await database;
     await db.transaction((txn) async {
       for (var entry in entries) {
-        await txn.insert('logs', entry);
+        await txn.insert(_tableName, entry);
       }
     });
 
@@ -268,13 +277,12 @@ class DatabaseHelper {
 
   Future<void> clearAllEntries() async {
     final db = await database;
-    await db.delete('logs');
+    await db.delete(_tableName);
   }
 
   Future<List<Map<String, dynamic>>> getAllEntries() async {
     final db = await database;
-    // Fetch newest 100 first
-    return await db.query('logs', orderBy: 'id DESC', limit: 10000);
+    return await db.query(_tableName, orderBy: 'id DESC', limit: 10000);
   }
 
   Future<List<Map<String, dynamic>>> getEntries(
@@ -293,7 +301,7 @@ class DatabaseHelper {
       date.day,
     ).add(Duration(days: duration)).toIso8601String();
     return await db.query(
-      'logs',
+      _tableName,
       where: 'timestamp >= ? AND timestamp < ?',
       whereArgs: [startOfDay, endOfDay],
       orderBy: 'timestamp ASC',
