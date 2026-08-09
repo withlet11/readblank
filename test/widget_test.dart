@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:readblank/providers/web_contents_notifier.dart';
+import 'package:readblank/providers/link_list_notifier.dart';
 import 'package:readblank/providers/activity_notifier.dart';
 import 'package:readblank/screens/read_page.dart';
 
@@ -16,13 +16,13 @@ void main() {
       });
       final sharedPrefs = await SharedPreferences.getInstance();
 
-      final webContentsNotifier = WebContentsNotifier(sharedPrefs);
+      final linkListNotifier = LinkListNotifier(sharedPrefs);
       final activityNotifier = ActivityNotifier();
 
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider.value(value: webContentsNotifier),
+            ChangeNotifierProvider.value(value: linkListNotifier),
             ChangeNotifierProvider.value(value: activityNotifier),
           ],
           child: MaterialApp(

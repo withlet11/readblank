@@ -24,7 +24,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../views/content_view.dart';
-import '../providers/web_contents_notifier.dart';
+import '../providers/link_list_notifier.dart';
 
 class ReadPage extends StatefulWidget {
   final String title;
@@ -40,16 +40,16 @@ class _ReadPageState extends State<ReadPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<WebContentsNotifier>(
+      Provider.of<LinkListNotifier>(
         context,
         listen: false,
-      ).fetchCurrentLinkedContent();
+      ).fetchCurrentContent();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WebContentsNotifier>(
+    return Consumer<LinkListNotifier>(
       builder: (context, notifier, child) {
         if (notifier.isLoading) {
           return const Center(child: CircularProgressIndicator(strokeWidth: 5));
@@ -60,7 +60,7 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
-  Widget _buildContent(WebContentsNotifier notifier) {
+  Widget _buildContent(LinkListNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return LayoutBuilder(

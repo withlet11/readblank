@@ -33,7 +33,7 @@ import 'drawers/content_selector_drawers.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/activity_notifier.dart';
 import 'providers/app_preferences_notifier.dart';
-import 'providers/web_contents_notifier.dart';
+import 'providers/link_list_notifier.dart';
 import 'screens/read_page.dart';
 
 void main() async {
@@ -45,7 +45,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppPreferencesNotifier()),
-        ChangeNotifierProvider(create: (_) => WebContentsNotifier(sharedPrefs)),
+        ChangeNotifierProvider(create: (_) => LinkListNotifier(sharedPrefs)),
         ChangeNotifierProvider(create: (_) => ActivityNotifier()),
       ],
       child: ReadBlank(),
@@ -131,15 +131,15 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WebContentsNotifier>().fetchAllLinkedContents();
+      context.read<LinkListNotifier>().fetchAllContents();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<WebContentsNotifier, ActivityNotifier>(
-      builder: (context, webContentsNotifier, activityNotifier, child) {
-        if (webContentsNotifier.isLoading) {
+    return Consumer2<LinkListNotifier, ActivityNotifier>(
+      builder: (context, linkListNotifier, activityNotifier, child) {
+        if (linkListNotifier.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator(strokeWidth: 5)),
           );
@@ -147,7 +147,7 @@ class _MainPageState extends State<MainPage> {
 
         return Scaffold(
           appBar: _selectedIndex == 0
-              ? _buildAppBarForRead(webContentsNotifier)
+              ? _buildAppBarForRead(linkListNotifier)
               : _selectedIndex == 1
               ? _buildAppBarForLog(activityNotifier)
               : _buildAppBarForSettings(),
@@ -164,19 +164,19 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForRead(WebContentsNotifier webContentsNotifier) {
+  AppBar _buildAppBarForRead(LinkListNotifier linkListNotifier) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            webContentsNotifier.currentTitle ?? webContentsNotifier.currentUrl,
+            linkListNotifier.currentTitle ?? linkListNotifier.currentUrl,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            webContentsNotifier.currentDomainName,
+            linkListNotifier.currentDomainName,
             style: Theme.of(context).textTheme.bodySmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -193,7 +193,7 @@ class _MainPageState extends State<MainPage> {
         ),
         Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.list_outlined),
+            icon: const Icon(Icons.history_outlined),
             onPressed: () {
               Scaffold.of(context).openEndDrawer();
             },
@@ -277,7 +277,7 @@ class _MainPageState extends State<MainPage> {
 
   void _addLink() async {
     final l10n = AppLocalizations.of(context)!;
-    final webContentsNotifier = context.read<WebContentsNotifier>();
+    final linkListNotifier = context.read<LinkListNotifier>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {
@@ -287,7 +287,7 @@ class _MainPageState extends State<MainPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (webContentsNotifier.containsInHistory(copiedText)) {
+            if (linkListNotifier.contains(copiedText)) {
               if (mounted) {
                 showDialog(
                   context: context,
@@ -302,7 +302,7 @@ class _MainPageState extends State<MainPage> {
                       FilledButton(
                         onPressed: () async {
                           Navigator.of(context).pop();
-                          webContentsNotifier.select(copiedText);
+                          linkListNotifier.select(copiedText);
                         },
                         child: Text(l10n.commonOpen),
                       ),
@@ -311,7 +311,7 @@ class _MainPageState extends State<MainPage> {
                 );
               }
             } else {
-              webContentsNotifier.addHistory(copiedText);
+              linkListNotifier.add(copiedText);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

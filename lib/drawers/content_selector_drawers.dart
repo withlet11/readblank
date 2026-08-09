@@ -25,7 +25,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/web_contents_notifier.dart';
+import '../providers/link_list_notifier.dart';
 
 class ContentSelectorDrawers extends StatefulWidget {
   const ContentSelectorDrawers({super.key});
@@ -39,6 +39,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   static const String _keyUrl = 'url';
   static const String _keyTitle = 'title';
   static const String _keyTimestamp = 'timestamp';
+  static const String _keyIsFavorite = 'isFavorite';
 
   late TabController _tabController;
   int _activeIndex = 0;
@@ -69,76 +70,235 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final fontSizeFactor = context
+        .watch<AppPreferencesNotifier>()
+        .fontSizeFactor;
 
-    return Consumer<WebContentsNotifier>(
-      builder: (context, webContentsNotifier, child) {
-        if (webContentsNotifier.isLoading) {
+    return Consumer<LinkListNotifier>(
+      builder: (context, linkListNotifier, child) {
+        if (linkListNotifier.isLoading) {
           return Center(child: CircularProgressIndicator());
         }
 
-        return Drawer(
-          child: DefaultTabController(
-            length: 2,
+        return NavigationDrawer(
+          header: SafeArea(
+            bottom: false,
             child: Column(
               children: [
-                SafeArea(
-                  bottom: false,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    tabs: [
-                      Tab(
-                        icon: const Icon(Icons.history_outlined),
-                        text: l10n.historyLabel,
-                      ),
-                      Tab(
-                        icon: const Icon(Icons.star_outlined),
-                        text: l10n.favoritesLabel,
-                      ),
-                    ],
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.history_outlined),
+                    Text(
+                      l10n.historyLabel,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _historyListView(webContentsNotifier),
-                      _favoriteListView(webContentsNotifier),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                SafeArea(
-                  top: false,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.error,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                        onPressed: _activeIndex == 0
-                            ? _clearAllHistory
-                            : _deleteAllFavorites,
-                        icon: const Icon(Icons.delete_sweep_outlined),
-                        label: Text(
-                          _activeIndex == 0
-                              ? l10n.allHistoryClearButton
-                              : l10n.allFavoritesDeleteButton,
-                        ),
+                        minimumSize: Size.zero,
                       ),
-                    ],
-                  ),
+                      icon: Icon(
+                        linkListNotifier.isFavoritesOnly
+                            ? Icons.filter_alt
+                            : Icons.filter_alt_outlined,
+                        size: 16 * fontSizeFactor,
+                      ),
+                      label: Text('Favorites'),
+                      onPressed: () {
+                        linkListNotifier.isFavoritesOnly =
+                            !linkListNotifier.isFavoritesOnly;
+                        linkListNotifier.persist();
+                      },
+                    ),
+                    DropdownButton<String?>(
+                      value: linkListNotifier.targetLocale,
+                      items: [
+                        DropdownMenuItem(value: null, child: Text('All🌐')),
+                        for (final locale in linkListNotifier.locales)
+                          DropdownMenuItem(
+                            value: locale,
+                            child: Text(
+                              '$locale ${_localeNameToEmoji(locale)}',
+                            ),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        linkListNotifier.targetLocale = value;
+                        linkListNotifier.persist();
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          children: [
+            for (final entry in linkListNotifier.sortedLinkList)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 0.0,
+                  vertical: 0.0,
+                ),
+                minLeadingWidth: 0,
+                visualDensity: const VisualDensity(
+                  horizontal: -4,
+                  vertical: -4,
+                ),
+                leading: IconButton(
+                  isSelected: entry[_keyIsFavorite] ?? false,
+                  icon: const Icon(Icons.star_outline_outlined),
+                  selectedIcon: const Icon(Icons.star_outlined),
+                  onPressed: () {
+                    final isFavorite = entry[_keyIsFavorite] ?? false;
+                    entry[_keyIsFavorite] = !isFavorite;
+                    linkListNotifier.persist();
+                  },
+                  disabledColor: Theme.of(context).colorScheme.onSurface,
+                ),
+                title: Text(
+                  entry[_keyTitle] ?? l10n.noTitle,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.dns, size: 12 * fontSizeFactor),
+                        Expanded(
+                          child: Text(
+                            Uri.parse(entry[_keyUrl]).host,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(fontFamily: 'monospace'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_month_outlined,
+                          size: 12 * fontSizeFactor,
+                        ),
+                        Expanded(
+                          child: Text(
+                            DateFormat.yMMMd(l10n.localeName).add_jm().format(
+                              DateTime.parse(entry[_keyTimestamp]),
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.language_outlined,
+                          size: 12 * fontSizeFactor,
+                        ),
+                        Text(
+                          linkListNotifier.getCachedContentLocale(
+                                entry[_keyUrl],
+                              ) ??
+                              '',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(width: 12),
+                        Icon(
+                          Icons.data_usage_outlined,
+                          size: 12 * fontSizeFactor,
+                        ),
+                        Text(
+                          linkListNotifier.getCachedContentSize(entry[_keyUrl]),
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                selected: linkListNotifier.isSelected(entry[_keyUrl]),
+                onTap: () {
+                  linkListNotifier.select(entry[_keyUrl]);
+                  Navigator.pop(context);
+                },
+                trailing: IconButton(
+                  style: IconButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  icon: const Icon(Icons.delete_outlined),
+                  onPressed: linkListNotifier.linkList.length > 1
+                      ? () {
+                          linkListNotifier.remove(entry[_keyUrl]);
+                        }
+                      : null,
+                ),
+              ),
+            const Divider(height: 1),
+            SafeArea(
+              top: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    onPressed: _clearAllHistory,
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    label: Text(l10n.allHistoryClearButton),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          // ),
+          // ),
         );
       },
     );
   }
 
-  Widget _historyListView(WebContentsNotifier webContentsNotifier) {
+  String _localeNameToEmoji(String localeName) {
+    final parts = localeName.replaceAll('-', '_').split('_');
+
+    String contryCode = '';
+    if (parts.length > 1) {
+      contryCode = parts.last.toUpperCase();
+    } else {
+      final languageCode = parts.first;
+      contryCode = languageCode == 'en'
+          ? 'US'
+          : languageCode == 'ja'
+          ? 'JP'
+          : languageCode == 'zh'
+          ? 'CN'
+          : languageCode.toUpperCase();
+    }
+
+    if (contryCode.isEmpty) return '';
+
+    final int firstChar = contryCode.codeUnitAt(0) + 0x1F1A5;
+    final int secondChar = contryCode.codeUnitAt(1) + 0x1F1A5;
+
+    return String.fromCharCode(firstChar) + String.fromCharCode(secondChar);
+  }
+
+  Widget _historyListView(LinkListNotifier linkListNotifier) {
     final l10n = AppLocalizations.of(context)!;
     final fontSizeFactor = context
         .watch<AppPreferencesNotifier>()
@@ -148,28 +308,8 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
       context: context,
       removeTop: true,
       child: NavigationDrawer(
-        header: SizedBox(
-          width: double.infinity,
-          height: 40,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              DropdownButton(
-                value: 'abc',
-                items: [
-                  for (final domain in <String>['abc', 'def', 'ghi'])
-                    DropdownMenuItem<String>(
-                      value: domain,
-                      child: Text(domain),
-                    ),
-                ],
-                onChanged: (value) {},
-              ),
-            ],
-          ),
-        ),
         children: [
-          for (final entry in webContentsNotifier.historyList)
+          for (final entry in linkListNotifier.sortedLinkList)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
@@ -178,18 +318,14 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
               minLeadingWidth: 0,
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               leading: IconButton(
-                icon: webContentsNotifier.containsInFavorites(entry[_keyUrl])
-                    ? const Icon(Icons.star_outlined)
-                    : const Icon(Icons.star_outline_outlined),
-                onPressed:
-                    webContentsNotifier.containsInFavorites(entry[_keyUrl])
-                    ? null
-                    : () {
-                        webContentsNotifier.addFavorite(
-                          entry[_keyUrl],
-                          entry[_keyTitle],
-                        );
-                      },
+                isSelected: entry[_keyIsFavorite] ?? false,
+                icon: const Icon(Icons.star_outline_outlined),
+                selectedIcon: const Icon(Icons.star_outlined),
+                onPressed: () {
+                  final isFavorite = entry[_keyIsFavorite] ?? false;
+                  entry[_keyIsFavorite] = !isFavorite;
+                  linkListNotifier.persist();
+                },
                 disabledColor: Theme.of(context).colorScheme.onSurface,
               ),
               title: Text(
@@ -232,7 +368,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     children: [
                       Icon(Icons.language_outlined, size: 12 * fontSizeFactor),
                       Text(
-                        webContentsNotifier.getCachedContentLanguage(
+                        linkListNotifier.getCachedContentLocale(
                               entry[_keyUrl],
                             ) ??
                             '',
@@ -245,7 +381,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                         size: 12 * fontSizeFactor,
                       ),
                       Text(
-                        webContentsNotifier.getCachedContentSize(entry[_keyUrl]),
+                        linkListNotifier.getCachedContentSize(entry[_keyUrl]),
                         style: Theme.of(context).textTheme.bodySmall,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -253,9 +389,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   ),
                 ],
               ),
-              selected: webContentsNotifier.isSelected(entry[_keyUrl]),
+              selected: linkListNotifier.isSelected(entry[_keyUrl]),
               onTap: () {
-                webContentsNotifier.select(entry[_keyUrl]);
+                linkListNotifier.select(entry[_keyUrl]);
                 Navigator.pop(context);
               },
               trailing: IconButton(
@@ -263,120 +399,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 icon: const Icon(Icons.delete_outlined),
-                onPressed: webContentsNotifier.historyList.length > 1
+                onPressed: linkListNotifier.linkList.length > 1
                     ? () {
-                        webContentsNotifier.removeHistory(entry[_keyUrl]);
-                      }
-                    : null,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _favoriteListView(WebContentsNotifier webContentsNotifier) {
-    final l10n = AppLocalizations.of(context)!;
-    final fontSizeFactor = context
-        .watch<AppPreferencesNotifier>()
-        .fontSizeFactor;
-
-    return MediaQuery.removePadding(
-      context: context,
-      removeTop: true,
-      child: NavigationDrawer(
-        header: SizedBox(
-          width: double.infinity,
-          height: 40,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              DropdownButton(
-                value: 'abc',
-                items: [
-                  for (final domain in <String>['abc', 'def', 'ghi'])
-                    DropdownMenuItem<String>(
-                      value: domain,
-                      child: Text(domain),
-                    ),
-                ],
-                onChanged: (value) {},
-              ),
-            ],
-          ),
-        ),
-        children: [
-          for (final entry in webContentsNotifier.favoriteList)
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 0.0,
-                vertical: 0.0,
-              ),
-              minLeadingWidth: 0,
-              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-              leading: IconButton(
-                icon: const Icon(Icons.edit_note_outlined),
-                onPressed: () {},
-              ),
-              title: Text(
-                entry[_keyTitle] ?? l10n.noTitle,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.dns, size: 12 * fontSizeFactor),
-                      Text(
-                        Uri.parse(entry[_keyUrl]).host,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.language_outlined, size: 12 * fontSizeFactor),
-                      Text(
-                        webContentsNotifier.getCachedContentLanguage(
-                              entry[_keyUrl],
-                            ) ??
-                            '',
-                        style: Theme.of(context).textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(width: 12),
-                      Icon(
-                        Icons.data_usage_outlined,
-                        size: 12 * fontSizeFactor,
-                      ),
-                      Text(
-                        webContentsNotifier.getCachedContentSize(entry[_keyUrl]),
-                        style: Theme.of(context).textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              selected: webContentsNotifier.isSelected(entry[_keyUrl]),
-              onTap: () {
-                webContentsNotifier.select(entry[_keyUrl]);
-                Navigator.pop(context);
-              },
-              trailing: IconButton(
-                style: IconButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                ),
-                icon: const Icon(Icons.delete_outlined),
-                onPressed: webContentsNotifier.favoriteList.length > 1
-                    ? () {
-                        webContentsNotifier.removeFavorite(entry[_keyUrl]);
+                        linkListNotifier.remove(entry[_keyUrl]);
                       }
                     : null,
               ),
@@ -388,7 +413,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
 
   void _clearAllHistory() async {
     final l10n = AppLocalizations.of(context)!;
-    final settings = context.read<WebContentsNotifier>();
+    final settings = context.read<LinkListNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -408,33 +433,33 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
     );
 
     if (confirm == true) {
-      settings.clearAllHistory();
+      settings.clearAll();
     }
   }
 
-  void _deleteAllFavorites() async {
-    final l10n = AppLocalizations.of(context)!;
-    final settings = context.read<WebContentsNotifier>();
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.allFavoritesDeleteButton),
-        content: Text(l10n.allFavoritesDeleteConfirmation),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.commonYes),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      settings.clearAllFavorite();
-    }
-  }
+  // void _deleteAllFavorites() async {
+  //   final l10n = AppLocalizations.of(context)!;
+  //   final settings = context.read<WebContentsNotifier>();
+  //   final confirm = await showDialog<bool>(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text(l10n.allFavoritesDeleteButton),
+  //       content: Text(l10n.allFavoritesDeleteConfirmation),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context, false),
+  //           child: Text(l10n.commonCancel),
+  //         ),
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context, true),
+  //           child: Text(l10n.commonYes),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  //
+  //   if (confirm == true) {
+  //     settings.clearAllFavorite();
+  //   }
+  // }
 }

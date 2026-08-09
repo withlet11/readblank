@@ -28,7 +28,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/web_contents_notifier.dart';
+import '../providers/link_list_notifier.dart';
 import '../providers/activity_notifier.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -52,16 +52,17 @@ enum ImportProcessResult {
 class _SettingsPageState extends State<SettingsPage> {
   bool _isImportingHistory = false;
   bool _isExportingHistory = false;
-  bool _isImportingFavorites = false;
-  bool _isExportingFavorites = false;
+
+  // bool _isImportingFavorites = false;
+  // bool _isExportingFavorites = false;
   bool _isLoadingActivity = false;
   bool _isSavingActivity = false;
 
   bool get _isImportingOrExporting =>
       _isImportingHistory ||
       _isExportingHistory ||
-      _isImportingFavorites ||
-      _isExportingFavorites ||
+      // _isImportingFavorites ||
+      // _isExportingFavorites ||
       _isLoadingActivity ||
       _isSavingActivity;
 
@@ -151,36 +152,36 @@ class _SettingsPageState extends State<SettingsPage> {
           onPressed: _isImportingOrExporting ? null : _exportHistory,
         ),
       ),
-      ListTile(
-        leading: const Icon(Icons.star_outlined),
-        title: Text(l10n.favoritesImportLabel),
-        trailing: IconButton(
-          // label: Text(l10n.pasteButton),
-          icon: _isImportingFavorites
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                )
-              : const Icon(Icons.paste_outlined),
-          onPressed: _isImportingOrExporting ? null : _importFavorites,
-        ),
-      ),
-      ListTile(
-        leading: const Icon(Icons.star_outlined),
-        title: Text(l10n.favoritesExportLabel),
-        trailing: IconButton(
-          // label: Text(l10n.copyAllButton),
-          icon: _isExportingFavorites
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                )
-              : const Icon(Icons.copy_all_outlined),
-          onPressed: _isImportingOrExporting ? null : _exportFavorites,
-        ),
-      ),
+      // ListTile(
+      //   leading: const Icon(Icons.star_outlined),
+      //   title: Text(l10n.favoritesImportLabel),
+      //   trailing: IconButton(
+      //     // label: Text(l10n.pasteButton),
+      //     icon: _isImportingFavorites
+      //         ? const SizedBox(
+      //             width: 24,
+      //             height: 24,
+      //             child: CircularProgressIndicator(strokeWidth: 2.5),
+      //           )
+      //         : const Icon(Icons.paste_outlined),
+      //     onPressed: _isImportingOrExporting ? null : _importFavorites,
+      //   ),
+      // ),
+      // ListTile(
+      //   leading: const Icon(Icons.star_outlined),
+      //   title: Text(l10n.favoritesExportLabel),
+      //   trailing: IconButton(
+      //     // label: Text(l10n.copyAllButton),
+      //     icon: _isExportingFavorites
+      //         ? const SizedBox(
+      //             width: 24,
+      //             height: 24,
+      //             child: CircularProgressIndicator(strokeWidth: 2.5),
+      //           )
+      //         : const Icon(Icons.copy_all_outlined),
+      //     onPressed: _isImportingOrExporting ? null : _exportFavorites,
+      //   ),
+      // ),
       ListTile(
         leading: const Icon(Icons.bar_chart_outlined),
         title: Text(l10n.activityRestoreLabel),
@@ -213,9 +214,9 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     ];
 
-    return Consumer2<WebContentsNotifier, ActivityNotifier>(
-      builder: (context, webContentsNotifier, activityNotifier, child) {
-        if (webContentsNotifier.isLoading || activityNotifier.isLoading) {
+    return Consumer2<LinkListNotifier, ActivityNotifier>(
+      builder: (context, linkListNotifier, activityNotifier, child) {
+        if (linkListNotifier.isLoading || activityNotifier.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -240,8 +241,8 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      final webContentsNotifier = context.read<WebContentsNotifier>();
-      final String exportedData = webContentsNotifier.historyJsonData;
+      final linkListNotifier = context.read<LinkListNotifier>();
+      final String exportedData = linkListNotifier.linkListJsonData;
       await Clipboard.setData(ClipboardData(text: exportedData));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,7 +365,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<ImportProcessResult> _addLink(String url) async {
-    final webContentsNotifier = context.read<WebContentsNotifier>();
+    final linkListNotifier = context.read<LinkListNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -372,170 +373,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (webContentsNotifier.containsInHistory(url)) {
+            if (linkListNotifier.contains(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              webContentsNotifier.addHistory(url);
-              return ImportProcessResult.success;
-            }
-          } else {
-            return ImportProcessResult.noParagraph;
-          }
-        } else {
-          return ImportProcessResult.invalidUrl;
-        }
-      } catch (e) {
-        return ImportProcessResult.error;
-      }
-    } else {
-      return ImportProcessResult.noUrl;
-    }
-  }
-
-  Future<void> _exportFavorites() async {
-    final l10n = AppLocalizations.of(context)!;
-
-    setState(() {
-      _isExportingFavorites = true;
-    });
-
-    try {
-      final webContentsNotifier = context.read<WebContentsNotifier>();
-      final String exportedData = webContentsNotifier.favoritesJsonData;
-      await Clipboard.setData(ClipboardData(text: exportedData));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.favoritesCopySuccessMessage),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.favoritesExportErrorMessage(e.toString())),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isExportingFavorites = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _importFavorites() async {
-    final l10n = AppLocalizations.of(context)!;
-
-    setState(() {
-      _isImportingFavorites = true;
-    });
-    try {
-      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-      final String? copiedText = data?.text;
-
-      if (copiedText != null && copiedText.isNotEmpty) {
-        final List<String> lines = copiedText
-            .split('\n')
-            .map((line) => line.trim())
-            .where((line) => line.isNotEmpty)
-            .toList();
-
-        int successCount = 0;
-        int existsCount = 0;
-        int noParagraphCount = 0;
-        int invalidUrlCount = 0;
-        int errorCount = 0;
-
-        final results = await Future.wait(lines.map(_addFavorite));
-
-        for (final result in results) {
-          switch (result) {
-            case ImportProcessResult.success:
-              ++successCount;
-              break;
-            case ImportProcessResult.alreadyExists:
-              ++existsCount;
-              break;
-            case ImportProcessResult.noParagraph:
-              ++noParagraphCount;
-              break;
-            case ImportProcessResult.invalidUrl:
-              ++invalidUrlCount;
-              break;
-            default:
-              ++errorCount;
-          }
-        }
-
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.importCount(successCount)),
-              content: Text(
-                l10n.importSummary(
-                  existsCount,
-                  noParagraphCount,
-                  invalidUrlCount,
-                  errorCount,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.commonOk),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.clipboardEmptyMessage),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.favoritesImportErrorMessage(e.toString())),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isImportingFavorites = false;
-        });
-      }
-    }
-  }
-
-  Future<ImportProcessResult> _addFavorite(String url) async {
-    final webContentsNotifier = context.read<WebContentsNotifier>();
-    if (url.isNotEmpty) {
-      try {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
-          final document = parser.parse(response.body);
-          final pElements = document.getElementsByTagName('p');
-          if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (webContentsNotifier.containsInFavorites(url)) {
-              return ImportProcessResult.alreadyExists;
-            } else {
-              webContentsNotifier.addHistory(url);
+              linkListNotifier.add(url);
               return ImportProcessResult.success;
             }
           } else {
