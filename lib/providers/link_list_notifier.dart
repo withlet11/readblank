@@ -48,6 +48,8 @@ class LinkListNotifier extends ChangeNotifier {
   static const String _keyUrl = 'url';
   static const String _keyLinkId = 'link_id';
   static const String _keyTitle = 'title';
+  static const String _keyFileSize = 'file_size';
+  static const String _keyLocale = 'locale';
   static const String _keyTimestamp = 'timestamp';
   static const String _keyLastViewedParagraphIndex =
       'last_viewed_paragraph_index';
@@ -57,7 +59,7 @@ class LinkListNotifier extends ChangeNotifier {
   final SharedPreferences sharedPrefs;
 
   // For fetching data from the web
-  bool _isLoading = false;
+  http.Client? _client;
   String? _data;
   String? _error;
 
@@ -94,15 +96,6 @@ class LinkListNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> _fetchAllLinkedContents() async {
-    for (final entry in _linkList) {
-      final url = entry[_keyUrl] as String;
-      if (!_isCached(url)) {
-        await _fetchContent(url);
-      }
-    }
-  }
-
   Future<void> persist() async {
     notifyListeners();
     await sharedPrefs.setString(_keyLinkList, linkListJsonData);
@@ -136,20 +129,31 @@ class LinkListNotifier extends ChangeNotifier {
 
   // Modify link list
   Future<void> add(String url) async {
-    if (!_isCached(url)) {
-      await _fetchContent(url);
+    try {
+      if (!_isCached(url)) {
+        _client = http.Client();
+        _error = null;
+        notifyListeners();
+        await _fetchContent(url);
+      }
+      _currentParagraphIndex = 0;
+      final now = DateTime.now();
+      _linkList.insert(0, {
+        _keyUrl: url,
+        _keyLinkId: _intToBase64(now.microsecondsSinceEpoch),
+        _keyTitle: _getCachedContent(url)?.title,
+        _keyFileSize: _getCachedContent(url)?.size,
+        _keyLocale: _getCachedContent(url)?.locale,
+        _keyTimestamp: now.toIso8601String(),
+        _keyLastViewedParagraphIndex: _currentParagraphIndex,
+        _keyIsFavorite: false,
+      });
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _client = null;
+      persist();
     }
-    _currentParagraphIndex = 0;
-    final now = DateTime.now();
-    _linkList.insert(0, {
-      _keyUrl: url,
-      _keyLinkId: _intToBase64(now.microsecondsSinceEpoch),
-      _keyTitle: _getCachedContent(url)?.title,
-      _keyTimestamp: now.toIso8601String(),
-      _keyLastViewedParagraphIndex: _currentParagraphIndex,
-      _keyIsFavorite: false,
-    });
-    persist();
   }
 
   Future<void> removeAt(int index) async {
@@ -212,6 +216,16 @@ class LinkListNotifier extends ChangeNotifier {
       entry[_keyTitle] = _getCachedTitle(url);
     }
 
+    // title: default to cached file size if missing
+    if (entry[_keyFileSize] == null) {
+      entry[_keyFileSize] = getCachedContentSize(url);
+    }
+
+    // title: default to cached locale if missing
+    if (entry[_keyLocale] == null) {
+      entry[_keyLocale] = getCachedContentLocale(url);
+    }
+
     // timestamp: default to current time if missing
     if (entry[_keyTimestamp] == null) {
       entry[_keyTimestamp] = DateTime.now().toIso8601String();
@@ -235,46 +249,32 @@ class LinkListNotifier extends ChangeNotifier {
   }
 
   // Fetch and cache data from the web
-  bool get isLoading => _isLoading;
+  bool get isLoading => _client != null;
 
   String? get data => _data;
 
   String? get error => _error;
 
-  Future<void> fetchAllContents() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _fetchAllLinkedContents();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
   Future<void> fetchCurrentContent() async {
     if (currentParagraphList != null) return;
 
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
     try {
+      _client = http.Client();
+      _error = null;
+      notifyListeners();
       await _fetchContent(currentUrl);
     } catch (e) {
       _error = e.toString();
     } finally {
-      _isLoading = false;
+      _client = null;
       notifyListeners();
     }
   }
 
   Future<void> _fetchContent(String url) async {
-    final response = await http.get(Uri.parse(url));
+    if (_client == null) throw Exception('Client is null');
+
+    final response = await _client!.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       final document = parser.parse(response.body);

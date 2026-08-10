@@ -128,23 +128,9 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LinkListNotifier>().fetchAllContents();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Consumer2<LinkListNotifier, ActivityNotifier>(
       builder: (context, linkListNotifier, activityNotifier, child) {
-        if (linkListNotifier.isLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator(strokeWidth: 5)),
-          );
-        }
-
         return Scaffold(
           appBar: _selectedIndex == 0
               ? _buildAppBarForRead(linkListNotifier)

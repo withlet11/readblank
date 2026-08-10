@@ -152,36 +152,6 @@ class _SettingsPageState extends State<SettingsPage> {
           onPressed: _isImportingOrExporting ? null : _exportHistory,
         ),
       ),
-      // ListTile(
-      //   leading: const Icon(Icons.star_outlined),
-      //   title: Text(l10n.favoritesImportLabel),
-      //   trailing: IconButton(
-      //     // label: Text(l10n.pasteButton),
-      //     icon: _isImportingFavorites
-      //         ? const SizedBox(
-      //             width: 24,
-      //             height: 24,
-      //             child: CircularProgressIndicator(strokeWidth: 2.5),
-      //           )
-      //         : const Icon(Icons.paste_outlined),
-      //     onPressed: _isImportingOrExporting ? null : _importFavorites,
-      //   ),
-      // ),
-      // ListTile(
-      //   leading: const Icon(Icons.star_outlined),
-      //   title: Text(l10n.favoritesExportLabel),
-      //   trailing: IconButton(
-      //     // label: Text(l10n.copyAllButton),
-      //     icon: _isExportingFavorites
-      //         ? const SizedBox(
-      //             width: 24,
-      //             height: 24,
-      //             child: CircularProgressIndicator(strokeWidth: 2.5),
-      //           )
-      //         : const Icon(Icons.copy_all_outlined),
-      //     onPressed: _isImportingOrExporting ? null : _exportFavorites,
-      //   ),
-      // ),
       ListTile(
         leading: const Icon(Icons.bar_chart_outlined),
         title: Text(l10n.activityRestoreLabel),

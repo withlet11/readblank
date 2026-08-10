@@ -37,25 +37,25 @@ class ReadPage extends StatefulWidget {
 
 class _ReadPageState extends State<ReadPage> {
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<LinkListNotifier>(
-        context,
-        listen: false,
-      ).fetchCurrentContent();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Consumer<LinkListNotifier>(
       builder: (context, notifier, child) {
-        if (notifier.isLoading) {
-          return const Center(child: CircularProgressIndicator(strokeWidth: 5));
-        } else {
-          return _buildContent(notifier);
+        if (notifier.linkList.isNotEmpty && notifier.currentParagraph != null) {
+          notifier.fetchCurrentContent();
         }
+
+        return Stack(
+          children: [
+            _buildContent(notifier),
+            if (notifier.isLoading)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+          ],
+        );
       },
     );
   }
