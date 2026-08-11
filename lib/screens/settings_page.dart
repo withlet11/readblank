@@ -21,7 +21,6 @@
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -207,12 +206,21 @@ class _SettingsPageState extends State<SettingsPage> {
       final String? path = await contentsNotifier.exportContents();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.contentsBackupLabel),
             content: Text(
-              path == null ? 'Export Cancel' : l10n.contentsBackupSuccess(path),
+              path == null
+                  ? l10n.contentsBackupCancelledMessage
+                  : l10n.contentsBackupCompletedMessage,
             ),
-            duration: const Duration(seconds: 3),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.commonOk),
+              ),
+            ],
           ),
         );
       }
@@ -319,12 +327,21 @@ class _SettingsPageState extends State<SettingsPage> {
       final String? path = await activityNotifier.exportActivity();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.contentsBackupLabel),
             content: Text(
-              path == null ? 'Export Cancel' : l10n.activityBackupSuccess(path),
+              path == null
+                  ? l10n.activityBackupCancelledMessage
+                  : l10n.activityBackupCompletedMessage,
             ),
-            duration: const Duration(seconds: 3),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.commonOk),
+              ),
+            ],
           ),
         );
       }

@@ -25,6 +25,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/activity_notifier.dart';
+import '../providers/contents_notifier.dart';
 import '../style.dart';
 
 class ContentView extends StatefulWidget {
@@ -336,8 +337,10 @@ class _ContentViewState extends State<ContentView> {
         setState(() {
           _moveNextWord();
         });
+        final linkId = context.read<ContentsNotifier>().currentLinkId;
         context.read<ActivityNotifier>().addWord(
           _paragraph.substring(_wordList[index].$1, _wordList[index].$2),
+          linkId,
         );
       } else if (_paragraph
               .substring(_wordList[index].$1, _wordList[index].$2)
@@ -361,8 +364,10 @@ class _ContentViewState extends State<ContentView> {
           );
           _moveNextWord();
         });
+        final linkId = context.read<ContentsNotifier>().currentLinkId;
         context.read<ActivityNotifier>().addWord(
           _paragraph.substring(_wordList[index].$1, _wordList[index].$2),
+          linkId,
         );
       }
     };

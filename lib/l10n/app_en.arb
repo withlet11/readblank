@@ -1,8 +1,9 @@
 {
   "@@locale": "en",
+  "activityBackupCancelledMessage": "Activity backup cancelled.",
+  "activityBackupCompletedMessage": "Activity backup completed.",
   "activityBackupLabel": "Backup Activity",
   "activityBackupNotFound": "Backup file not found: {path}",
-  "activityBackupSuccess": "Activity backed up to {path}",
   "activityNavButton": "Activity",
   "activityRestoreLabel": "Restore Activity",
   "activityRestoreSuccess": "Activity restored successfully",
@@ -44,7 +45,8 @@
     }
   },
   "contentsCopySuccessMessage": "Contents copied to the clipboard",
-  "contentsBackupSuccess": "Contents backed up to {path}",
+  "contentsBackupCancelledMessage": "Contents backup cancelled.",
+  "contentsBackupCompletedMessage": "Contents backup completed.",
   "contentsRestoreLabel": "Restore Contents",
   "contentsRestoreSuccess": "Contents restored successfully",
   "contentsImportErrorMessage": "Failed to import contents: {error}",

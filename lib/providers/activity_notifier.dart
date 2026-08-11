@@ -33,6 +33,7 @@ class ActivityNotifier extends ChangeNotifier {
   static const String _keyId = 'id';
   static const String _keyWord = 'word';
   static const String _keyTimestamp = 'timestamp';
+  static const String _keyLinkId = 'link_id';
 
   bool _isLoading = false;
 
@@ -67,11 +68,15 @@ class ActivityNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addWord(String word) async {
+  Future<void> addWord(String word, String linkId) async {
     final timestamp = DateTime.now().toIso8601String();
-    await _db.addEntry(word);
+    await _db.addEntry(word, timestamp: timestamp, linkId: linkId);
 
-    _wordLog.insert(0, {_keyWord: word, _keyTimestamp: timestamp});
+    _wordLog.insert(0, {
+      _keyWord: word,
+      _keyTimestamp: timestamp,
+      _keyLinkId: linkId,
+    });
     if (_wordLog.length > 10000) _wordLog.removeLast();
 
     notifyListeners();
@@ -203,6 +208,7 @@ class DatabaseHelper {
   static const String _tableName = 'logs';
   static const String _keyWord = 'word';
   static const String _keyTimestamp = 'timestamp';
+  static const String _keyLinkId = 'link_id';
 
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
@@ -220,21 +226,17 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('''
-        CREATE TABLE logs (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          word TEXT NOT NULL,
-          timestamp TEXT NOT NULL
-        )
-      ''');
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE logs ADD COLUMN link_id TEXT NOT NULL DEFAULT ''",
+      );
     }
   }
 
@@ -243,16 +245,22 @@ class DatabaseHelper {
       CREATE TABLE logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         word TEXT NOT NULL,
-        timestamp TEXT NOT NULL
+        timestamp TEXT NOT NULL,
+        link_id TEXT NOT NULL
       )
     ''');
   }
 
-  Future<void> addEntry(String word, {String? timestamp}) async {
+  Future<void> addEntry(
+    String word, {
+    required String timestamp,
+    required String linkId,
+  }) async {
     final db = await database;
     await db.insert(_tableName, {
       _keyWord: word,
-      _keyTimestamp: timestamp ?? DateTime.now().toIso8601String(),
+      _keyTimestamp: timestamp,
+      _keyLinkId: linkId,
     });
 
     // Optional: Auto-trim database size

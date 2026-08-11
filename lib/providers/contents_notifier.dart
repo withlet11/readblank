@@ -29,14 +29,14 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CacheContent {
+class CachedContent {
   final String? title;
   final List<String> paragraphs;
   final String? locale;
   final int size;
   final bool isFavorite;
 
-  CacheContent({
+  CachedContent({
     required this.title,
     required this.paragraphs,
     required this.locale,
@@ -67,7 +67,7 @@ class ContentsNotifier extends ChangeNotifier {
 
   // For storing data
   List<Map<String, dynamic>> _linkList = [];
-  final Map<String, CacheContent> _cachedContents = {};
+  final Map<String, CachedContent> _cachedContents = {};
   final List<String> _locales = [];
 
   // Other properties
@@ -228,12 +228,12 @@ class ContentsNotifier extends ChangeNotifier {
       entry[_keyTitle] = _getCachedTitle(url);
     }
 
-    // title: default to cached file size if missing
+    // file size: default to cached file size if missing
     if (entry[_keyFileSize] == null) {
       entry[_keyFileSize] = getCachedContentSize(url);
     }
 
-    // title: default to cached locale if missing
+    // locale: default to cached locale if missing
     if (entry[_keyLocale] == null) {
       entry[_keyLocale] = getCachedContentLocale(url);
     }
@@ -275,11 +275,13 @@ class ContentsNotifier extends ChangeNotifier {
       _error = null;
       notifyListeners();
       await _fetchContent(currentUrl);
+      _selectedEntry![_keyFileSize] = getCachedContentSize(currentUrl);
+      _selectedEntry![_keyLocale] = getCachedContentLocale(currentUrl);
     } catch (e) {
       _error = e.toString();
     } finally {
       _client = null;
-      notifyListeners();
+      persist(); // instead of notifyListeners();
     }
   }
 
@@ -294,7 +296,7 @@ class ContentsNotifier extends ChangeNotifier {
       final title = document.querySelector('title')?.text;
       final pElements = document.getElementsByTagName('p');
       final locale = lang?.toLowerCase().replaceAll('-', '_');
-      _cachedContents[url] = CacheContent(
+      _cachedContents[url] = CachedContent(
         title: title,
         paragraphs: pElements
             .map((element) => element.text.trim())
@@ -334,7 +336,7 @@ class ContentsNotifier extends ChangeNotifier {
   // Getters of current page properties
   String get currentUrl => _selectedEntry?[_keyUrl] ?? '';
 
-  String? get currentLinkId => _selectedEntry?[_keyLinkId];
+  String get currentLinkId => _selectedEntry?[_keyLinkId];
 
   String get currentTimestamp {
     return _selectedEntry == null
@@ -405,7 +407,13 @@ class ContentsNotifier extends ChangeNotifier {
   }
 
   Future<String?> exportContents() async {
-    final jsonData = jsonEncode(_linkList);
+    final linkIds = <String>{};
+    final normalizedList = _linkList
+        .map(normalizeEntry)
+        .where((e) => linkIds.add(e?[_keyLinkId] ?? ''))
+        .toList();
+
+    final jsonData = jsonEncode(normalizedList);
 
     final path = await FilePicker.platform.saveFile(
       dialogTitle: 'Export contents',
@@ -417,6 +425,31 @@ class ContentsNotifier extends ChangeNotifier {
     );
 
     return path;
+  }
+
+  Map<String, dynamic>? normalizeEntry(Map<String, dynamic> entry) {
+    final normalizedEntry = <String, dynamic>{};
+    final String? url = entry[_keyUrl];
+    final String? linkId = entry[_keyLinkId];
+
+    if (url == null || url.isEmpty || linkId == null || linkId.isEmpty) {
+      return null;
+    }
+
+    normalizedEntry[_keyUrl] = url;
+    normalizedEntry[_keyLinkId] = linkId;
+    normalizedEntry[_keyTitle] = entry[_keyTitle] ?? _getCachedTitle(url);
+    normalizedEntry[_keyFileSize] =
+        entry[_keyFileSize] ?? getCachedContentSize(url);
+    normalizedEntry[_keyLocale] =
+        entry[_keyLocale] ?? getCachedContentLocale(url);
+    normalizedEntry[_keyTimestamp] =
+        entry[_keyTimestamp] ?? DateTime.now().toIso8601String();
+    normalizedEntry[_keyLastViewedParagraphIndex] =
+        entry[_keyLastViewedParagraphIndex] ?? 0;
+    normalizedEntry[_keyIsFavorite] = entry[_keyIsFavorite] ?? false;
+
+    return normalizedEntry;
   }
 
   Future<void> importContents(String path) async {
