@@ -33,7 +33,7 @@ import 'drawers/content_selector_drawers.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/activity_notifier.dart';
 import 'providers/app_preferences_notifier.dart';
-import 'providers/link_list_notifier.dart';
+import 'providers/contents_notifier.dart';
 import 'screens/read_page.dart';
 
 void main() async {
@@ -45,7 +45,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppPreferencesNotifier()),
-        ChangeNotifierProvider(create: (_) => LinkListNotifier(sharedPrefs)),
+        ChangeNotifierProvider(create: (_) => ContentsNotifier(sharedPrefs)),
         ChangeNotifierProvider(create: (_) => ActivityNotifier()),
       ],
       child: ReadBlank(),
@@ -129,11 +129,11 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<LinkListNotifier, ActivityNotifier>(
-      builder: (context, linkListNotifier, activityNotifier, child) {
+    return Consumer2<ContentsNotifier, ActivityNotifier>(
+      builder: (context, contentsNotifier, activityNotifier, child) {
         return Scaffold(
           appBar: _selectedIndex == 0
-              ? _buildAppBarForRead(linkListNotifier)
+              ? _buildAppBarForRead(contentsNotifier)
               : _selectedIndex == 1
               ? _buildAppBarForLog(activityNotifier)
               : _buildAppBarForSettings(),
@@ -150,19 +150,19 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  AppBar _buildAppBarForRead(LinkListNotifier linkListNotifier) {
+  AppBar _buildAppBarForRead(ContentsNotifier contentsNotifier) {
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            linkListNotifier.currentTitle ?? linkListNotifier.currentUrl,
+            contentsNotifier.currentTitle ?? contentsNotifier.currentUrl,
             style: Theme.of(context).textTheme.bodyMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            linkListNotifier.currentDomainName,
+            contentsNotifier.currentDomainName,
             style: Theme.of(context).textTheme.bodySmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -179,7 +179,7 @@ class _MainPageState extends State<MainPage> {
         ),
         Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.history_outlined),
+            icon: const Icon(Icons.library_books_outlined),
             onPressed: () {
               Scaffold.of(context).openEndDrawer();
             },
@@ -263,7 +263,7 @@ class _MainPageState extends State<MainPage> {
 
   void _addLink() async {
     final l10n = AppLocalizations.of(context)!;
-    final linkListNotifier = context.read<LinkListNotifier>();
+    final contentsNotifier = context.read<ContentsNotifier>();
     final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final String? copiedText = data?.text;
     if (copiedText != null && copiedText.isNotEmpty) {
@@ -273,7 +273,7 @@ class _MainPageState extends State<MainPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (linkListNotifier.contains(copiedText)) {
+            if (contentsNotifier.contains(copiedText)) {
               if (mounted) {
                 showDialog(
                   context: context,
@@ -288,7 +288,7 @@ class _MainPageState extends State<MainPage> {
                       FilledButton(
                         onPressed: () async {
                           Navigator.of(context).pop();
-                          linkListNotifier.select(copiedText);
+                          contentsNotifier.select(copiedText);
                         },
                         child: Text(l10n.commonOpen),
                       ),
@@ -297,7 +297,7 @@ class _MainPageState extends State<MainPage> {
                 );
               }
             } else {
-              linkListNotifier.add(copiedText);
+              contentsNotifier.add(copiedText);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

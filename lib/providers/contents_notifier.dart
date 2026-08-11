@@ -1,5 +1,5 @@
 /*
- * link_list_notifier.dart
+ * contents_notifier.dart
  *
  * Copyright 2026 Yasuhiro Yamakawa <withlet11@gmail.com>
  *
@@ -20,7 +20,9 @@
  */
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:http/http.dart' as http;
@@ -43,7 +45,7 @@ class CacheContent {
   });
 }
 
-class LinkListNotifier extends ChangeNotifier {
+class ContentsNotifier extends ChangeNotifier {
   static const String _keyLinkList = 'history';
   static const String _keyUrl = 'url';
   static const String _keyLinkId = 'link_id';
@@ -73,7 +75,7 @@ class LinkListNotifier extends ChangeNotifier {
   bool isFavoritesOnly = false;
   String? targetLocale;
 
-  LinkListNotifier(this.sharedPrefs) {
+  ContentsNotifier(this.sharedPrefs) {
     _retrieveFromSharedPreferences();
   }
 
@@ -87,6 +89,12 @@ class LinkListNotifier extends ChangeNotifier {
           _linkList = List<Map<String, dynamic>>.from(decoded);
           _currentParagraphIndex =
               _selectedEntry?[_keyLastViewedParagraphIndex] ?? 0;
+        }
+        for (final entry in _linkList) {
+          final locale = entry[_keyLocale]?.toLowerCase().replaceAll('-', '_');
+          if (!_locales.contains(locale)) {
+            _locales.add(locale ?? '');
+          }
         }
       } else {
         _linkList = [];
@@ -112,7 +120,11 @@ class LinkListNotifier extends ChangeNotifier {
 
   bool _functionForFilteringWithFavoritesAndLocale(Map<String, dynamic> e) {
     return (!isFavoritesOnly || (e[_keyIsFavorite] ?? false)) &&
-        (_cachedContents[e[_keyUrl]]?.locale == targetLocale);
+        (_cachedContents[e[_keyUrl]]?.locale?.toLowerCase().replaceAll(
+              '-',
+              '_',
+            ) ==
+            targetLocale);
   }
 
   bool _functionForFilteringWithFavorites(Map<String, dynamic> e) {
@@ -141,9 +153,9 @@ class LinkListNotifier extends ChangeNotifier {
       _linkList.insert(0, {
         _keyUrl: url,
         _keyLinkId: _intToBase64(now.microsecondsSinceEpoch),
-        _keyTitle: _getCachedContent(url)?.title,
-        _keyFileSize: _getCachedContent(url)?.size,
-        _keyLocale: _getCachedContent(url)?.locale,
+        _keyTitle: _getCachedTitle(url),
+        _keyFileSize: getCachedContentSize(url),
+        _keyLocale: getCachedContentLocale(url),
         _keyTimestamp: now.toIso8601String(),
         _keyLastViewedParagraphIndex: _currentParagraphIndex,
         _keyIsFavorite: false,
@@ -256,7 +268,7 @@ class LinkListNotifier extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> fetchCurrentContent() async {
-    if (currentParagraphList != null) return;
+    if (currentParagraphList != null || isLoading) return;
 
     try {
       _client = http.Client();
@@ -281,29 +293,25 @@ class LinkListNotifier extends ChangeNotifier {
       final lang = document.documentElement?.attributes['lang'];
       final title = document.querySelector('title')?.text;
       final pElements = document.getElementsByTagName('p');
+      final locale = lang?.toLowerCase().replaceAll('-', '_');
       _cachedContents[url] = CacheContent(
         title: title,
         paragraphs: pElements
             .map((element) => element.text.trim())
             .where((text) => text.isNotEmpty)
             .toList(),
-        locale: lang,
+        locale: locale,
         size: pElements
             .map((element) => element.text.codeUnits.length)
             .reduce((a, b) => a + b),
         isFavorite: false,
       );
-      if (!_locales.contains(lang)) {
-        _locales.add(lang?.replaceAll('-', '_').toLowerCase() ?? '');
-      }
     } else {
       throw Exception('Failed to fetch a page');
     }
   }
 
   bool _isCached(String url) => _cachedContents.containsKey(url);
-
-  CacheContent? _getCachedContent(String url) => _cachedContents[url];
 
   List<String>? _getCachedParagraphList(String url) =>
       _cachedContents[url]?.paragraphs;
@@ -320,7 +328,7 @@ class LinkListNotifier extends ChangeNotifier {
   }
 
   String? getCachedContentLocale(String url) {
-    return _cachedContents[url]?.locale;
+    return _cachedContents[url]?.locale?.toLowerCase().replaceAll('-', '_');
   }
 
   // Getters of current page properties
@@ -346,8 +354,7 @@ class LinkListNotifier extends ChangeNotifier {
   bool get isFavorite => _selectedEntry?[_keyIsFavorite] ?? false;
 
   // Current paragraph
-  String? get currentParagraph =>
-      currentParagraphList?[_currentParagraphIndex] ?? '';
+  String? get currentParagraph => currentParagraphList?[_currentParagraphIndex];
 
   int get currentParagraphIndex => _currentParagraphIndex;
 
@@ -394,6 +401,45 @@ class LinkListNotifier extends ChangeNotifier {
       _currentParagraphIndex = currentParagraphList!.length - 1;
       _linkList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
       persist();
+    }
+  }
+
+  Future<String?> exportContents() async {
+    final jsonData = jsonEncode(_linkList);
+
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: 'Export contents',
+      fileName:
+          'Contents-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: utf8.encode(jsonData),
+    );
+
+    return path;
+  }
+
+  Future<void> importContents(String path) async {
+    final file = File(path);
+    if (await file.exists()) {
+      String jsonData = await file.readAsString();
+      List<Object?> list = jsonDecode(jsonData);
+
+      if (list.isNotEmpty) {
+        int count = 0;
+        for (var value in list) {
+          final entry = value as Map<String, dynamic>;
+          if (entry[_keyUrl] != null) {
+            if (!contains(entry[_keyUrl])) {
+              _linkList.insert(0, entry);
+              ++count;
+            }
+          }
+        }
+        print('count: $count, entries.length: ${linkList.length}');
+      }
+    } else {
+      throw Exception("File not found: $path");
     }
   }
 }

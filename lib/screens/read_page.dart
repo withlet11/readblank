@@ -24,7 +24,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../views/content_view.dart';
-import '../providers/link_list_notifier.dart';
+import '../providers/contents_notifier.dart';
 
 class ReadPage extends StatefulWidget {
   final String title;
@@ -38,10 +38,14 @@ class ReadPage extends StatefulWidget {
 class _ReadPageState extends State<ReadPage> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<LinkListNotifier>(
+    return Consumer<ContentsNotifier>(
       builder: (context, notifier, child) {
-        if (notifier.linkList.isNotEmpty && notifier.currentParagraph != null) {
-          notifier.fetchCurrentContent();
+        if (notifier.linkList.isNotEmpty &&
+            notifier.currentParagraphList == null &&
+            !notifier.isLoading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notifier.fetchCurrentContent();
+          });
         }
 
         return Stack(
@@ -60,7 +64,7 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
-  Widget _buildContent(LinkListNotifier notifier) {
+  Widget _buildContent(ContentsNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return LayoutBuilder(
@@ -73,7 +77,11 @@ class _ReadPageState extends State<ReadPage> {
                 key: ValueKey(
                   '${notifier.currentParagraphIndex}_${notifier.currentParagraph}',
                 ),
-                paragraph: notifier.currentParagraph ?? l10n.urlRequestMessage,
+                paragraph: (notifier.isLoading ||
+                        (notifier.linkList.isNotEmpty &&
+                            notifier.currentParagraph == null))
+                    ? ''
+                    : (notifier.currentParagraph ?? l10n.urlRequestMessage),
               ),
             ),
             Expanded(

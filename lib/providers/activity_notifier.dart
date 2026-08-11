@@ -161,9 +161,9 @@ class ActivityNotifier extends ChangeNotifier {
     final jsonData = jsonEncode(backupData);
 
     final path = await FilePicker.platform.saveFile(
-      dialogTitle: 'Export data',
+      dialogTitle: 'Export activity',
       fileName:
-          'ReadBlank-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+          'Activity-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json',
       type: FileType.custom,
       allowedExtensions: ['json'],
       bytes: utf8.encode(jsonData),

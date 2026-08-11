@@ -6,21 +6,13 @@
   "activityNavButton": "Activity",
   "activityRestoreLabel": "Restore Activity",
   "activityRestoreSuccess": "Activity restored successfully",
-  "allFavoritesDeleteButton": "Delete all favorites",
-  "@allFavoritesDeleteButton": {
-    "description": "A label of delete all favorites."
+  "allContentsClearButton": "Clear all contents",
+  "@allContentsClearButton": {
+    "description": "A label of clear all contents."
   },
-  "allFavoritesDeleteConfirmation": "Are you sure you want to delete all favorites?",
-  "@allFavoritesDeleteConfirmation": {
-    "description": "Confirmation message shown before deleting all favorites."
-  },
-  "allHistoryClearButton": "Clear all history",
-  "@allHistoryClearButton": {
-    "description": "A label of clear all history."
-  },
-  "allHistoryClearConfirmation": "Are you sure you want to clear all history?",
-  "@allHistoryClearConfirmation": {
-    "description": "Confirmation message shown before clearing all history."
+  "allContentsClearConfirmation": "Are you sure you want to clear all contents?",
+  "@allContentsClearConfirmation": {
+    "description": "Confirmation message shown before clearing all contents."
   },
   "alreadyExistsMessage": "Already exists",
   "backupButton": "Backup",
@@ -41,31 +33,34 @@
       }
     }
   },
+  "contentsBackupLabel": "Backup Contents",
+  "contentsExportErrorMessage": "Failed to export contents: {error}",
+  "@contentsExportErrorMessage": {
+    "description": "Error message shown when exporting contents fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "contentsCopySuccessMessage": "Contents copied to the clipboard",
+  "contentsBackupSuccess": "Contents backed up to {path}",
+  "contentsRestoreLabel": "Restore Contents",
+  "contentsRestoreSuccess": "Contents restored successfully",
+  "contentsImportErrorMessage": "Failed to import contents: {error}",
+  "@contentsImportErrorMessage": {
+    "description": "Error message shown when importing contents fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "contentListLabel": "Content List",
   "copyAllButton": "Copy all",
   "darkModeLabel": "Dark Mode",
   "errorLabel": "Error",
   "existingLinkOpenConfirmation": "This link already exists. Do you want to select it?",
-  "favoritesCopySuccessMessage": "Favorites copied to the clipboard",
-  "favoritesExportErrorMessage": "Failed to export favorites: {error}",
-  "@favoritesExportErrorMessage": {
-    "description": "Error message shown when exporting favorites fails.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "favoritesExportLabel": "Export Favorites",
-  "favoritesImportErrorMessage": "Failed to import favorites: {error}",
-  "@favoritesImportErrorMessage": {
-    "description": "Error message shown when importing favorites fails.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "favoritesImportLabel": "Import Favorites",
   "favoritesLabel": "Favorites",
   "fieldAlreadyFilledMessage": "The field is already filled.",
   "fontSizeLabel": "Font Size",
@@ -73,28 +68,6 @@
   "fontSizeMedium": "Medium",
   "fontSizeSmall": "Small",
   "fontSizeXLarge": "X-Large",
-  "historyCopySuccessMessage": "History copied to the clipboard",
-  "historyExportErrorMessage": "Failed to export history: {error}",
-  "@historyExportErrorMessage": {
-    "description": "Error message shown when exporting history fails.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "historyExportLabel": "Export History",
-  "historyImportErrorMessage": "Failed to import history: {error}",
-  "@historyImportErrorMessage": {
-    "description": "Error message shown when importing history fails.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "historyImportLabel": "Import History",
-  "historyLabel": "History",
   "importCount": "Imported {successCount}",
   "@importCount": {
     "description": "Error message shown when counting imported links fails.",

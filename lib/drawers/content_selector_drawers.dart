@@ -25,7 +25,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/link_list_notifier.dart';
+import '../providers/contents_notifier.dart';
 
 class ContentSelectorDrawers extends StatefulWidget {
   const ContentSelectorDrawers({super.key});
@@ -76,9 +76,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
         .watch<AppPreferencesNotifier>()
         .fontSizeFactor;
 
-    return Consumer<LinkListNotifier>(
-      builder: (context, linkListNotifier, child) {
-        if (linkListNotifier.isLoading) {
+    return Consumer<ContentsNotifier>(
+      builder: (context, contentsNotifier, child) {
+        if (contentsNotifier.isLoading) {
           return Center(child: CircularProgressIndicator());
         }
 
@@ -92,9 +92,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.history_outlined),
+                        const Icon(Icons.library_books_outlined),
                         Text(
-                          l10n.historyLabel,
+                          l10n.contentListLabel,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ],
@@ -111,23 +111,23 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                             minimumSize: Size.zero,
                           ),
                           icon: Icon(
-                            linkListNotifier.isFavoritesOnly
+                            contentsNotifier.isFavoritesOnly
                                 ? Icons.filter_alt
                                 : Icons.filter_alt_outlined,
                             size: 16 * fontSizeFactor,
                           ),
-                          label: Text('Favorites'),
+                          label: Text(l10n.favoritesLabel),
                           onPressed: () {
-                            linkListNotifier.isFavoritesOnly =
-                                !linkListNotifier.isFavoritesOnly;
-                            linkListNotifier.persist();
+                            contentsNotifier.isFavoritesOnly =
+                                !contentsNotifier.isFavoritesOnly;
+                            contentsNotifier.persist();
                           },
                         ),
                         DropdownButton<String?>(
-                          value: linkListNotifier.targetLocale,
+                          value: contentsNotifier.targetLocale,
                           items: [
                             DropdownMenuItem(value: null, child: Text('All🌐')),
-                            for (final locale in linkListNotifier.locales)
+                            for (final locale in contentsNotifier.locales)
                               DropdownMenuItem(
                                 value: locale,
                                 child: Text(
@@ -136,15 +136,15 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                               ),
                           ],
                           onChanged: (value) {
-                            linkListNotifier.targetLocale = value;
-                            linkListNotifier.persist();
+                            contentsNotifier.targetLocale = value;
+                            contentsNotifier.persist();
                           },
                         ),
                       ],
                     ),
                   ],
                 ),
-                if (linkListNotifier.isLoading)
+                if (contentsNotifier.isLoading)
                   const Positioned(
                     left: 0,
                     right: 0,
@@ -155,7 +155,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
             ),
           ),
           children: [
-            for (final entry in linkListNotifier.sortedLinkList)
+            for (final entry in contentsNotifier.sortedLinkList)
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 0.0,
@@ -173,7 +173,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                   onPressed: () {
                     final isFavorite = entry[_keyIsFavorite] ?? false;
                     entry[_keyIsFavorite] = !isFavorite;
-                    linkListNotifier.persist();
+                    contentsNotifier.persist();
                   },
                   disabledColor: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -241,9 +241,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     ),
                   ],
                 ),
-                selected: linkListNotifier.isSelected(entry[_keyUrl]),
+                selected: contentsNotifier.isSelected(entry[_keyUrl]),
                 onTap: () async {
-                  linkListNotifier.select(entry[_keyUrl]);
+                  contentsNotifier.select(entry[_keyUrl]);
                   Navigator.pop(context);
                 },
                 trailing: IconButton(
@@ -251,9 +251,9 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),
                   icon: const Icon(Icons.delete_outlined),
-                  onPressed: linkListNotifier.linkList.length > 1
+                  onPressed: contentsNotifier.linkList.length > 1
                       ? () {
-                          linkListNotifier.remove(entry[_keyUrl]);
+                          contentsNotifier.remove(entry[_keyUrl]);
                         }
                       : null,
                 ),
@@ -270,7 +270,7 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
                     ),
                     onPressed: _clearAllHistory,
                     icon: const Icon(Icons.delete_sweep_outlined),
-                    label: Text(l10n.allHistoryClearButton),
+                    label: Text(l10n.allContentsClearButton),
                   ),
                 ],
               ),
@@ -284,12 +284,12 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
   String _localeNameToEmoji(String localeName) {
     final parts = localeName.replaceAll('-', '_').split('_');
 
-    String contryCode = '';
+    String countryCode = '';
     if (parts.length > 1) {
-      contryCode = parts.last.toUpperCase();
+      countryCode = parts.last.toUpperCase();
     } else {
       final languageCode = parts.first;
-      contryCode = languageCode == 'en'
+      countryCode = languageCode == 'en'
           ? 'US'
           : languageCode == 'ja'
           ? 'JP'
@@ -298,22 +298,22 @@ class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
           : languageCode.toUpperCase();
     }
 
-    if (contryCode.isEmpty) return '';
+    if (countryCode.isEmpty) return '';
 
-    final int firstChar = contryCode.codeUnitAt(0) + 0x1F1A5;
-    final int secondChar = contryCode.codeUnitAt(1) + 0x1F1A5;
+    final int firstChar = countryCode.codeUnitAt(0) + 0x1F1A5;
+    final int secondChar = countryCode.codeUnitAt(1) + 0x1F1A5;
 
     return String.fromCharCode(firstChar) + String.fromCharCode(secondChar);
   }
 
   void _clearAllHistory() async {
     final l10n = AppLocalizations.of(context)!;
-    final settings = context.read<LinkListNotifier>();
+    final settings = context.read<ContentsNotifier>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.allHistoryClearButton),
-        content: Text(l10n.allHistoryClearConfirmation),
+        title: Text(l10n.allContentsClearButton),
+        content: Text(l10n.allContentsClearConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

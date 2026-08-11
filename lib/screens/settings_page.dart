@@ -28,7 +28,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
-import '../providers/link_list_notifier.dart';
+import '../providers/contents_notifier.dart';
 import '../providers/activity_notifier.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -50,19 +50,15 @@ enum ImportProcessResult {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _isImportingHistory = false;
-  bool _isExportingHistory = false;
+  bool _isLoadingContents = false;
+  bool _isSavingContents = false;
 
-  // bool _isImportingFavorites = false;
-  // bool _isExportingFavorites = false;
   bool _isLoadingActivity = false;
   bool _isSavingActivity = false;
 
   bool get _isImportingOrExporting =>
-      _isImportingHistory ||
-      _isExportingHistory ||
-      // _isImportingFavorites ||
-      // _isExportingFavorites ||
+      _isLoadingContents ||
+      _isSavingContents ||
       _isLoadingActivity ||
       _isSavingActivity;
 
@@ -123,40 +119,37 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       ListTile(
-        leading: const Icon(Icons.history_outlined),
-        title: Text(l10n.historyImportLabel),
+        leading: const Icon(Icons.library_books_outlined),
+        title: Text(l10n.contentsRestoreLabel),
         trailing: IconButton(
-          // label: Text(l10n.pasteButton),
-          icon: _isImportingHistory
+          icon: _isLoadingContents
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : const Icon(Icons.paste_outlined),
-          onPressed: _isImportingOrExporting ? null : _importHistory,
+              : const Icon(Icons.settings_backup_restore_outlined),
+          onPressed: _isImportingOrExporting ? null : _loadContents,
         ),
       ),
       ListTile(
-        leading: const Icon(Icons.history_outlined),
-        title: Text(l10n.historyExportLabel),
+        leading: const Icon(Icons.library_books_outlined),
+        title: Text(l10n.contentsBackupLabel),
         trailing: IconButton(
-          // label: Text(l10n.copyAllButton),
-          icon: _isExportingHistory
+          icon: _isSavingContents
               ? const SizedBox(
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
-              : const Icon(Icons.copy_all_outlined),
-          onPressed: _isImportingOrExporting ? null : _exportHistory,
+              : const Icon(Icons.save_outlined),
+          onPressed: _isImportingOrExporting ? null : _saveContents,
         ),
       ),
       ListTile(
         leading: const Icon(Icons.bar_chart_outlined),
         title: Text(l10n.activityRestoreLabel),
         trailing: IconButton(
-          // label: Text(l10n.restoreButton),
           icon: _isLoadingActivity
               ? const SizedBox(
                   width: 24,
@@ -171,7 +164,6 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: const Icon(Icons.bar_chart_outlined),
         title: Text(l10n.activityBackupLabel),
         trailing: IconButton(
-          // label: Text(l10n.backupButton),
           icon: _isSavingActivity
               ? const SizedBox(
                   width: 24,
@@ -184,9 +176,9 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     ];
 
-    return Consumer2<LinkListNotifier, ActivityNotifier>(
-      builder: (context, linkListNotifier, activityNotifier, child) {
-        if (linkListNotifier.isLoading || activityNotifier.isLoading) {
+    return Consumer2<ContentsNotifier, ActivityNotifier>(
+      builder: (context, contentsNotifier, activityNotifier, child) {
+        if (contentsNotifier.isLoading || activityNotifier.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -203,21 +195,23 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _exportHistory() async {
+  Future<void> _saveContents() async {
     final l10n = AppLocalizations.of(context)!;
 
     setState(() {
-      _isExportingHistory = true;
+      _isSavingContents = true;
     });
 
     try {
-      final linkListNotifier = context.read<LinkListNotifier>();
-      final String exportedData = linkListNotifier.linkListJsonData;
-      await Clipboard.setData(ClipboardData(text: exportedData));
+      final contentsNotifier = context.read<ContentsNotifier>();
+      final String? path = await contentsNotifier.exportContents();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.historyCopySuccessMessage),
+            content: Text(
+              path == null ? 'Export Cancel' : l10n.contentsBackupSuccess(path),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -226,7 +220,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.historyExportErrorMessage(e.toString())),
+            content: Text(l10n.contentsExportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -234,83 +228,33 @@ class _SettingsPageState extends State<SettingsPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _isExportingHistory = false;
+          _isSavingContents = false;
         });
       }
     }
   }
 
-  Future<void> _importHistory() async {
+  Future<void> _loadContents() async {
     final l10n = AppLocalizations.of(context)!;
 
     setState(() {
-      _isImportingHistory = true;
+      _isLoadingContents = true;
     });
+
     try {
-      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-      final String? copiedText = data?.text;
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
 
-      if (copiedText != null && copiedText.isNotEmpty) {
-        final List<String> lines = copiedText
-            .split('\n')
-            .map((line) => line.trim())
-            .where((line) => line.isNotEmpty)
-            .toList();
-
-        int successCount = 0;
-        int existsCount = 0;
-        int noParagraphCount = 0;
-        int invalidUrlCount = 0;
-        int errorCount = 0;
-
-        final results = await Future.wait(lines.map(_addLink));
-
-        for (final result in results) {
-          switch (result) {
-            case ImportProcessResult.success:
-              ++successCount;
-              break;
-            case ImportProcessResult.alreadyExists:
-              ++existsCount;
-              break;
-            case ImportProcessResult.noParagraph:
-              ++noParagraphCount;
-              break;
-            case ImportProcessResult.invalidUrl:
-              ++invalidUrlCount;
-              break;
-            default:
-              ++errorCount;
-          }
-        }
-
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(l10n.importCount(successCount)),
-              content: Text(
-                l10n.importSummary(
-                  existsCount,
-                  noParagraphCount,
-                  invalidUrlCount,
-                  errorCount,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.commonOk),
-                ),
-              ],
-            ),
-          );
-        }
-      } else {
+      if (result != null && result.files.single.path != null) {
+        if (!mounted) return;
+        final contentsNotifier = context.read<ContentsNotifier>();
+        await contentsNotifier.importContents(result.files.single.path!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.clipboardEmptyMessage),
+              content: Text(l10n.contentsRestoreSuccess),
               duration: const Duration(seconds: 3),
             ),
           );
@@ -320,7 +264,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.historyImportErrorMessage(e.toString())),
+            content: Text(l10n.contentsImportErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -328,14 +272,14 @@ class _SettingsPageState extends State<SettingsPage> {
     } finally {
       if (mounted) {
         setState(() {
-          _isImportingHistory = false;
+          _isLoadingContents = false;
         });
       }
     }
   }
 
   Future<ImportProcessResult> _addLink(String url) async {
-    final linkListNotifier = context.read<LinkListNotifier>();
+    final contentsNotifier = context.read<ContentsNotifier>();
     if (url.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(url));
@@ -343,10 +287,10 @@ class _SettingsPageState extends State<SettingsPage> {
           final document = parser.parse(response.body);
           final pElements = document.getElementsByTagName('p');
           if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (linkListNotifier.contains(url)) {
+            if (contentsNotifier.contains(url)) {
               return ImportProcessResult.alreadyExists;
             } else {
-              linkListNotifier.add(url);
+              contentsNotifier.add(url);
               return ImportProcessResult.success;
             }
           } else {
@@ -365,6 +309,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _saveActivity() async {
     final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isSavingActivity = true;
     });
@@ -403,6 +348,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadActivity() async {
     final l10n = AppLocalizations.of(context)!;
+
     setState(() {
       _isLoadingActivity = true;
     });
