@@ -5,13 +5,14 @@
   "activityBackupLabel": "アクティビティをバックアップ",
   "activityBackupNotFound": "バックアップファイルが見つかりません: {path}",
   "activityNavButton": "アクティビティ",
+  "activityRestoreErrorMessage": "アクティビティをリストアできませんでした：{error}",
   "activityRestoreLabel": "アクティビティを復元",
+  "activityRestoreSuccessMessage": "アクティビティを復元しました：{count}単語",
   "activityRestoreSuccess": "アクティビティを復元しました",
   "allContentsClearButton": "全てのコンテンツの削除",
   "allContentsClearConfirmation": "全てのコンテンツを削除します。よろしいですか？",
   "alreadyExistsMessage": "既に存在します",
   "backupButton": "バックアップ",
-  "backupCancelledMessage": "バックアップをキャンセルしました。",
   "clipboardEmptyMessage": "クリップボードが空です。エクスポートデータのコピーが必要です。",
   "commonCancel": "キャンセル",
   "commonOk": "了解",
@@ -19,13 +20,13 @@
   "commonYes": "はい",
   "connectionError": "接続エラー、または無効なリンクです。\nコピーされたテキスト: \"{copiedText}\"",
   "contentsBackupLabel": "コンテンツのバックアップ",
-  "contentsExportErrorMessage": "コンテンツをエクスポートできませんでした：{error}",
   "contentsCopySuccessMessage": "コンテンツをクリップボードにコピーしました",
   "contentsBackupCancelledMessage": "コンテンツのバックアップをキャンセルしました。",
   "contentsBackupCompletedMessage": "コンテンツのバックアップを完了しました。",
+  "contentsBackupErrorMessage": "コンテンツのバックアップが失敗しました：{error}",
   "contentsRestoreLabel": "コンテンツのリストア",
-  "contentsRestoreSuccess": "コンテンツを復元しました",
-  "contentsImportErrorMessage": "コンテンツをインポートできませんでした：{error}",
+  "contentsRestoreErrorMessage": "コンテンツをリストアできませんでした：{error}",
+  "contentsRestoreSuccessMessage": "コンテンツを復元しました：{count}個",
   "contentListLabel": "コンテンツ一覧",
   "copyAllButton": "全てコピー",
   "darkModeLabel": "ダークモード",
@@ -33,6 +34,7 @@
   "existingLinkOpenConfirmation": "このリンクは既に存在します。リンクを選択しますか？",
   "favoritesLabel": "お気に入り",
   "fieldAlreadyFilledMessage": "空欄は入力済みです",
+  "fileNotSelectedMessage": "ファイルが選択されていません。",
   "fontSizeLabel": "フォントサイズ",
   "fontSizeLarge": "大",
   "fontSizeMedium": "中",
@@ -55,14 +57,6 @@
   "urlCopyRequest": "ブラウザのアドレスバーからリンクをコピーしてください。" ,
   "urlRequestMessage": "リンクを追加してください",
   "wordCount": "{count}単語",
-  "@wordCount": {
-    "description": "A message of word count.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "dateFormatForDailyChart": "{date}",
   "@dateFormatForDailyChart": {
     "placeholders": {

@@ -5,7 +5,25 @@
   "activityBackupLabel": "Backup Activity",
   "activityBackupNotFound": "Backup file not found: {path}",
   "activityNavButton": "Activity",
+  "activityRestoreErrorMessage": "failed to restore activities: {error}",
+  "@activityRestoreErrorMessage": {
+    "description": "Error message shown when restoring contents fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "activityRestoreLabel": "Restore Activity",
+  "activityRestoreSuccessMessage": "Activity restored successfully: {count, plural, zero {no words} one {1 word} other {{count} words}}",
+  "@activityRestoreSuccessMessage": {
+    "description": "Formated text for word count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+   },
   "activityRestoreSuccess": "Activity restored successfully",
   "allContentsClearButton": "Clear all contents",
   "@allContentsClearButton": {
@@ -35,23 +53,12 @@
     }
   },
   "contentsBackupLabel": "Backup Contents",
-  "contentsExportErrorMessage": "Failed to export contents: {error}",
-  "@contentsExportErrorMessage": {
-    "description": "Error message shown when exporting contents fails.",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "contentsCopySuccessMessage": "Contents copied to the clipboard",
   "contentsBackupCancelledMessage": "Contents backup cancelled.",
   "contentsBackupCompletedMessage": "Contents backup completed.",
-  "contentsRestoreLabel": "Restore Contents",
-  "contentsRestoreSuccess": "Contents restored successfully",
-  "contentsImportErrorMessage": "Failed to import contents: {error}",
-  "@contentsImportErrorMessage": {
-    "description": "Error message shown when importing contents fails.",
+  "contentsBackupErrorMessage": "Failed to backup contents: {error}",
+  "@contentsBackupErrorMessage": {
+    "description": "Error message shown when Backing up contents fails.",
     "placeholders": {
       "error": {
         "type": "String"
@@ -59,12 +66,32 @@
     }
   },
   "contentListLabel": "Content List",
+  "contentsRestoreLabel": "restore contents",
+  "contentsRestoreErrorMessage": "failed to import contents: {error}",
+  "@contentsRestoreErrorMessage": {
+    "description": "Error message shown when importing contents fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "contentsRestoreSuccessMessage": "Contents restored successfully: {count, plural, zero {no contents} one {1 content} other {{count} contents}}",
+  "@contentsRestoreSuccessMessage": {
+    "description": "Formated text for word count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+   },
   "copyAllButton": "Copy all",
   "darkModeLabel": "Dark Mode",
   "errorLabel": "Error",
   "existingLinkOpenConfirmation": "This link already exists. Do you want to select it?",
   "favoritesLabel": "Favorites",
   "fieldAlreadyFilledMessage": "The field is already filled.",
+  "fileNotSelectedMessage": "No file selected.",
   "fontSizeLabel": "Font Size",
   "fontSizeLarge": "Large",
   "fontSizeMedium": "Medium",

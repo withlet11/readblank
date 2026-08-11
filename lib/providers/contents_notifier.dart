@@ -46,7 +46,13 @@ class CachedContent {
 }
 
 class ContentsNotifier extends ChangeNotifier {
-  static const String _keyLinkList = 'history';
+  static const String _appId = 'io.github.withlet11.readblank';
+  static const String _keyContents = 'contents';
+  static const String _keyAppId = 'app_id';
+  static const String _keyTarget = 'target';
+  static const String _keySchemaVersion = 'schema_version';
+  static const String _keyBackupAt = 'backup_at';
+  static const String _keyRecords = 'records';
   static const String _keyUrl = 'url';
   static const String _keyLinkId = 'link_id';
   static const String _keyTitle = 'title';
@@ -82,7 +88,7 @@ class ContentsNotifier extends ChangeNotifier {
   // Link data handling
   void _retrieveFromSharedPreferences() {
     try {
-      final linkListJson = sharedPrefs.getString(_keyLinkList);
+      final linkListJson = sharedPrefs.getString(_keyContents);
       if (linkListJson != null) {
         final decoded = jsonDecode(linkListJson);
         if (decoded is List) {
@@ -106,7 +112,7 @@ class ContentsNotifier extends ChangeNotifier {
 
   Future<void> persist() async {
     notifyListeners();
-    await sharedPrefs.setString(_keyLinkList, linkListJsonData);
+    await sharedPrefs.setString(_keyContents, linkListJsonData);
   }
 
   List<Map<String, dynamic>> get linkList => _linkList;
@@ -409,16 +415,23 @@ class ContentsNotifier extends ChangeNotifier {
   Future<String?> exportContents() async {
     final linkIds = <String>{};
     final normalizedList = _linkList
-        .map(normalizeEntry)
+        .map(_completeEntry)
         .where((e) => linkIds.add(e?[_keyLinkId] ?? ''))
         .toList();
+    final timestamp = DateTime.now().toIso8601String();
+    final data = {
+      _keyAppId: _appId,
+      _keyTarget: _keyContents,
+      _keySchemaVersion: 1,
+      _keyBackupAt: timestamp,
+      _keyRecords: normalizedList,
+    };
 
-    final jsonData = jsonEncode(normalizedList);
+    final jsonData = jsonEncode(data);
 
     final path = await FilePicker.platform.saveFile(
       dialogTitle: 'Export contents',
-      fileName:
-          'Contents-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+      fileName: 'Contents-backup-${timestamp.substring(0, 10)}.json',
       type: FileType.custom,
       allowedExtensions: ['json'],
       bytes: utf8.encode(jsonData),
@@ -427,7 +440,7 @@ class ContentsNotifier extends ChangeNotifier {
     return path;
   }
 
-  Map<String, dynamic>? normalizeEntry(Map<String, dynamic> entry) {
+  Map<String, dynamic>? _completeEntry(Map<String, dynamic> entry) {
     final normalizedEntry = <String, dynamic>{};
     final String? url = entry[_keyUrl];
     final String? linkId = entry[_keyLinkId];
@@ -452,27 +465,55 @@ class ContentsNotifier extends ChangeNotifier {
     return normalizedEntry;
   }
 
-  Future<void> importContents(String path) async {
+  Future<int?> importContents(String path) async {
     final file = File(path);
     if (await file.exists()) {
       String jsonData = await file.readAsString();
-      List<Object?> list = jsonDecode(jsonData);
+      Map<String, dynamic> data = jsonDecode(jsonData);
+
+      if (data[_keyAppId] != _appId ||
+          data[_keyTarget] != _keyContents ||
+          data[_keySchemaVersion] != 1) {
+        return null;
+      }
+
+      final List<dynamic> list = data[_keyRecords] as List<dynamic>;
+      int count = 0;
 
       if (list.isNotEmpty) {
-        int count = 0;
         for (var value in list) {
           final entry = value as Map<String, dynamic>;
-          if (entry[_keyUrl] != null) {
-            if (!contains(entry[_keyUrl])) {
-              _linkList.insert(0, entry);
+          final url = entry[_keyUrl];
+          final linkId = entry[_keyLinkId];
+          if (url != null && linkId != null) {
+            if (!contains(url)) {
+              _linkList.insert(0, _cleanEntry(entry, url, linkId));
               ++count;
             }
           }
         }
-        print('count: $count, entries.length: ${linkList.length}');
       }
+
+      return count;
     } else {
       throw Exception("File not found: $path");
     }
+  }
+
+  Map<String, dynamic> _cleanEntry(
+    Map<String, dynamic> entry,
+    String url,
+    String linkId,
+  ) {
+    return {
+      _keyUrl: url,
+      _keyLinkId: linkId,
+      _keyTitle: entry[_keyTitle],
+      _keyFileSize: entry[_keyFileSize] ?? '? B',
+      _keyLocale: entry[_keyLocale] ?? '',
+      _keyTimestamp: entry[_keyTimestamp] ?? DateTime.now().toIso8601String(),
+      _keyLastViewedParagraphIndex: entry[_keyLastViewedParagraphIndex] ?? 0,
+      _keyIsFavorite: entry[_keyIsFavorite] ?? false,
+    };
   }
 }

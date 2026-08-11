@@ -30,6 +30,13 @@ import 'package:sqflite/sqflite.dart';
 enum ActivityViewMode { daily, weekly, monthly }
 
 class ActivityNotifier extends ChangeNotifier {
+  static const String _appId = 'io.github.withlet11.readblank';
+  static const String _keyActivity = 'activity';
+  static const String _keyAppId = 'app_id';
+  static const String _keyTarget = 'target';
+  static const String _keySchemaVersion = 'schema_version';
+  static const String _keyBackupAt = 'backup_at';
+  static const String _keyRecords = 'records';
   static const String _keyId = 'id';
   static const String _keyWord = 'word';
   static const String _keyTimestamp = 'timestamp';
@@ -68,8 +75,12 @@ class ActivityNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addWord(String word, String linkId) async {
-    final timestamp = DateTime.now().toIso8601String();
+  Future<void> addWord(
+    String word, {
+    String? timestamp,
+    required String linkId,
+  }) async {
+    timestamp = timestamp ?? DateTime.now().toIso8601String();
     await _db.addEntry(word, timestamp: timestamp, linkId: linkId);
 
     _wordLog.insert(0, {
@@ -158,17 +169,25 @@ class ActivityNotifier extends ChangeNotifier {
 
   Future<String?> exportActivity() async {
     final log = await _db.getAllEntries();
-    final backupData = log.map((row) {
+    final records = log.map((row) {
       final entry = Map<String, Object?>.from(row);
       entry.remove(_keyId); // unnecessary field
       return entry;
     }).toList();
+    final timestamp = DateTime.now().toIso8601String();
+    final backupData = {
+      _keyAppId: _appId,
+      _keyTarget: _keyActivity,
+      _keySchemaVersion: 1,
+      _keyBackupAt: timestamp,
+      _keyRecords: records,
+    };
+
     final jsonData = jsonEncode(backupData);
 
     final path = await FilePicker.platform.saveFile(
       dialogTitle: 'Export activity',
-      fileName:
-          'Activity-backup-${DateTime.now().toIso8601String().substring(0, 10)}.json',
+      fileName: 'Activity-backup-${timestamp.substring(0, 10)}.json',
       type: FileType.custom,
       allowedExtensions: ['json'],
       bytes: utf8.encode(jsonData),
@@ -177,26 +196,37 @@ class ActivityNotifier extends ChangeNotifier {
     return path;
   }
 
-  Future<void> importActivity(String path) async {
+  Future<int?> importActivity(String path) async {
     final file = File(path);
     if (await file.exists()) {
       String jsonData = await file.readAsString();
-      List<Object?> entries = jsonDecode(jsonData);
+      Map<String, dynamic> data = jsonDecode(jsonData);
+
+      if (data[_keyAppId] != _appId ||
+          data[_keyTarget] != _keyActivity ||
+          data[_keySchemaVersion] != 1) {
+        return null;
+      }
+
+      List<Object?> entries = data[_keyRecords] as List<dynamic>;
+      int count = 0;
 
       if (entries.isNotEmpty) {
-        int count = 0;
         final list = await _db.getAllEntries();
         final listWords = list.map((e) => e[_keyWord]).toList();
         for (var entry in entries) {
           final elem = entry as Map<String, dynamic>;
-          if (elem.containsKey(_keyWord) &&
-              elem.containsKey(_keyTimestamp) &&
-              listWords.contains(elem[_keyWord])) {
+          String? word = elem[_keyWord];
+          String? timestamp = elem[_keyTimestamp];
+          String? linkId = elem[_keyLinkId];
+          if (word != null && timestamp != null && !listWords.contains(word)) {
+            addWord(word, timestamp: timestamp, linkId: linkId ?? '');
             ++count;
           }
         }
-        print('count: $count, entries.length: ${entries.length}');
       }
+
+      return count;
     } else {
       throw Exception("File not found: $path");
     }

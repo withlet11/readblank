@@ -5,7 +5,9 @@
   "activityBackupLabel": "Tevékenység biztonsági mentése",
   "activityBackupNotFound": "Mentési fájl nem található: {path}",
   "activityNavButton": "Tevékenység",
+  "activityRestoreErrorMessage": "Nem sikerült a tevékenység visszaállítása: {error}",
   "activityRestoreLabel": "Tevékenység visszaállítása",
+  "activityRestoreSuccessMessage": "Tevékenység sikeresen visszaállítva: {count} szó",
   "activityRestoreSuccess": "Tevékenység sikeresen visszaállítva",
   "allContentsClearButton": "Összes tartalmak törlése",
   "allContentsClearConfirmation": "Biztosan törli az összes tartalmat?",
@@ -18,13 +20,13 @@
   "commonYes": "Igen",
   "connectionError": "Csatlakozási hiba vagy érvénytelen hivatkozás.\nA másolt szöveg: \"{copiedText}\".",
   "contentsBackupLabel": "Tartalomak biztonsági mentése",
-  "contentsExportErrorMessage": "Nem sikerült a tartalomak exportálása: {error}",
   "contentsCopySuccessMessage": "Tartalomak a vágólapra másolva",
   "contentsBackupCancelledMessage": "A tartalmak biztonsági mentése megszakítva.",
   "contentsBackupCompletedMessage": "A tartalmak biztonsági mentése elkészült.",
+  "contentsBackupErrorMessage": "Nem sikerült a tartalomak biztonsági mentése: {error}",
   "contentsRestoreLabel": "Tartalomak visszaállítása",
-  "contentsRestoreSuccess": "Tartalomak sikeresen visszaállítva",
-  "contentsImportErrorMessage": "Nem sikerült a tartalomak importálása: {error}",
+  "contentsRestoreErrorMessage": "Nem sikerült a tartalomak visszaállítása: {error}",
+  "contentsRestoreSuccessMessage": "Tartalomak sikeresen visszaállítva: {count} tartalom",
   "contentListLabel": "Tartalomlista",
   "copyAllButton": "Másolása",
   "darkModeLabel": "Sötét mód",
@@ -32,6 +34,7 @@
   "existingLinkOpenConfirmation": "Ez a hivatkozás már létezik. Ki szeretné jelölni?",
   "favoritesLabel": "Kedvencek",
   "fieldAlreadyFilledMessage": "A mező már ki van töltve.",
+  "fileNotSelectedMessage": "Nincs fájl kiválasztva.",
   "fontSizeLabel": "Betűméret",
   "fontSizeLarge": "Nagy",
   "fontSizeMedium": "Közepes",
@@ -54,14 +57,6 @@
   "urlCopyRequest": "Kérjük, másolja ki a hivatkozást a böngésző címsorából.",
   "urlRequestMessage": "Kérjük, adjon meg egy hivatkozást",
   "wordCount": "{count} szó",
-  "@wordCount": {
-    "description": "A message of word count.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "dateFormatForDailyChart": "{date}",
   "@dateFormatForDailyChart": {
     "placeholders": {

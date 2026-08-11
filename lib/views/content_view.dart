@@ -340,7 +340,7 @@ class _ContentViewState extends State<ContentView> {
         final linkId = context.read<ContentsNotifier>().currentLinkId;
         context.read<ActivityNotifier>().addWord(
           _paragraph.substring(_wordList[index].$1, _wordList[index].$2),
-          linkId,
+          linkId: linkId,
         );
       } else if (_paragraph
               .substring(_wordList[index].$1, _wordList[index].$2)
@@ -367,7 +367,7 @@ class _ContentViewState extends State<ContentView> {
         final linkId = context.read<ContentsNotifier>().currentLinkId;
         context.read<ActivityNotifier>().addWord(
           _paragraph.substring(_wordList[index].$1, _wordList[index].$2),
-          linkId,
+          linkId: linkId,
         );
       }
     };

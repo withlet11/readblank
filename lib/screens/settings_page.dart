@@ -21,8 +21,6 @@
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart' as parser;
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -228,7 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.contentsExportErrorMessage(e.toString())),
+            content: Text(l10n.contentsBackupErrorMessage(e.toString())),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -258,22 +256,42 @@ class _SettingsPageState extends State<SettingsPage> {
       if (result != null && result.files.single.path != null) {
         if (!mounted) return;
         final contentsNotifier = context.read<ContentsNotifier>();
-        await contentsNotifier.importContents(result.files.single.path!);
+        int? count = await contentsNotifier.importContents(
+          result.files.single.path!,
+        );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.contentsRestoreSuccess),
-              duration: const Duration(seconds: 3),
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.contentsBackupLabel),
+              content: Text(
+                count == null
+                    ? l10n.contentsRestoreErrorMessage('error')
+                    : l10n.contentsRestoreSuccessMessage(count),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.commonOk),
+                ),
+              ],
             ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.contentsImportErrorMessage(e.toString())),
-            duration: const Duration(seconds: 3),
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.contentsBackupLabel),
+            content: Text(l10n.contentsRestoreErrorMessage(e.toString())),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.commonOk),
+              ),
+            ],
           ),
         );
       }
@@ -286,34 +304,34 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<ImportProcessResult> _addLink(String url) async {
-    final contentsNotifier = context.read<ContentsNotifier>();
-    if (url.isNotEmpty) {
-      try {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
-          final document = parser.parse(response.body);
-          final pElements = document.getElementsByTagName('p');
-          if (pElements.any((element) => element.text.trim().isNotEmpty)) {
-            if (contentsNotifier.contains(url)) {
-              return ImportProcessResult.alreadyExists;
-            } else {
-              contentsNotifier.add(url);
-              return ImportProcessResult.success;
-            }
-          } else {
-            return ImportProcessResult.noParagraph;
-          }
-        } else {
-          return ImportProcessResult.invalidUrl;
-        }
-      } catch (e) {
-        return ImportProcessResult.error;
-      }
-    } else {
-      return ImportProcessResult.noUrl;
-    }
-  }
+  // Future<ImportProcessResult> _addLink(String url) async {
+  //   final contentsNotifier = context.read<ContentsNotifier>();
+  //   if (url.isNotEmpty) {
+  //     try {
+  //       final response = await http.get(Uri.parse(url));
+  //       if (response.statusCode == 200) {
+  //         final document = parser.parse(response.body);
+  //         final pElements = document.getElementsByTagName('p');
+  //         if (pElements.any((element) => element.text.trim().isNotEmpty)) {
+  //           if (contentsNotifier.contains(url)) {
+  //             return ImportProcessResult.alreadyExists;
+  //           } else {
+  //             contentsNotifier.add(url);
+  //             return ImportProcessResult.success;
+  //           }
+  //         } else {
+  //           return ImportProcessResult.noParagraph;
+  //         }
+  //       } else {
+  //         return ImportProcessResult.invalidUrl;
+  //       }
+  //     } catch (e) {
+  //       return ImportProcessResult.error;
+  //     }
+  //   } else {
+  //     return ImportProcessResult.noUrl;
+  //   }
+  // }
 
   Future<void> _saveActivity() async {
     final l10n = AppLocalizations.of(context)!;
@@ -379,22 +397,58 @@ class _SettingsPageState extends State<SettingsPage> {
       if (result != null && result.files.single.path != null) {
         if (!mounted) return;
         final activityNotifier = context.read<ActivityNotifier>();
-        await activityNotifier.importActivity(result.files.single.path!);
+        final count = await activityNotifier.importActivity(
+          result.files.single.path!,
+        );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.activityRestoreSuccess),
-              duration: const Duration(seconds: 3),
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.contentsBackupLabel),
+              content: Text(
+                count == null
+                    ? l10n.activityRestoreErrorMessage('error')
+                    : l10n.activityRestoreSuccessMessage(count),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.commonOk),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(l10n.contentsBackupLabel),
+              content: Text(l10n.fileNotSelectedMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.commonOk),
+                ),
+              ],
             ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            duration: const Duration(seconds: 3),
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.activityBackupLabel),
+            content: Text(l10n.activityRestoreErrorMessage(e.toString())),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.commonOk),
+              ),
+            ],
           ),
         );
       }
