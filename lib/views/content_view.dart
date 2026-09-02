@@ -35,12 +35,16 @@ class WordRange {
 class ContentView extends StatefulWidget {
   final String paragraph;
   final HiddenMode hiddenMode;
+  final double speechVolume;
+  final double speechRate;
   final Locale locale;
 
   const ContentView({
     super.key,
     required this.paragraph,
     required this.hiddenMode,
+    required this.speechVolume,
+    required this.speechRate,
     required this.locale,
   });
 
@@ -53,6 +57,8 @@ class _ContentViewState extends State<ContentView> {
 
   late String _paragraph;
   late HiddenMode _hiddenMode;
+  late double _speechVolume;
+  late double _speechRate;
   final List<WordRange> _hiddenWords = [];
   late List<int> _sortedIndexList;
   int _currentIndex = 0;
@@ -155,8 +161,14 @@ class _ContentViewState extends State<ContentView> {
     super.initState();
     _paragraph = widget.paragraph.trim();
     _hiddenMode = widget.hiddenMode;
+    _speechVolume = widget.speechVolume;
+    _speechRate = widget.speechRate;
     _prepareWordList();
-    _ttsService.initTts(language: widget.locale.languageCode);
+    _ttsService.initTts(
+      volume: _speechVolume,
+      rate: _speechRate,
+      language: widget.locale.languageCode,
+    );
 
     _ttsService.onStart = () {
       if (mounted) setState(() {});
@@ -331,13 +343,35 @@ class _ContentViewState extends State<ContentView> {
                   },
             icon: const Icon(Icons.share),
           ),
-          IconButton.filled(
-            icon: Icon(
-              _ttsService.state == TtsState.playing
-                  ? Icons.stop
-                  : Icons.volume_up,
-            ),
-            onPressed: _toggleSpeak,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton.filled(
+                icon: Icon(
+                  _ttsService.state == TtsState.playing
+                      ? Icons.stop
+                      : _speechVolume == 0.0
+                      ? Icons.volume_off
+                      : _speechVolume < 0.5
+                      ? Icons.volume_mute
+                      : _speechVolume < 0.75
+                      ? Icons.volume_down
+                      : Icons.volume_up,
+                ),
+                onPressed: _speechVolume > 0.0 ? _toggleSpeak : null,
+              ),
+              if (_speechVolume > 0.0)
+                Positioned(
+                  bottom: 5,
+                  child: Text(
+                    '${(_speechRate * 2).toStringAsFixed(1)}×',
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

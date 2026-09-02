@@ -50,7 +50,10 @@ class _ReadPageState extends State<ReadPage> {
 
   Widget _buildContent(ContentsNotifier notifier) {
     final l10n = AppLocalizations.of(context)!;
-    final hiddenMode = context.watch<AppPreferencesNotifier>().hiddenMode;
+    final pref = context.watch<AppPreferencesNotifier>();
+    final hiddenMode = pref.hiddenMode;
+    final speechVolume = pref.speechVolumeFactor;
+    final speechRate = pref.speechRateFactor;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -60,7 +63,7 @@ class _ReadPageState extends State<ReadPage> {
               height: constraints.maxHeight * 0.9,
               child: ContentView(
                 key: ValueKey(
-                  '${notifier.currentParagraphIndex}_${notifier.currentParagraph}_$hiddenMode',
+                  '${notifier.currentParagraphIndex}_${notifier.currentParagraph}_${hiddenMode}_${speechVolume}_$speechRate ',
                 ),
                 paragraph:
                     (notifier.isLoading ||
@@ -70,6 +73,8 @@ class _ReadPageState extends State<ReadPage> {
                     : (notifier.currentParagraph ?? l10n.urlRequestMessage),
                 hiddenMode: hiddenMode,
                 locale: notifier.currentLocale,
+                speechVolume: speechVolume,
+                speechRate: speechRate,
               ),
             ),
             Expanded(

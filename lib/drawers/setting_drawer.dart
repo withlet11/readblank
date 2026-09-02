@@ -169,6 +169,57 @@ class _SettingDrawer extends State<SettingDrawer> {
           ),
         ),
         ListTile(
+          leading: const Icon(Icons.volume_up),
+          title: Text(l10n.speechVolumeLabel),
+          trailing: DropdownButton(
+            items: pref.speechVolumeFactorList.indexed.map((entry) {
+              final (index, factor) = entry;
+              return DropdownMenuItem(
+                value: index,
+                child: Text(
+                  factor == 0.0
+                      ? l10n.speechVolumeMute
+                      : factor < 0.5
+                      ? l10n.speechVolumeLow
+                      : factor < 0.75
+                      ? l10n.speechVolumeMedium
+                      : l10n.speechVolumeMax,
+                ),
+              );
+            }).toList(),
+            value: pref.speechVolumeIndex,
+            onChanged: (int? index) {
+              if (index != null) pref.setSpeechVolumeIndex(index);
+            },
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.speed),
+          title: Text(l10n.speechRateLabel),
+          trailing: DropdownButton(
+            items: pref.speechRateFactorList.indexed.map((entry) {
+              final (index, factor) = entry;
+              return DropdownMenuItem(
+                value: index,
+                child: Text(
+                  factor <= 0.25
+                      ? l10n.speechRateSlow
+                      : factor <= 0.5
+                      ? l10n.speechRateMedium
+                      : factor <= 0.75
+                      ? l10n.speechRateFast
+                      : l10n.speechRateFastest,
+                ),
+              );
+            }).toList(),
+            value: pref.speechRateIndex,
+            onChanged: (int? index) {
+              if (index != null) pref.setSpeechRateIndex(index);
+            },
+          ),
+        ),
+        const Divider(),
+        ListTile(
           leading: const Icon(Icons.archive),
           title: Text(l10n.backupLabel),
           subtitle: Text(l10n.backupDescription),

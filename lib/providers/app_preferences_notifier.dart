@@ -10,14 +10,20 @@ class AppPreferencesNotifier extends ChangeNotifier {
   static const String _keyThemeMode = 'theme_mode';
   static const String _keyLanguageCode = 'language_code';
   static const String _keyFontSizeIndex = 'font_size_index';
+  static const String _keySpeechRateIndex = 'speech_rate_index';
+  static const String _keySpeechVolumeIndex = 'speech_volume_index';
   static const String _keyHiddenMode = 'hidden_mode';
 
-  static const _fontSizeFactorList = [0.8, 1.0, 1.2, 1.4];
+  static const _fontSizeFactorList = [1.4, 1.2, 1.0, 0.8];
+  static const _speechVolumeFactorList = [1.0, 0.67, 0.33, 0.0];
+  static const _speechRateFactorList = [1.0, 0.75, 0.5, 0.25];
 
   HiddenMode _hiddenMode = HiddenMode.wholeWords;
   ThemeMode _themeMode = ThemeMode.system;
   Locale _locale = const Locale('en');
-  int _fontSizeIndex = 1;
+  int _fontSizeIndex = 2;
+  int _speechVolumeIndex = 0;
+  int _speechRateIndex = 2;
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
@@ -32,6 +38,18 @@ class AppPreferencesNotifier extends ChangeNotifier {
   double get fontSizeFactor => _fontSizeFactorList[_fontSizeIndex];
 
   List<double> get fontSizeFactorList => _fontSizeFactorList;
+
+  int get speechVolumeIndex => _speechVolumeIndex;
+
+  double get speechVolumeFactor => _speechVolumeFactorList[_speechVolumeIndex];
+
+  List<double> get speechVolumeFactorList => _speechVolumeFactorList;
+
+  int get speechRateIndex => _speechRateIndex;
+
+  double get speechRateFactor => _speechRateFactorList[_speechRateIndex];
+
+  List<double> get speechRateFactorList => _speechRateFactorList;
 
   AppPreferencesNotifier() {
     _loadPreferences();
@@ -118,5 +136,23 @@ class AppPreferencesNotifier extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyFontSizeIndex, index);
+  }
+
+  Future<void> setSpeechVolumeIndex(int index) async {
+    if (_speechVolumeIndex == index) return;
+    _speechVolumeIndex = index;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keySpeechVolumeIndex, index);
+  }
+
+  Future<void> setSpeechRateIndex(int index) async {
+    if (_speechRateIndex == index) return;
+    _speechRateIndex = index;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keySpeechRateIndex, index);
   }
 }

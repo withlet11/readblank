@@ -10,14 +10,14 @@ import '../l10n/app_localizations.dart';
 import '../providers/app_preferences_notifier.dart';
 import '../providers/contents_notifier.dart';
 
-class ContentSelectorDrawers extends StatefulWidget {
-  const ContentSelectorDrawers({super.key});
+class ContentSelectorDrawer extends StatefulWidget {
+  const ContentSelectorDrawer({super.key});
 
   @override
-  State<ContentSelectorDrawers> createState() => _ContentSelectorDrawersState();
+  State<ContentSelectorDrawer> createState() => _ContentSelectorDrawerState();
 }
 
-class _ContentSelectorDrawersState extends State<ContentSelectorDrawers>
+class _ContentSelectorDrawerState extends State<ContentSelectorDrawer>
     with SingleTickerProviderStateMixin {
   static const String _keyUrl = 'url';
   static const String _keyTitle = 'title';

@@ -10,7 +10,7 @@ import 'package:readblank/drawers/setting_drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:readblank/screens/activity_page.dart';
 
-import 'drawers/content_selector_drawers.dart';
+import 'drawers/content_selector_drawer.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/activity_notifier.dart';
 import 'providers/app_preferences_notifier.dart';
@@ -178,7 +178,7 @@ class _MainPageState extends State<MainPage> {
               ? const ReadPage()
               : const ActivityPage(),
           drawer: _selectedIndex == 0 ? const SettingDrawer() : null,
-          endDrawer: const ContentSelectorDrawers(),
+          endDrawer: const ContentSelectorDrawer(),
           endDrawerEnableOpenDragGesture: false,
           bottomNavigationBar: _buildNavigationBar(),
         );

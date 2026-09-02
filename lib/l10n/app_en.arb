@@ -182,6 +182,16 @@
   "refreshCacheLabel": "Refresh Cache",
   "restoreButton": "Restore",
   "restoreOriginalButton": "Restore original",
+  "speechRateFast": "Fast",
+  "speechRateFastest": "Fastest",
+  "speechRateLabel": "Speech rate",
+  "speechRateMedium": "Medium",
+  "speechRateSlow": "Slow",
+  "speechVolumeLabel": "Speech volume",
+  "speechVolumeLow": "Low",
+  "speechVolumeMax": "Max",
+  "speechVolumeMedium": "Medium",
+  "speechVolumeMute": "Mute",
   "urlCopyRequest": "Please copy the link from your browser's address bar.",
   "@urlCopyRequest": {
     "description": "Request message when adding a link."
