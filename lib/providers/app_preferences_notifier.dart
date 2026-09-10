@@ -75,6 +75,20 @@ class AppPreferencesNotifier extends ChangeNotifier {
       _fontSizeIndex = fontSizeIndex;
     }
 
+    final speechVolumeIndex = prefs.getInt(_keySpeechVolumeIndex);
+    if (speechVolumeIndex != null &&
+        speechVolumeIndex >= 0 &&
+        speechVolumeIndex < _speechVolumeFactorList.length) {
+      _speechVolumeIndex = speechVolumeIndex;
+    }
+
+    final speechRateIndex = prefs.getInt(_keySpeechRateIndex);
+    if (speechRateIndex != null &&
+        speechRateIndex >= 0 &&
+        speechRateIndex < _speechRateFactorList.length) {
+      _speechRateIndex = speechRateIndex;
+    }
+
     final hiddenModeName = prefs.getString(_keyHiddenMode);
     if (hiddenModeName == null) {
       _hiddenMode = HiddenMode.wholeWords;
