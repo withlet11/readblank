@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: MIT
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/contents_notifier.dart';
 import '../style.dart';
 
 class PlainTextPage extends StatefulWidget {
+  final String url;
   final String title;
   final String domain;
   final List<String> paragraphs;
@@ -16,9 +19,10 @@ class PlainTextPage extends StatefulWidget {
 
   const PlainTextPage({
     super.key,
+    required this.url,
     required this.title,
     required this.domain,
-    required this.paragraphs,
+    this.paragraphs = const [],
     this.searchWord,
     this.isExactMatch = false,
   });
@@ -30,7 +34,6 @@ class PlainTextPage extends StatefulWidget {
 class _PlainTextPageState extends State<PlainTextPage> {
   late String _title;
   late String _domain;
-  late List<String> _paragraphs;
   late String? _searchWord;
   late bool _isExactMatch;
 
@@ -42,7 +45,6 @@ class _PlainTextPageState extends State<PlainTextPage> {
 
     _title = widget.title;
     _domain = widget.domain;
-    _paragraphs = widget.paragraphs;
     _searchWord = widget.searchWord;
     _textEditingController.text = _searchWord ?? '';
     _isExactMatch = widget.isExactMatch;
@@ -59,6 +61,9 @@ class _PlainTextPageState extends State<PlainTextPage> {
     final palette = ContentViewPalette.of(context);
     final highlightColor = palette.accent;
     final l10n = AppLocalizations.of(context)!;
+    final contentsNotifier = context.watch<ContentsNotifier>();
+    final paragraphs =
+        contentsNotifier.getParagraphs(widget.url) ?? widget.paragraphs;
 
     return Scaffold(
       appBar: AppBar(
@@ -79,6 +84,12 @@ class _PlainTextPageState extends State<PlainTextPage> {
             ),
           ],
         ),
+        bottom: contentsNotifier.isLoading
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(4),
+                child: LinearProgressIndicator(),
+              )
+            : null,
       ),
       body: SafeArea(
         bottom: true,
@@ -130,7 +141,7 @@ class _PlainTextPageState extends State<PlainTextPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final (index, paragraph) in _paragraphs.indexed)
+                    for (final (index, paragraph) in paragraphs.indexed)
                       if (_textEditingController.text.isEmpty ||
                           (_isExactMatch
                               ? containsWholeWord(

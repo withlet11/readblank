@@ -283,15 +283,15 @@ class _ActivityPageState extends State<ActivityPage> {
               subtitle: domain.isNotEmpty ? Text('$domain [$locale]') : null,
               trailing: IconButton(
                 onPressed: () {
+                  final paragraphs = contentsNotifier.getParagraphList(url);
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (BuildContext context) {
                         return PlainTextPage(
+                          url: url,
                           title: title,
                           domain: domain,
-                          paragraphs:
-                              contentsNotifier.currentParagraphList ??
-                              <String>[],
+                          paragraphs: paragraphs,
                           searchWord: entry.word,
                           isExactMatch: true,
                         );
@@ -463,9 +463,7 @@ class _ActivityPageState extends State<ActivityPage> {
             onSwipeRight: _isOnOrBeforeStartDate(selectedDate)
                 ? null
                 : () {
-                    activityNotifier.selectedDate = _getOneDayAgo(
-                      selectedDate,
-                    );
+                    activityNotifier.selectedDate = _getOneDayAgo(selectedDate);
                   },
           ),
           const SizedBox(height: 16),
@@ -720,6 +718,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   double get minExtent => _tabBar.preferredSize.height;
+
   @override
   double get maxExtent => _tabBar.preferredSize.height;
 

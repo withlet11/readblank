@@ -156,6 +156,11 @@ class _ContentViewState extends State<ContentView> {
     }
   }
 
+  void _speakWord(int index) {
+    String word = _getWholeWord(_hiddenWords[index]);
+    _ttsService.speak(word);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -444,6 +449,7 @@ class _ContentViewState extends State<ContentView> {
       } else if (index == _currentIndex) {
         // Selected field index is correct.
         _hiddenWords[index] = currentWord.copyWith(isHidden: false);
+        _speakWord(index);
         setState(() {
           _moveNextWord();
         });

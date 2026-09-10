@@ -277,7 +277,7 @@ class ContentsNotifier extends ChangeNotifier {
     try {
       _client = http.Client();
       _error = null;
-      notifyListeners();
+      Future.microtask(() => notifyListeners());
       await _fetchContent(currentUrl);
       _selectedEntry![_keyOriginalTitle] = _getCachedOriginalTitle(currentUrl);
       _selectedEntry![_keyFileSize] = getCachedContentSize(currentUrl);
@@ -296,11 +296,15 @@ class ContentsNotifier extends ChangeNotifier {
     try {
       _client = http.Client();
       _error = null;
-      notifyListeners();
+      Future.microtask(() => notifyListeners());
       await _fetchContent(url);
-      _selectedEntry![_keyOriginalTitle] = _getCachedOriginalTitle(url);
-      _selectedEntry![_keyFileSize] = getCachedContentSize(url);
-      _selectedEntry![_keyLocale] = getCachedContentLocale(url);
+      final entry = _linkList.firstWhere((e) => e[_keyUrl] == url);
+      entry[_keyOriginalTitle] = _getCachedOriginalTitle(url);
+      entry[_keyFileSize] = getCachedContentSize(url);
+      entry[_keyLocale] = getCachedContentLocale(url);
+      // _selectedEntry![_keyOriginalTitle] = _getCachedOriginalTitle(url);
+      // _selectedEntry![_keyFileSize] = getCachedContentSize(url);
+      // _selectedEntry![_keyLocale] = getCachedContentLocale(url);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -340,7 +344,17 @@ class ContentsNotifier extends ChangeNotifier {
     }
   }
 
+  List<String> getParagraphList(String url) {
+    final cachedList = _getCachedParagraphList(url);
+    if (cachedList != null) return cachedList;
+    fetchContent(url);
+    final fetchedList = _getCachedParagraphList(url);
+    return fetchedList ?? [];
+  }
+
   bool _isCached(String url) => _cachedContents.containsKey(url);
+
+  List<String>? getParagraphs(String url) => _cachedContents[url]?.paragraphs;
 
   List<String>? _getCachedParagraphList(String url) =>
       _cachedContents[url]?.paragraphs;
@@ -391,7 +405,8 @@ class ContentsNotifier extends ChangeNotifier {
   String? get currentParagraph => currentParagraphList?[_currentParagraphIndex];
 
   int get currentParagraphIndex {
-    if (currentParagraphList != null && currentParagraphList!.length <= _currentParagraphIndex) {
+    if (currentParagraphList != null &&
+        currentParagraphList!.length <= _currentParagraphIndex) {
       _currentParagraphIndex = currentParagraphList!.length - 1;
       _linkList.first[_keyLastViewedParagraphIndex] = _currentParagraphIndex;
     }

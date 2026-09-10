@@ -97,6 +97,7 @@ class _SettingDrawer extends State<SettingDrawer> {
               MaterialPageRoute(
                 builder: (BuildContext context) {
                   return PlainTextPage(
+                    url: contentsNotifier.currentUrl,
                     title: contentsNotifier.currentTitle ?? l10n.noTitle,
                     domain: contentsNotifier.currentDomainName,
                     paragraphs:
