@@ -84,7 +84,7 @@ class ContentsNotifier extends ChangeNotifier {
               _selectedEntry?[_keyLastViewedParagraphIndex] ?? 0;
         }
         for (final entry in _linkList) {
-          final locale = entry[_keyLocale]?.toLowerCase().replaceAll('-', '_');
+          final locale = entry[_keyLocale]?.toLowerCase().replaceAll('_', '-');
           if (!_locales.contains(locale)) {
             _locales.add(locale ?? '');
           }
@@ -113,7 +113,7 @@ class ContentsNotifier extends ChangeNotifier {
 
   bool _functionForFilteringWithFavoritesAndLocale(Map<String, dynamic> e) {
     return (!isFavoritesOnly || (e[_keyIsFavorite] ?? false)) &&
-        (e[_keyLocale]?.toLowerCase().replaceAll('-', '_') == targetLocale);
+        (e[_keyLocale]?.toLowerCase().replaceAll('_', '-') == targetLocale);
   }
 
   bool _functionForFilteringWithFavorites(Map<String, dynamic> e) {
@@ -323,7 +323,7 @@ class ContentsNotifier extends ChangeNotifier {
       final lang = document.documentElement?.attributes['lang'];
       final originalTitle = document.querySelector('title')?.text;
       final pElements = document.getElementsByTagName('p');
-      final locale = lang?.toLowerCase().replaceAll('-', '_');
+      final locale = lang?.toLowerCase().replaceAll('_', '-');
       final title = _cachedContents[url]?.title ?? originalTitle;
       print('set original title: $originalTitle');
       _cachedContents[url] = CachedContent(
@@ -354,8 +354,6 @@ class ContentsNotifier extends ChangeNotifier {
 
   bool _isCached(String url) => _cachedContents.containsKey(url);
 
-  List<String>? getParagraphs(String url) => _cachedContents[url]?.paragraphs;
-
   List<String>? _getCachedParagraphList(String url) =>
       _cachedContents[url]?.paragraphs;
 
@@ -374,7 +372,7 @@ class ContentsNotifier extends ChangeNotifier {
   }
 
   String? getCachedContentLocale(String url) {
-    return _cachedContents[url]?.locale?.toLowerCase().replaceAll('-', '_');
+    return _cachedContents[url]?.locale?.toLowerCase().replaceAll('_', '-');
   }
 
   // Getters of current page properties

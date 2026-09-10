@@ -27,6 +27,8 @@ class _ContentSelectorDrawerState extends State<ContentSelectorDrawer>
   static const String _keyTimestamp = 'timestamp';
   static const String _keyIsFavorite = 'isFavorite';
 
+  bool _canAddLink = true;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -62,8 +64,21 @@ class _ContentSelectorDrawerState extends State<ContentSelectorDrawer>
                         IconButton.filled(
                           icon: const Icon(Icons.add_link),
                           visualDensity: VisualDensity.compact,
-                          onPressed: () =>
-                              contentsNotifier.addLink(l10n, context),
+                          onPressed: _canAddLink
+                              ? () async {
+                                  setState(() => _canAddLink = false);
+                                  try {
+                                    await contentsNotifier.addLink(
+                                      l10n,
+                                      context,
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _canAddLink = true);
+                                    }
+                                  }
+                                }
+                              : null,
                         ),
                       ],
                     ),

@@ -100,8 +100,9 @@ class _SettingDrawer extends State<SettingDrawer> {
                     url: contentsNotifier.currentUrl,
                     title: contentsNotifier.currentTitle ?? l10n.noTitle,
                     domain: contentsNotifier.currentDomainName,
-                    paragraphs:
-                        contentsNotifier.currentParagraphList ?? <String>[],
+                    locale: contentsNotifier.currentLocale,
+                    speechVolume: pref.speechVolumeFactor,
+                    speechRate: pref.speechRateFactor,
                   );
                 },
               ),

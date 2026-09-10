@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/app_preferences_notifier.dart';
 import '../providers/contents_notifier.dart';
+import '../services/text_to_speech_service.dart';
 import '../style.dart';
 
 class PlainTextPage extends StatefulWidget {
@@ -16,6 +18,9 @@ class PlainTextPage extends StatefulWidget {
   final List<String> paragraphs;
   final String? searchWord;
   final bool isExactMatch;
+  final Locale locale;
+  final double speechVolume;
+  final double speechRate;
 
   const PlainTextPage({
     super.key,
@@ -25,6 +30,9 @@ class PlainTextPage extends StatefulWidget {
     this.paragraphs = const [],
     this.searchWord,
     this.isExactMatch = false,
+    required this.locale,
+    required this.speechVolume,
+    required this.speechRate,
   });
 
   @override
@@ -34,10 +42,16 @@ class PlainTextPage extends StatefulWidget {
 class _PlainTextPageState extends State<PlainTextPage> {
   late String _title;
   late String _domain;
+  late String _url;
   late String? _searchWord;
   late bool _isExactMatch;
+  late double _speechVolume;
+  late double _speechRate;
+  int _readingParagraphIndex = 0;
 
   final _textEditingController = TextEditingController();
+
+  final TextToSpeechService _ttsService = TextToSpeechService();
 
   @override
   void initState() {
@@ -45,14 +59,39 @@ class _PlainTextPageState extends State<PlainTextPage> {
 
     _title = widget.title;
     _domain = widget.domain;
+    _url = widget.url;
     _searchWord = widget.searchWord;
     _textEditingController.text = _searchWord ?? '';
     _isExactMatch = widget.isExactMatch;
+    _speechVolume = widget.speechVolume;
+    _speechRate = widget.speechRate;
+
+    _ttsService.initTts(
+      volume: _speechVolume,
+      rate: _speechRate,
+      language: widget.locale.languageCode,
+    );
+    print(
+      'plaintext ======${widget.locale.toLanguageTag()} =======',
+    );
+
+    _ttsService.onStart = () {
+      if (mounted) setState(() {});
+    };
+
+    _ttsService.onComplete = () {
+      if (mounted) setState(() {});
+    };
+
+    _ttsService.onError = (msg) {
+      if (mounted) setState(() {});
+    };
   }
 
   @override
   void dispose() {
     _textEditingController.dispose();
+    _ttsService.dispose();
     super.dispose();
   }
 
@@ -62,8 +101,7 @@ class _PlainTextPageState extends State<PlainTextPage> {
     final highlightColor = palette.accent;
     final l10n = AppLocalizations.of(context)!;
     final contentsNotifier = context.watch<ContentsNotifier>();
-    final paragraphs =
-        contentsNotifier.getParagraphs(widget.url) ?? widget.paragraphs;
+    final paragraphs = contentsNotifier.getParagraphList(widget.url);
 
     return Scaffold(
       appBar: AppBar(
@@ -105,9 +143,9 @@ class _PlainTextPageState extends State<PlainTextPage> {
                   Expanded(
                     child: TextField(
                       controller: _textEditingController,
-                      decoration: const InputDecoration(
-                        labelText: 'Search',
-                        prefixIcon: Icon(Icons.search),
+                      decoration: InputDecoration(
+                        labelText: l10n.searchLabel,
+                        prefixIcon: const Icon(Icons.search),
                       ),
                       onChanged: (value) {
                         setState(() {});
@@ -140,63 +178,7 @@ class _PlainTextPageState extends State<PlainTextPage> {
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final (index, paragraph) in paragraphs.indexed)
-                      if (_textEditingController.text.isEmpty ||
-                          (_isExactMatch
-                              ? containsWholeWord(
-                                  paragraph,
-                                  _textEditingController.text,
-                                )
-                              : paragraph.toLowerCase().contains(
-                                  _textEditingController.text.toLowerCase(),
-                                )))
-                        Padding(
-                          padding: const EdgeInsetsGeometry.symmetric(
-                            vertical: 0,
-                            horizontal: 16,
-                          ),
-                          child: Card(
-                            surfaceTintColor: Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer,
-                            elevation: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('[${index + 1}]'),
-                                      IconButton(
-                                        visualDensity: VisualDensity.compact,
-                                        onPressed: () {
-                                          SharePlus.instance.share(
-                                            ShareParams(text: paragraph),
-                                          );
-                                        },
-                                        icon: Icon(Icons.share),
-                                      ),
-                                    ],
-                                  ),
-                                  RichText(
-                                    text: TextSpan(
-                                      children: highlightSearchWord(
-                                        paragraph,
-                                        highlightColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                  ],
+                  children: _buildParagraphs(paragraphs, highlightColor),
                 ),
               ),
             ),
@@ -204,6 +186,113 @@ class _PlainTextPageState extends State<PlainTextPage> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildParagraphs(List<String> paragraphs, Color highlightColor) {
+    return [
+      for (final (index, paragraph) in paragraphs.indexed)
+        if (_textEditingController.text.isEmpty ||
+            (_isExactMatch
+                ? containsWholeWord(paragraph, _textEditingController.text)
+                : paragraph.toLowerCase().contains(
+                    _textEditingController.text.toLowerCase(),
+                  )))
+          Padding(
+            padding: const EdgeInsetsGeometry.symmetric(
+              vertical: 0,
+              horizontal: 16,
+            ),
+            child: Card(
+              surfaceTintColor: Theme.of(context).colorScheme.primaryContainer,
+              elevation: 1,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('[${index + 1}]'),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.article),
+                              onPressed: () async {
+                                final contentsNotifier = context
+                                    .read<ContentsNotifier>();
+                                final pref = context
+                                    .read<AppPreferencesNotifier>();
+                                final navigator = Navigator.of(context);
+
+                                await contentsNotifier.select(_url);
+                                await contentsNotifier.setCurrentParagraphIndex(
+                                  index,
+                                );
+
+                                if (!mounted) return;
+
+                                pref.setMainPageSelectedIndex(0);
+                                navigator.pop();
+                              },
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                SharePlus.instance.share(
+                                  ShareParams(text: paragraph),
+                                );
+                              },
+                              icon: const Icon(Icons.share),
+                            ),
+                            IconButton(
+                              icon:
+                                  (_ttsService.state == TtsState.playing &&
+                                      index == _readingParagraphIndex)
+                                  ? Icon(
+                                      Icons.stop,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    )
+                                  : Icon(
+                                      _speechVolume == 0.0
+                                          ? Icons.volume_off
+                                          : _speechVolume < 0.5
+                                          ? Icons.volume_mute
+                                          : _speechVolume < 0.75
+                                          ? Icons.volume_down
+                                          : Icons.volume_up,
+                                    ),
+                              onPressed: _speechVolume > 0.0
+                                  ? () {
+                                      if (index == _readingParagraphIndex) {
+                                        _toggleSpeak(paragraph);
+                                      } else {
+                                        _readingParagraphIndex = index;
+                                        _switchSpeak(paragraph);
+                                      }
+                                    }
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    RichText(
+                      text: TextSpan(
+                        children: highlightSearchWord(
+                          paragraph,
+                          highlightColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    ];
   }
 
   List<InlineSpan> highlightSearchWord(String text, Color highlightColor) {
@@ -260,5 +349,21 @@ class _PlainTextPageState extends State<PlainTextPage> {
 
   bool isLatinChar(String char) {
     return RegExp(r'^\p{Script=Latin}$', unicode: true).hasMatch(char);
+  }
+
+  void _toggleSpeak(String paragraph) async {
+    if (_ttsService.state == TtsState.playing) {
+      await _ttsService.stop();
+    } else {
+      await _ttsService.speak(paragraph);
+    }
+  }
+
+  void _switchSpeak(String paragraph) async {
+    if (_ttsService.state == TtsState.playing) {
+      await _ttsService.stop();
+    }
+
+    await _ttsService.speak(paragraph);
   }
 }

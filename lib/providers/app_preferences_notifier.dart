@@ -24,6 +24,7 @@ class AppPreferencesNotifier extends ChangeNotifier {
   int _fontSizeIndex = 2;
   int _speechVolumeIndex = 0;
   int _speechRateIndex = 2;
+  int _mainPageSelectedIndex = 0;
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
@@ -50,6 +51,14 @@ class AppPreferencesNotifier extends ChangeNotifier {
   double get speechRateFactor => _speechRateFactorList[_speechRateIndex];
 
   List<double> get speechRateFactorList => _speechRateFactorList;
+
+  int get mainPageSelectedIndex => _mainPageSelectedIndex;
+
+  void setMainPageSelectedIndex(int index) {
+    if (_mainPageSelectedIndex == index) return;
+    _mainPageSelectedIndex = index;
+    notifyListeners();
+  }
 
   AppPreferencesNotifier() {
     _loadPreferences();

@@ -105,7 +105,9 @@ class _MonthlyChartState extends State<MonthlyChartView>
   }
 
   void _swipeLeft() {
-    if (_isAnimating || widget.nextData.isEmpty) return;
+    if (_isAnimating || widget.nextData.isEmpty || widget.onSwipeLeft == null) {
+      return;
+    }
     _animateTo(-_lastWidth, widget.nextData, () {
       widget.onSwipeLeft?.call();
       setState(() {
@@ -115,7 +117,11 @@ class _MonthlyChartState extends State<MonthlyChartView>
   }
 
   void _swipeRight() {
-    if (_isAnimating || widget.previousData.isEmpty) return;
+    if (_isAnimating ||
+        widget.previousData.isEmpty ||
+        widget.onSwipeRight == null) {
+      return;
+    }
     _animateTo(_lastWidth, widget.previousData, () {
       widget.onSwipeRight?.call();
       setState(() {
@@ -127,8 +133,10 @@ class _MonthlyChartState extends State<MonthlyChartView>
   void _onDragUpdate(DragUpdateDetails details) {
     if (_isAnimating ||
         _dragShift.abs() >= _lastWidth ||
-        (details.delta.dx > 0 && widget.previousData.isEmpty) ||
-        (details.delta.dx < 0 && widget.nextData.isEmpty)) {
+        (details.delta.dx > 0 &&
+            (widget.previousData.isEmpty || widget.onSwipeRight == null)) ||
+        (details.delta.dx < 0 &&
+            (widget.nextData.isEmpty || widget.onSwipeLeft == null))) {
       return;
     }
 
@@ -141,9 +149,13 @@ class _MonthlyChartState extends State<MonthlyChartView>
     if (_isAnimating) return;
 
     const threshold = 50.0;
-    if (_dragShift < -threshold) {
+    if (_dragShift < -threshold &&
+        widget.nextData.isNotEmpty &&
+        widget.onSwipeLeft != null) {
       _swipeLeft();
-    } else if (_dragShift > threshold) {
+    } else if (_dragShift > threshold &&
+        widget.previousData.isNotEmpty &&
+        widget.onSwipeRight != null) {
       _swipeRight();
     } else {
       _animateTo(0.0, widget.currentData, null);

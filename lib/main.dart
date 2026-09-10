@@ -164,25 +164,30 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 0;
-
   @override
   Widget build(BuildContext context) {
-    return Consumer2<ContentsNotifier, ActivityNotifier>(
-      builder: (context, contentsNotifier, activityNotifier, child) {
-        return Scaffold(
-          appBar: _selectedIndex == 0
-              ? _buildAppBarForRead(contentsNotifier)
-              : _buildAppBarForLog(activityNotifier),
-          body: _selectedIndex == 0
-              ? const ReadPage()
-              : const ActivityPage(),
-          drawer: _selectedIndex == 0 ? const SettingDrawer() : null,
-          endDrawer: const ContentSelectorDrawer(),
-          endDrawerEnableOpenDragGesture: false,
-          bottomNavigationBar: _buildNavigationBar(),
-        );
-      },
+    return Consumer3<
+      ContentsNotifier,
+      ActivityNotifier,
+      AppPreferencesNotifier
+    >(
+      builder:
+          (context, contentsNotifier, activityNotifier, prefNotifier, child) {
+            final selectedIndex = prefNotifier.mainPageSelectedIndex;
+
+            return Scaffold(
+              appBar: selectedIndex == 0
+                  ? _buildAppBarForRead(contentsNotifier)
+                  : _buildAppBarForLog(activityNotifier),
+              body: selectedIndex == 0
+                  ? const ReadPage()
+                  : const ActivityPage(),
+              drawer: selectedIndex == 0 ? const SettingDrawer() : null,
+              endDrawer: const ContentSelectorDrawer(),
+              endDrawerEnableOpenDragGesture: false,
+              bottomNavigationBar: _buildNavigationBar(prefNotifier),
+            );
+          },
     );
   }
 
@@ -211,7 +216,7 @@ class _MainPageState extends State<MainPage> {
           builder: (context) => contentsNotifier.isLoading
               ? IconButton(
                   icon: Icon(
-                    Icons.stop_circle,
+                    Icons.stop,
                     color: Theme.of(context).colorScheme.error,
                   ),
                   onPressed: () {
@@ -261,15 +266,13 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  NavigationBar _buildNavigationBar() {
+  NavigationBar _buildNavigationBar(AppPreferencesNotifier prefNotifier) {
     final l10n = AppLocalizations.of(context)!;
 
     return NavigationBar(
-      selectedIndex: _selectedIndex,
+      selectedIndex: prefNotifier.mainPageSelectedIndex,
       onDestinationSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
+        prefNotifier.setMainPageSelectedIndex(index);
       },
       destinations: [
         NavigationDestination(

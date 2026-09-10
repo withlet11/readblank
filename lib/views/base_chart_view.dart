@@ -102,7 +102,9 @@ abstract class BaseBarChartState<
   }
 
   void _swipeLeft() {
-    if (_isAnimating || widget.onSwipeLeft == null) return;
+    if (_isAnimating || widget.nextData.isEmpty || widget.onSwipeLeft == null) {
+      return;
+    }
     _animateTo(-_lastWidth, widget.nextData, () {
       widget.onSwipeLeft?.call();
       setState(() {
@@ -112,7 +114,11 @@ abstract class BaseBarChartState<
   }
 
   void _swipeRight() {
-    if (_isAnimating || widget.onSwipeRight == null) return;
+    if (_isAnimating ||
+        widget.previousData.isEmpty ||
+        widget.onSwipeRight == null) {
+      return;
+    }
     _animateTo(_lastWidth, widget.previousData, () {
       widget.onSwipeRight?.call();
       setState(() {
@@ -124,8 +130,10 @@ abstract class BaseBarChartState<
   void _onDragUpdate(DragUpdateDetails details) {
     if (_isAnimating ||
         _dragShift.abs() >= _lastWidth ||
-        (details.delta.dx > 0 && widget.onSwipeRight == null) ||
-        (details.delta.dx < 0 && widget.onSwipeLeft == null)) {
+        (details.delta.dx > 0 &&
+            (widget.previousData.isEmpty || widget.onSwipeRight == null)) ||
+        (details.delta.dx < 0 &&
+            (widget.nextData.isEmpty || widget.onSwipeLeft == null))) {
       return;
     }
 
@@ -138,9 +146,13 @@ abstract class BaseBarChartState<
     if (_isAnimating) return;
 
     const threshold = 50.0;
-    if (_dragShift < -threshold) {
+    if (_dragShift < -threshold &&
+        widget.nextData.isNotEmpty &&
+        widget.onSwipeLeft != null) {
       _swipeLeft();
-    } else if (_dragShift > threshold) {
+    } else if (_dragShift > threshold &&
+        widget.previousData.isNotEmpty &&
+        widget.onSwipeRight != null) {
       _swipeRight();
     } else {
       _animateTo(0.0, widget.currentData, null);

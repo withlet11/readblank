@@ -205,6 +205,24 @@ class _ActivityPageState extends State<ActivityPage> {
         final domain = Uri.tryParse(url)?.host.replaceFirst('www.', '') ?? '';
 
         return ListTile(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (BuildContext context) {
+                  final pref = context.read<AppPreferencesNotifier>();
+                  return PlainTextPage(
+                    url: url,
+                    title: title,
+                    domain: domain,
+                    isExactMatch: true,
+                    locale: Locale(locale),
+                    speechVolume: pref.speechVolumeFactor,
+                    speechRate: pref.speechRateFactor,
+                  );
+                },
+              ),
+            );
+          },
           title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
           trailing: Text(
             count.toString(),
@@ -283,7 +301,7 @@ class _ActivityPageState extends State<ActivityPage> {
               subtitle: domain.isNotEmpty ? Text('$domain [$locale]') : null,
               trailing: IconButton(
                 onPressed: () {
-                  final paragraphs = contentsNotifier.getParagraphList(url);
+                  final pref = context.read<AppPreferencesNotifier>();
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (BuildContext context) {
@@ -291,9 +309,11 @@ class _ActivityPageState extends State<ActivityPage> {
                           url: url,
                           title: title,
                           domain: domain,
-                          paragraphs: paragraphs,
                           searchWord: entry.word,
                           isExactMatch: true,
+                          locale: Locale(locale),
+                          speechVolume: pref.speechVolumeFactor,
+                          speechRate: pref.speechRateFactor,
                         );
                       },
                     ),
