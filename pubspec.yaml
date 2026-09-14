@@ -39,6 +39,7 @@ dependencies:
   flutter_tts: any
   html: any
   http: any
+  in_app_purchase: any
   intl: any
   path: any
   path_provider: any

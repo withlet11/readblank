@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import '../main.dart';
 import '../providers/app_preferences_notifier.dart';
 import '../providers/contents_notifier.dart';
 import '../screens/backup_page.dart';
@@ -20,6 +21,22 @@ class SettingDrawer extends StatefulWidget {
 
 class _SettingDrawer extends State<SettingDrawer> {
   @override
+  void initState() {
+    super.initState();
+    purchaseManager.addListener(_onPurchaseStateChanged);
+  }
+
+  @override
+  void dispose() {
+    purchaseManager.removeListener(_onPurchaseStateChanged);
+    super.dispose();
+  }
+
+  void _onPurchaseStateChanged() {
+    setState(() {}); // Rebuild UI when purchase status changes
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final pref = context.watch<AppPreferencesNotifier>();
@@ -30,11 +47,15 @@ class _SettingDrawer extends State<SettingDrawer> {
         bottom: false,
         child: Column(
           children: [
-            Text('ReadBlank', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Image.asset('assets/images/app_icon.png', width: 64, height: 64),
-            const SizedBox(height: 16),
-            const Divider(),
+            _buildPurchaseButton(context),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                const Divider(),
+                if (!purchaseManager.isLoading)
+                  const LinearProgressIndicator(minHeight: 2),
+              ],
+            ),
           ],
         ),
       ),
@@ -173,52 +194,56 @@ class _SettingDrawer extends State<SettingDrawer> {
         ListTile(
           leading: const Icon(Icons.volume_up),
           title: Text(l10n.speechVolumeLabel),
-          trailing: DropdownButton(
-            items: pref.speechVolumeFactorList.indexed.map((entry) {
-              final (index, factor) = entry;
-              return DropdownMenuItem(
-                value: index,
-                child: Text(
-                  factor == 0.0
-                      ? l10n.speechVolumeMute
-                      : factor < 0.5
-                      ? l10n.speechVolumeLow
-                      : factor < 0.75
-                      ? l10n.speechVolumeMedium
-                      : l10n.speechVolumeMax,
-                ),
-              );
-            }).toList(),
-            value: pref.speechVolumeIndex,
-            onChanged: (int? index) {
-              if (index != null) pref.setSpeechVolumeIndex(index);
-            },
-          ),
+          trailing: purchaseManager.isFullUser
+              ? DropdownButton(
+                  items: pref.speechVolumeFactorList.indexed.map((entry) {
+                    final (index, factor) = entry;
+                    return DropdownMenuItem(
+                      value: index,
+                      child: Text(
+                        factor == 0.0
+                            ? l10n.speechVolumeMute
+                            : factor < 0.5
+                            ? l10n.speechVolumeLow
+                            : factor < 0.75
+                            ? l10n.speechVolumeMedium
+                            : l10n.speechVolumeMax,
+                      ),
+                    );
+                  }).toList(),
+                  value: pref.speechVolumeIndex,
+                  onChanged: (int? index) {
+                    if (index != null) pref.setSpeechVolumeIndex(index);
+                  },
+                )
+              : const Icon(Icons.lock),
         ),
         ListTile(
           leading: const Icon(Icons.speed),
           title: Text(l10n.speechRateLabel),
-          trailing: DropdownButton(
-            items: pref.speechRateFactorList.indexed.map((entry) {
-              final (index, factor) = entry;
-              return DropdownMenuItem(
-                value: index,
-                child: Text(
-                  factor <= 0.25
-                      ? l10n.speechRateSlow
-                      : factor <= 0.5
-                      ? l10n.speechRateMedium
-                      : factor <= 0.75
-                      ? l10n.speechRateFast
-                      : l10n.speechRateFastest,
-                ),
-              );
-            }).toList(),
-            value: pref.speechRateIndex,
-            onChanged: (int? index) {
-              if (index != null) pref.setSpeechRateIndex(index);
-            },
-          ),
+          trailing: purchaseManager.isFullUser
+              ? DropdownButton(
+                  items: pref.speechRateFactorList.indexed.map((entry) {
+                    final (index, factor) = entry;
+                    return DropdownMenuItem(
+                      value: index,
+                      child: Text(
+                        factor <= 0.25
+                            ? l10n.speechRateSlow
+                            : factor <= 0.5
+                            ? l10n.speechRateMedium
+                            : factor <= 0.75
+                            ? l10n.speechRateFast
+                            : l10n.speechRateFastest,
+                      ),
+                    );
+                  }).toList(),
+                  value: pref.speechRateIndex,
+                  onChanged: (int? index) {
+                    if (index != null) pref.setSpeechRateIndex(index);
+                  },
+                )
+              : const Icon(Icons.lock),
         ),
         const Divider(),
         ListTile(
@@ -291,5 +316,76 @@ class _SettingDrawer extends State<SettingDrawer> {
     )) {
       throw Exception('Could not launch $url');
     }
+  }
+
+  Widget _buildPurchaseButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    if (purchaseManager.isFullUser) {
+      return ListTile(
+        leading: Image.asset(
+          'assets/images/app_icon.png',
+          width: 48,
+          height: 48,
+        ),
+        title: Text(l10n.fullVersionLabel),
+        subtitle: Text(l10n.fullVersionDescription),
+        onTap: () {},
+      );
+    }
+
+    final product = purchaseManager.fullProduct;
+
+    return Column(
+      children: [
+        ListTile(
+          leading: Image.asset(
+            'assets/images/app_icon.png',
+            width: 48,
+            height: 48,
+          ),
+          title: Text(l10n.freeVersionLabel),
+          subtitle: Text(l10n.freeVersionDescription),
+        ),
+        if (product != null)
+          Row(
+            children: [
+              const SizedBox(width: 12),
+              Flexible(
+                child: FilledButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                  onPressed: () => purchaseManager.buyFullVersion(),
+                  child: Text(l10n.buyForLabel(product.price), maxLines: 2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                  onPressed: () => purchaseManager.restorePurchases(),
+                  child: Text(
+                    l10n.restorePurchasesLabel,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+          )
+        else
+          Text(l10n.unableToPricingMessage),
+      ],
+    );
   }
 }

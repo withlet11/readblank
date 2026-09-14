@@ -325,7 +325,6 @@ class ContentsNotifier extends ChangeNotifier {
       final pElements = document.getElementsByTagName('p');
       final locale = lang?.toLowerCase().replaceAll('_', '-');
       final title = _cachedContents[url]?.title ?? originalTitle;
-      print('set original title: $originalTitle');
       _cachedContents[url] = CachedContent(
         title: title,
         originalTitle: originalTitle,

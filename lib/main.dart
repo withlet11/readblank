@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/drawers/setting_drawer.dart';
+import 'package:readblank/providers/purchase_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:readblank/screens/activity_page.dart';
 
@@ -16,6 +17,8 @@ import 'providers/activity_notifier.dart';
 import 'providers/app_preferences_notifier.dart';
 import 'providers/contents_notifier.dart';
 import 'screens/read_page.dart';
+
+final purchaseManager = PurchaseManager();
 
 void main() async {
   LicenseRegistry.addLicense(() async* {
@@ -79,6 +82,8 @@ icon, logo, and visual assets.
   WidgetsFlutterBinding.ensureInitialized();
   final sharedPrefs = await SharedPreferences.getInstance();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  await purchaseManager.initialize();
 
   runApp(
     MultiProvider(

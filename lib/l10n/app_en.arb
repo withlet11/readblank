@@ -1,5 +1,14 @@
 {
   "@@locale": "en",
+  "buyForLabel": "Buy for {price}",
+  "@buyForLabel": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "restorePurchasesLabel": "Restore Purchases",
   "beginningOfWordsLabel": "Beginning",
   "endOfWordsLabel": "End",
   "activityBackupCancelledMessage": "Activity backup cancelled.",
@@ -115,6 +124,10 @@
   "fontSizeMedium": "Medium",
   "fontSizeSmall": "Small",
   "fontSizeXLarge": "X-Large",
+  "freeVersionDescription": "Limited activity history\nRead-aloud unavailable",
+  "freeVersionLabel": "Free version",
+  "fullVersionDescription": "Unlimited activity history\nRead-aloud available",
+  "fullVersionLabel": "Full version",
   "hiddenPartDescription": "Choose the part of each word to hide.",
   "hiddenPartLabel": "Hidden Part",
   "importCount": "Imported {successCount}",
@@ -193,6 +206,7 @@
   "speechVolumeMax": "Max",
   "speechVolumeMedium": "Medium",
   "speechVolumeMute": "Mute",
+  "unableToPricingMessage": "Unable to load product pricing.",
   "urlCopyRequest": "Please copy the link from your browser's address bar.",
   "@urlCopyRequest": {
     "description": "Request message when adding a link."
