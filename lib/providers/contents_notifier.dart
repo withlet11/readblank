@@ -379,7 +379,7 @@ class ContentsNotifier extends ChangeNotifier {
 
   String get currentLinkId => _selectedEntry?[_keyLinkId];
 
-  Locale get currentLocale => Locale(_selectedEntry?[_keyLocale]);
+  Locale get currentLocale => Locale(_selectedEntry?[_keyLocale] ?? 'en_us');
 
   String get currentTimestamp {
     return _selectedEntry == null

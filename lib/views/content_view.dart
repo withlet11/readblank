@@ -70,8 +70,6 @@ class _ContentViewState extends State<ContentView> {
 
   final TextToSpeechService _ttsService = TextToSpeechService();
 
-  // bool _isPlaying = false;
-
   void _prepareWordList() {
     final regex = RegExp(r'\p{L}+', unicode: true);
     final matches = regex.allMatches(_paragraph).toList();

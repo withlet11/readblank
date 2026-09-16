@@ -21,22 +21,6 @@ class SettingDrawer extends StatefulWidget {
 
 class _SettingDrawer extends State<SettingDrawer> {
   @override
-  void initState() {
-    super.initState();
-    purchaseManager.addListener(_onPurchaseStateChanged);
-  }
-
-  @override
-  void dispose() {
-    purchaseManager.removeListener(_onPurchaseStateChanged);
-    super.dispose();
-  }
-
-  void _onPurchaseStateChanged() {
-    setState(() {}); // Rebuild UI when purchase status changes
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final pref = context.watch<AppPreferencesNotifier>();
@@ -47,12 +31,12 @@ class _SettingDrawer extends State<SettingDrawer> {
         bottom: false,
         child: Column(
           children: [
-            _buildPurchaseButton(context),
+            _buildPurchaseButton(context, pref),
             Stack(
               alignment: Alignment.center,
               children: [
                 const Divider(),
-                if (!purchaseManager.isLoading)
+                if (pref.isPurchaseLoading)
                   const LinearProgressIndicator(minHeight: 2),
               ],
             ),
@@ -194,7 +178,7 @@ class _SettingDrawer extends State<SettingDrawer> {
         ListTile(
           leading: const Icon(Icons.volume_up),
           title: Text(l10n.speechVolumeLabel),
-          trailing: purchaseManager.isFullUser
+          trailing: pref.isFullUser
               ? DropdownButton(
                   items: pref.speechVolumeFactorList.indexed.map((entry) {
                     final (index, factor) = entry;
@@ -221,7 +205,7 @@ class _SettingDrawer extends State<SettingDrawer> {
         ListTile(
           leading: const Icon(Icons.speed),
           title: Text(l10n.speechRateLabel),
-          trailing: purchaseManager.isFullUser
+          trailing: pref.isFullUser
               ? DropdownButton(
                   items: pref.speechRateFactorList.indexed.map((entry) {
                     final (index, factor) = entry;
@@ -318,10 +302,10 @@ class _SettingDrawer extends State<SettingDrawer> {
     }
   }
 
-  Widget _buildPurchaseButton(BuildContext context) {
+  Widget _buildPurchaseButton(BuildContext context, AppPreferencesNotifier pref) {
     final l10n = AppLocalizations.of(context)!;
 
-    if (purchaseManager.isFullUser) {
+    if (pref.isFullUser) {
       return ListTile(
         leading: Image.asset(
           'assets/images/app_icon.png',
@@ -334,7 +318,7 @@ class _SettingDrawer extends State<SettingDrawer> {
       );
     }
 
-    final product = purchaseManager.fullProduct;
+    final product = pref.fullProduct;
 
     return Column(
       children: [

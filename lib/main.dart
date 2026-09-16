@@ -88,7 +88,7 @@ icon, logo, and visual assets.
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppPreferencesNotifier()),
+        ChangeNotifierProvider(create: (_) => AppPreferencesNotifier(purchaseManager)),
         ChangeNotifierProvider(create: (_) => ContentsNotifier(sharedPrefs)),
         ChangeNotifierProvider(create: (_) => ActivityNotifier()),
       ],

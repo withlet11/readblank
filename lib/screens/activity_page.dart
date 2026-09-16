@@ -29,7 +29,8 @@ class _ActivityPageState extends State<ActivityPage> {
   static const String _keyUrl = 'url';
   static const String _keyWords = 'words';
 
-  static final DateTime _startDate = DateTime(2026, 1, 1);
+  DateTime _startDate = DateTime(2026, 1, 1);
+
   final DailyChartViewController _dailyChartController =
       DailyChartViewController();
   final WeeklyChartViewController _weeklyChartController =
@@ -408,9 +409,9 @@ class _ActivityPageState extends State<ActivityPage> {
     List<Map<String, dynamic>> viewedContents,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final fontSizeFactor = context
-        .watch<AppPreferencesNotifier>()
-        .fontSizeFactor;
+    final pref = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = pref.fontSizeFactor;
+    _startDate = pref.startDate;
     final selectedDate = activityNotifier.selectedDate;
 
     if (_isBeforeStartDate(selectedDate)) {
@@ -514,9 +515,9 @@ class _ActivityPageState extends State<ActivityPage> {
     List<Map<String, dynamic>> viewedContents,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final fontSizeFactor = context
-        .watch<AppPreferencesNotifier>()
-        .fontSizeFactor;
+    final pref = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = pref.fontSizeFactor;
+    _startDate = pref.startDate;
     final selectedDate = activityNotifier.selectedDate;
 
     if (_isBeforeStartWeek(selectedDate)) {
@@ -625,9 +626,9 @@ class _ActivityPageState extends State<ActivityPage> {
     List<Map<String, dynamic>> viewedContents,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final fontSizeFactor = context
-        .watch<AppPreferencesNotifier>()
-        .fontSizeFactor;
+    final pref = context.watch<AppPreferencesNotifier>();
+    final fontSizeFactor = pref.fontSizeFactor;
+    _startDate = pref.startDate;
     final selectedDate = activityNotifier.selectedDate;
 
     final currentData = activityNotifier.currentChartData;

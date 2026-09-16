@@ -13,7 +13,8 @@ class PurchaseManager extends ChangeNotifier {
   bool isFullUser = false;
   bool isLoading = true;
 
-  static const String kFullProductID = 'full_lifetime';
+  static const String kFullProductID =
+      'io.github.withlet11.readblank.full_lifetime';
 
   Future<void> initialize() async {
     // Listen to purchase updates across app restarts/purchases
@@ -22,7 +23,7 @@ class PurchaseManager extends ChangeNotifier {
       _handlePurchaseUpdates,
       onDone: () => _subscription.cancel(),
       onError: (error) {
-        print("Purchase Stream Error: $error");
+        debugPrint("Purchase Stream Error: $error");
         isLoading = false;
         notifyListeners();
       },
@@ -38,6 +39,9 @@ class PurchaseManager extends ChangeNotifier {
       if (response.productDetails.isNotEmpty) {
         fullProduct = response.productDetails.first;
       }
+
+      // Restore purchases
+      await _iap.restorePurchases();
     }
 
     isLoading = false;
@@ -67,7 +71,7 @@ class PurchaseManager extends ChangeNotifier {
             _deliverProduct(purchase);
             break;
           case PurchaseStatus.error:
-            print("Purchase error: ${purchase.error}");
+            debugPrint("Purchase error: ${purchase.error}");
             break;
           case PurchaseStatus.pending:
             break;

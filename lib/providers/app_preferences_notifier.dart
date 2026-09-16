@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 import 'package:flutter/material.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'purchase_manager.dart';
 
 enum HiddenMode { wholeWords, beginningOfWords, endOfWords }
 
@@ -13,10 +16,13 @@ class AppPreferencesNotifier extends ChangeNotifier {
   static const String _keySpeechRateIndex = 'speech_rate_index';
   static const String _keySpeechVolumeIndex = 'speech_volume_index';
   static const String _keyHiddenMode = 'hidden_mode';
+  static final DateTime _defaultStartDate = DateTime(2026, 1, 1);
 
   static const _fontSizeFactorList = [1.4, 1.2, 1.0, 0.8];
   static const _speechVolumeFactorList = [1.0, 0.67, 0.33, 0.0];
   static const _speechRateFactorList = [1.0, 0.75, 0.5, 0.25];
+
+  final PurchaseManager _purchaseManager;
 
   HiddenMode _hiddenMode = HiddenMode.wholeWords;
   ThemeMode _themeMode = ThemeMode.system;
@@ -25,6 +31,12 @@ class AppPreferencesNotifier extends ChangeNotifier {
   int _speechVolumeIndex = 0;
   int _speechRateIndex = 2;
   int _mainPageSelectedIndex = 0;
+
+  bool get isFullUser => _purchaseManager.isFullUser;
+
+  bool get isPurchaseLoading => _purchaseManager.isLoading;
+
+  ProductDetails? get fullProduct => _purchaseManager.fullProduct;
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
@@ -40,9 +52,9 @@ class AppPreferencesNotifier extends ChangeNotifier {
 
   List<double> get fontSizeFactorList => _fontSizeFactorList;
 
-  int get speechVolumeIndex => _speechVolumeIndex;
+  int get speechVolumeIndex => isFullUser ? _speechVolumeIndex : 3;
 
-  double get speechVolumeFactor => _speechVolumeFactorList[_speechVolumeIndex];
+  double get speechVolumeFactor => _speechVolumeFactorList[speechVolumeIndex];
 
   List<double> get speechVolumeFactorList => _speechVolumeFactorList;
 
@@ -52,6 +64,17 @@ class AppPreferencesNotifier extends ChangeNotifier {
 
   List<double> get speechRateFactorList => _speechRateFactorList;
 
+  DateTime get startDate => isFullUser ? _defaultStartDate : limitedStartDate;
+
+  DateTime get limitedStartDate {
+    final now = DateTime.now();
+    return DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 30));
+  }
+
   int get mainPageSelectedIndex => _mainPageSelectedIndex;
 
   void setMainPageSelectedIndex(int index) {
@@ -60,8 +83,15 @@ class AppPreferencesNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  AppPreferencesNotifier() {
+  AppPreferencesNotifier(this._purchaseManager) {
     _loadPreferences();
+    _purchaseManager.addListener(notifyListeners);
+  }
+
+  @override
+  void dispose() {
+    _purchaseManager.removeListener(notifyListeners);
+    super.dispose();
   }
 
   Future<void> _loadPreferences() async {
