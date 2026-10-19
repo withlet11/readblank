@@ -34,7 +34,7 @@
         "type": "int"
       }
     }
-   },
+  },
   "activityRestoreSuccess": "Activity restored successfully",
   "allContentsClearButton": "Clear all contents",
   "@allContentsClearButton": {
@@ -103,7 +103,7 @@
         "type": "int"
       }
     }
-   },
+  },
   "contentsViewedLabel": "Contents Viewed",
   "darkModeLabel": "Dark Mode",
   "deleteLabel": "Delete",
