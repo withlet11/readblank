@@ -19,7 +19,7 @@
   "alreadyExistsMessage": "既に存在します",
   "appLegalese": "© 2026 WITHLET11. ソースコードはMIT Licenseに基づきます。ブランドおよびアセットは留保されています。",
   "appName": "ReadBlank",
-  "appVersion": "0.0.1",
+  "appVersion": "1.0.1",
   "backupButton": "バックアップ",
   "backupDescription": "バックアップの作成と復元",
   "backupLabel": "バックアップ",

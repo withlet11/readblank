@@ -48,7 +48,7 @@
   "alreadyExistsMessage": "Already exists",
   "appLegalese": "© 2026 WITHLET11. Source code licensed under the MIT License. Brand & Assets Reserved.",
   "appName": "ReadBlank",
-  "appVersion": "0.0.1",
+  "appVersion": "1.0.1",
   "backupButton": "Backup",
   "backupDescription": "Backup & Restore",
   "backupLabel": "Backup",
