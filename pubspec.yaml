@@ -74,6 +74,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  default-flavor: dev
+
   generate: true
 
   # The following line ensures that the Material Icons font is
