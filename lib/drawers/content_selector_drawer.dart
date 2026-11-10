@@ -327,21 +327,23 @@ class _ContentSelectorDrawerState extends State<ContentSelectorDrawer>
       countryCode = parts.last.toUpperCase();
     } else {
       final languageCode = parts.first;
-      countryCode = languageCode == 'en'
-          ? 'US'
-          : languageCode == 'ja'
-          ? 'JP'
-          : languageCode == 'zh'
-          ? 'CN'
-          : languageCode.toUpperCase();
+      countryCode = switch (languageCode) {
+        'en' => 'US',
+        'fr' => 'FR',
+        'hu' => 'HU',
+        'ja' => 'JP',
+        'zh' => 'CN',
+        _ => languageCode.toUpperCase(),
+      };
     }
 
-    if (countryCode.isEmpty) return '';
+    if (!RegExp(r'^[A-Z]{2}$').hasMatch(countryCode)) {
+      return '';
+    }
 
-    final int firstChar = countryCode.codeUnitAt(0) + 0x1F1A5;
-    final int secondChar = countryCode.codeUnitAt(1) + 0x1F1A5;
-
-    return String.fromCharCode(firstChar) + String.fromCharCode(secondChar);
+    return String.fromCharCodes(
+      countryCode.codeUnits.map((c) => c + 0x1F1A5),
+    );
   }
 
   void _showFavoriteCannotDeleteDialog(

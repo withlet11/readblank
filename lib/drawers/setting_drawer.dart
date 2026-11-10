@@ -135,8 +135,10 @@ class _SettingDrawer extends State<SettingDrawer> {
             },
             items: const [
               DropdownMenuItem(value: Locale('en'), child: Text('English')),
+              DropdownMenuItem(value: Locale('fr'), child: Text('Français')),
               DropdownMenuItem(value: Locale('hu'), child: Text('Magyar')),
               DropdownMenuItem(value: Locale('ja'), child: Text('日本語')),
+              DropdownMenuItem(value: Locale('zh'), child: Text('简体中文')),
             ],
           ),
         ),

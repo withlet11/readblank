@@ -88,7 +88,9 @@ icon, logo, and visual assets.
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppPreferencesNotifier(purchaseManager)),
+        ChangeNotifierProvider(
+          create: (_) => AppPreferencesNotifier(purchaseManager),
+        ),
         ChangeNotifierProvider(create: (_) => ContentsNotifier(sharedPrefs)),
         ChangeNotifierProvider(create: (_) => ActivityNotifier()),
       ],
@@ -141,7 +143,13 @@ class ReadBlank extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       locale: prefs.locale,
-      supportedLocales: [Locale('en'), Locale('hu'), Locale('ja')],
+      supportedLocales: [
+        Locale('en'),
+        Locale('fr'),
+        Locale('hu'),
+        Locale('ja'),
+        Locale('zh'),
+      ],
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: prefs.themeMode,
