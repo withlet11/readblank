@@ -55,6 +55,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  material_ui: any
+  cupertino_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

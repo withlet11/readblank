@@ -4,7 +4,7 @@
 import 'dart:math';
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:readblank/providers/app_preferences_notifier.dart';
 import 'package:share_plus/share_plus.dart';

@@ -1,10 +1,14 @@
 // Copyright 2026 WITHLET11 <withlet11@gmail.com>
 // SPDX-License-Identifier: MIT
 
+import 'package:cupertino_ui/cupertino_ui.dart'
+    hide GlobalCupertinoLocalizations;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    as flutter_localizations;
+import 'package:material_ui/material_ui.dart' hide GlobalMaterialLocalizations;
 import 'package:provider/provider.dart';
 import 'package:readblank/drawers/setting_drawer.dart';
 import 'package:readblank/providers/purchase_manager.dart';
@@ -139,8 +143,8 @@ class ReadBlank extends StatelessWidget {
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        flutter_localizations.GlobalWidgetsLocalizations.delegate,
+        flutter_localizations.GlobalCupertinoLocalizations.delegate,
       ],
       locale: prefs.locale,
       supportedLocales: [

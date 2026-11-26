@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import 'dart:math';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart' as intl;
 
 import '../l10n/app_localizations.dart';

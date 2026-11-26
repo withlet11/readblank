@@ -1,7 +1,7 @@
 // Copyright 2026 WITHLET11 <withlet11@gmail.com>
 // SPDX-License-Identifier: MIT
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
